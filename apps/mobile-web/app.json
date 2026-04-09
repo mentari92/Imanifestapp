@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Imanifest",
+    "slug": "imanifestapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "imanifest",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.imanifest.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F8FAFC"
+      },
+      "package": "com.imanifest.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}
