@@ -4,8 +4,7 @@
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true,
-      "filter": ["./apps/*"]
+      "persistent": true
     },
     "build": {
       "dependsOn": ["^build"],
@@ -15,12 +14,10 @@
       "outputs": []
     },
     "db:generate": {
-      "cache": false,
-      "filter": ["./packages/database"]
+      "cache": false
     },
     "db:migrate": {
-      "cache": false,
-      "filter": ["./packages/database"]
+      "cache": false
     }
   }
 }
