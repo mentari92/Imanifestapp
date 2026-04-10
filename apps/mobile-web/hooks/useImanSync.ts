@@ -12,7 +12,7 @@ interface UseImanSyncReturn {
   /** Trigger text analysis */
   analyze: (intentText: string) => Promise<void>;
   /** Trigger vision analysis (image + text) */
-  analyzeVision: (intentText: string, imageBase64: string) => Promise<void>;
+  analyzeVision: (intentText: string, imageBase64: string, imageUri?: string) => Promise<void>;
   /** Reset state to initial */
   reset: () => void;
 }
@@ -45,14 +45,18 @@ export function useImanSync(): UseImanSyncReturn {
   }, []);
 
   const analyzeVision = useCallback(
-    async (intentText: string, imageBase64: string) => {
+    async (intentText: string, imageBase64: string, imageUri?: string) => {
       setIsLoading(true);
       setError(null);
       setResult(null);
 
       try {
-        // Determine mime type from base64 header or default to jpeg
-        const mimeType = "image/jpeg";
+        // Detect MIME type from URI extension
+        let mimeType = "image/jpeg";
+        if (imageUri) {
+          const ext = imageUri.toLowerCase().split(".").pop()?.split("?")[0];
+          if (ext === "png") mimeType = "image/png";
+        }
 
         const formData = new FormData();
         formData.append("intentText", intentText);
@@ -65,7 +69,8 @@ export function useImanSync(): UseImanSyncReturn {
         }
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: mimeType });
-        formData.append("image", blob, "image.jpg");
+        const extension = mimeType === "image/png" ? "png" : "jpg";
+        formData.append("image", blob, `image.${extension}`);
 
         const response = await api.post<ImanSyncAnalyzeResponse>(
           "/iman-sync/analyze-vision",

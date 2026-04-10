@@ -25,16 +25,6 @@ export class AuthController {
     return this.authService.login(email, password);
   }
 
-  @Post("quran-oauth")
-  @HttpCode(HttpStatus.OK)
-  async loginWithQuranOAuth(
-    @Body("code") code: string,
-  ) {
-    // TODO: Exchange code for token with Quran.com OAuth2
-    // For now, pass code as token placeholder
-    return this.authService.loginWithQuranOAuth(code);
-  }
-
   @Post("logout")
   @HttpCode(HttpStatus.OK)
   async logout() {

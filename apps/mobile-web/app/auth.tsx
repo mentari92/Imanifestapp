@@ -41,15 +41,6 @@ export default function AuthScreen() {
     }
   }
 
-  async function handleQuranOAuth() {
-    // TODO: Implement Quran.com OAuth2 flow
-    // Will use expo-auth-session with Quran.com as provider
-    Alert.alert(
-      "Coming Soon",
-      "Quran.com login will be available once OAuth credentials are configured."
-    );
-  }
-
   return (
     <View className="flex-1 bg-background px-screen-x py-screen-y justify-center">
       <Text className="font-display text-display-xl text-primary text-center mb-section">
@@ -59,29 +50,12 @@ export default function AuthScreen() {
         Turn your intention into action.
       </Text>
 
-      {/* Quran.com OAuth */}
-      <TouchableOpacity
-        className="bg-accent rounded-button py-4 items-center mb-6"
-        onPress={handleQuranOAuth}
-      >
-        <Text className="font-sans text-label text-ink-inverse">
-          Login with Quran.com
-        </Text>
-      </TouchableOpacity>
-
-      {/* Divider */}
-      <View className="flex-row items-center mb-6">
-        <View className="flex-1 h-px bg-surface" />
-        <Text className="font-sans text-body-sm text-muted mx-4">or</Text>
-        <View className="flex-1 h-px bg-surface" />
-      </View>
-
-      {/* Email/Password Form */}
+      {/* Name field (register only) */}
       {!isLogin && (
         <TextInput
           className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-4 border border-surface"
           placeholder="Name (optional)"
-          placeholderTextColor="stone-400"
+          placeholderTextColor="#A8A29E"
           value={name}
           onChangeText={setName}
         />
@@ -90,7 +64,7 @@ export default function AuthScreen() {
       <TextInput
         className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-4 border border-surface"
         placeholder="Email"
-        placeholderTextColor="stone-400"
+        placeholderTextColor="#A8A29E"
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -100,7 +74,7 @@ export default function AuthScreen() {
       <TextInput
         className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-6 border border-surface"
         placeholder="Password"
-        placeholderTextColor="stone-400"
+        placeholderTextColor="#A8A29E"
         secureTextEntry
         value={password}
         onChangeText={setPassword}

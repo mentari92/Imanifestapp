@@ -3,7 +3,9 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
 import { QuranApiService, VerseResult } from "../common/quran-api.service";
+import { RedisService } from "../common/redis.service";
 import { AnalyzeDto } from "./dto/analyze.dto";
+import { createHash } from "crypto";
 
 export interface AnalyzeResult {
   manifestationId: string;
@@ -15,13 +17,16 @@ export interface AnalyzeVisionResult extends AnalyzeResult {
   imagePath: string;
 }
 
+const CACHE_TTL = 3600; // 1 hour
+
 /**
  * ImanSync service — orchestrates the full text analysis flow:
- * 1. Extract themes from intent via GLM-5
- * 2. Search Quran verses matching themes
- * 3. Fetch tafsir for each verse
+ * 1. Check Redis cache for existing result
+ * 2. Extract themes from intent via GLM-5
+ * 3. Search Quran verses matching themes
  * 4. Generate AI summary via GLM-5
  * 5. Save to Manifestation table
+ * 6. Cache result in Redis
  */
 @Injectable()
 export class ImanSyncService {
@@ -31,16 +36,33 @@ export class ImanSyncService {
     private readonly prisma: PrismaService,
     private readonly zhipu: ZhipuService,
     private readonly quranApi: QuranApiService,
+    private readonly redis: RedisService,
   ) {}
 
+  private hashText(text: string): string {
+    return createHash("sha256").update(text.trim().toLowerCase()).digest("hex");
+  }
+
   /**
-   * Full ImanSync text analysis pipeline.
-   * Target: < 8 seconds response time.
+   * Full ImanSync text analysis pipeline with caching.
+   * Target: < 8 seconds response time, < 200ms on cache hit.
    */
   async analyze(
     userId: string,
     dto: AnalyzeDto,
   ): Promise<AnalyzeResult> {
+    // Check cache first — include userId to ensure data isolation
+    const cacheKey = `iman-sync:cache:${userId}:${this.hashText(dto.intentText)}`;
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for intentText hash: ${cacheKey.substring(0, 30)}...`);
+        return JSON.parse(cached) as AnalyzeResult;
+      }
+    } catch {
+      // Cache read failed — continue with full pipeline
+    }
+
     const startTime = Date.now();
 
     // Step 1: Extract spiritual themes from intent text
@@ -94,11 +116,21 @@ export class ImanSyncService {
       `Analysis complete in ${elapsed}ms — manifestation ${manifestation.id}`,
     );
 
-    return {
+    const result: AnalyzeResult = {
       manifestationId: manifestation.id,
       verses: allVerses,
       aiSummary,
     };
+
+    // Cache the result
+    try {
+      await this.redis.set(cacheKey, JSON.stringify(result), CACHE_TTL);
+      this.logger.log(`Cached result for key: ${cacheKey.substring(0, 30)}...`);
+    } catch {
+      // Cache write failed — non-critical
+    }
+
+    return result;
   }
 
   /**

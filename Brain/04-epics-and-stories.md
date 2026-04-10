@@ -77,7 +77,7 @@
 
 **Acceptance Criteria:**
 - [ ] OAuth2 flow configured with Quran.com as provider (via Supabase Auth or Clerk)
-- [ ] On successful OAuth2: `User` created/updated in DB, `quranAuthToken` stored
+- [ ] On successful registration: `User` created in DB with bcrypt-hashed `password`
 - [ ] JWT token returned to Expo app, stored in SecureStore
 - [ ] `AuthGuard` on NestJS protects all routes except `/sakinah/*`
 - [ ] Login screen in Expo app with "Login with Quran.com" button

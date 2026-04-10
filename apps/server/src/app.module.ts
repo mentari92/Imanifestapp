@@ -4,9 +4,12 @@ import { DatabaseModule } from "@imanifest/database";
 import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/auth.guard";
 import { ImanSyncModule } from "./iman-sync/iman-sync.module";
+import { DuaToDoModule } from "./dua-todo/dua-todo.module";
+import { HeartPulseModule } from "./heart-pulse/heart-pulse.module";
+import { SakinahModule } from "./sakinah/sakinah.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, ImanSyncModule],
+  imports: [DatabaseModule, AuthModule, ImanSyncModule, DuaToDoModule, HeartPulseModule, SakinahModule],
   controllers: [],
   providers: [
     // Apply JWT guard globally — use @Public() to skip

@@ -13,7 +13,7 @@ export default function ImanSyncScreen() {
   const handleSubmit = useCallback(
     (intentText: string, imageUri?: string, imageBase64?: string) => {
       if (imageBase64) {
-        analyzeVision(intentText, imageBase64);
+        analyzeVision(intentText, imageBase64, imageUri);
       } else {
         analyze(intentText);
       }
@@ -52,6 +52,7 @@ export default function ImanSyncScreen() {
           <ImanSyncResult
             verses={result.verses}
             aiSummary={result.aiSummary}
+            manifestationId={result.manifestationId}
           />
 
           {/* New intention button */}

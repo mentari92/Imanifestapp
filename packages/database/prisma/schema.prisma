@@ -13,7 +13,8 @@ model User {
   id             String          @id @default(cuid())
   email          String          @unique
   name           String?
-  quranAuthToken String?         // OAuth token from Quran.com
+  password       String?         // bcrypt hashed password for email/password auth
+  quranApiKey    String?         // Quran Foundation Content API key (per-user, optional)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 

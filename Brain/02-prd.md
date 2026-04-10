@@ -42,7 +42,7 @@ All features are free for registered users in the hackathon MVP.
 ### FR-01: Authentication
 - OAuth2 login via Quran.com (primary)
 - Email/password fallback (if OAuth2 not ready in hackathon timeframe)
-- `quranAuthToken` stored in User table for API calls on behalf of user
+- `quranApiKey` stored in User table for per-user Quran API access (optional)
 - Session managed via Supabase Auth or Clerk JWT
 - Protected routes: `/dashboard`, `/iman-sync`, `/dua-to-do`, `/heart-pulse`
 - SakinahStream: publicly accessible, no login required

@@ -21,9 +21,7 @@ export class AuthService {
       data: {
         email,
         name: name || email.split("@")[0],
-        // Store hashed password in quranAuthToken field temporarily
-        // In production, add a dedicated password field to schema
-        quranAuthToken: `local:${hashedPassword}`,
+        password: hashedPassword,
       },
     });
 
@@ -33,36 +31,14 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !user.quranAuthToken?.startsWith("local:")) {
+    if (!user || !user.password) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const hashedPassword = user.quranAuthToken.replace("local:", "");
-    const valid = await bcrypt.compare(password, hashedPassword);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       throw new UnauthorizedException("Invalid credentials");
     }
-
-    const token = this.generateToken(user.id, user.email);
-    return { access_token: token, user: { id: user.id, email: user.email, name: user.name } };
-  }
-
-  async loginWithQuranOAuth(quranAuthToken: string) {
-    // TODO: Exchange code for token with Quran.com OAuth2
-    // For now, accept a token and create/update user
-    // In production: validate token with Quran.com API, extract user info
-
-    // Placeholder: create user with token-based identifier
-    const email = `quran_${Date.now()}@imanifest.app`;
-    const user = await this.prisma.user.upsert({
-      where: { email },
-      update: { quranAuthToken },
-      create: {
-        email,
-        name: "Quran.com User",
-        quranAuthToken,
-      },
-    });
 
     const token = this.generateToken(user.id, user.email);
     return { access_token: token, user: { id: user.id, email: user.email, name: user.name } };

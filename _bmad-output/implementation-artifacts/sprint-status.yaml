@@ -12,10 +12,10 @@ development_status:
   1-2-database-schema-migration: "done"
   1-3-authentication: "done"
   2-1-imansync-text-analysis: "done"
-  2-2-imansync-vision: "pending"
-  2-3-imansync-rate-limiting: "pending"
-  3-1-checklist-generation: "pending"
-  3-2-task-completion-tracking: "pending"
+  2-2-imansync-vision: "done"
+  2-3-imansync-rate-limiting: "done"
+  3-1-checklist-generation: "done"
+  3-2-task-completion-tracking: "done"
   4-1-voice-recording: "pending"
   4-2-sentiment-analysis: "pending"
   4-3-streak-tracking: "pending"
@@ -23,4 +23,4 @@ development_status:
   5-2-audio-player: "pending"
   6-1-dashboard-overview: "pending"
 
-last_updated: 2026-04-09
+last_updated: 2026-04-11

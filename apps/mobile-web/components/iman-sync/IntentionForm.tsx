@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Sparkles, ImagePlus, X } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import { ErrorMessage } from "../shared/ErrorMessage";
 
 interface IntentionFormProps {
   onSubmit: (intentText: string, imageUri?: string, imageBase64?: string) => void;
@@ -19,6 +20,7 @@ const MAX_IMAGE_SIZE_MB = 5;
 
 export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
   const [intentText, setIntentText] = useState("");
+  const [imageSizeError, setImageSizeError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{
     uri: string;
     base64: string;
@@ -35,6 +37,7 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
   };
 
   const pickImage = useCallback(async () => {
+    setImageSizeError(null);
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
@@ -51,7 +54,9 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
       const sizeInBytes = (asset.base64.length * 3) / 4;
       const sizeInMB = sizeInBytes / (1024 * 1024);
       if (sizeInMB > MAX_IMAGE_SIZE_MB) {
-        // Just skip setting — in production you'd show a toast
+        setImageSizeError(
+          `Image is too large (${sizeInMB.toFixed(1)}MB). Maximum size is ${MAX_IMAGE_SIZE_MB}MB.`,
+        );
         return;
       }
     }
@@ -133,6 +138,13 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
           </Pressable>
         )}
       </View>
+
+      {/* Image size error */}
+      {imageSizeError && (
+        <View className="mt-3">
+          <ErrorMessage message={imageSizeError} />
+        </View>
+      )}
 
       {/* Submit button */}
       <TouchableOpacity

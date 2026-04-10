@@ -1,15 +1,26 @@
-import { View, Text } from "react-native";
-import { BookOpen } from "lucide-react-native";
+import { View, Text, Pressable } from "react-native";
+import { BookOpen, Sparkles, ArrowRight } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import { VerseCard } from "./VerseCard";
 import type { QuranVerse } from "@imanifest/shared";
 
 interface ImanSyncResultProps {
   verses: QuranVerse[];
   aiSummary: string;
+  manifestationId: string;
 }
 
-export function ImanSyncResult({ verses, aiSummary }: ImanSyncResultProps) {
+export function ImanSyncResult({ verses, aiSummary, manifestationId }: ImanSyncResultProps) {
+  const router = useRouter();
+
   if (verses.length === 0) return null;
+
+  const handleGeneratePlan = () => {
+    router.push({
+      pathname: "/(tabs)/dua-todo",
+      params: { manifestationId },
+    });
+  };
 
   return (
     <View className="mt-section">
@@ -37,6 +48,18 @@ export function ImanSyncResult({ verses, aiSummary }: ImanSyncResultProps) {
           <VerseCard key={verse.verseKey || index} verse={verse} />
         ))}
       </View>
+
+      {/* Generate Action Plan button */}
+      <Pressable
+        onPress={handleGeneratePlan}
+        className="mt-section bg-primary rounded-2xl px-6 py-4 flex-row items-center justify-center active:opacity-80"
+      >
+        <Sparkles size={20} color="#E3C567" />
+        <Text className="font-sans text-body-md text-white ml-2 font-semibold">
+          Generate Action Plan
+        </Text>
+        <ArrowRight size={18} color="#E3C567" style={{ marginLeft: 8 }} />
+      </Pressable>
     </View>
   );
 }

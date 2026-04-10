@@ -6,7 +6,8 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
-  quranAuthToken: string | null;
+  password?: string | null;     // bcrypt hashed — never sent to client
+  quranApiKey: string | null;   // per-user Quran Foundation API key
   createdAt: Date;
   updatedAt: Date;
 }

@@ -63,6 +63,81 @@ Be sincere and specific to the actual verses. Avoid generic phrasing.`;
   }
 
   /**
+   * Generate 5 actionable Ikhtiar steps from intention + verses using GLM-5.
+   */
+  async generateTasks(
+    intentText: string,
+    verses: { verseKey: string; translation: string }[],
+  ): Promise<string[]> {
+    const versesContext = verses
+      .map((v) => `${v.verseKey}: ${v.translation}`)
+      .join("\n");
+
+    const systemPrompt = `You are an Islamic life coach creating practical action plans.
+Given the user's intention and related Quranic verses, generate exactly 5 actionable steps (Ikhtiar).
+Each step should be specific, practical, and spiritually grounded.
+Return ONLY a valid JSON array of 5 short action descriptions (max 100 chars each).
+Example: ["Pray Fajr on time for 7 days","Read Surah Al-Baqarah daily","Give charity this Friday","Call a family member to maintain ties","Write 3 gratitude points each night"]
+Do not include any explanation or extra text.`;
+
+    const userMessage = `Intention: ${intentText}\n\nVerses:\n${versesContext}`;
+
+    try {
+      const response = await this.callGLM5(systemPrompt, userMessage);
+      const parsed = this.parseJSONResponse<string[]>(response);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.slice(0, 5);
+      }
+      this.logger.warn("Unexpected tasks response, using fallback");
+      return [
+        "Pray all 5 daily prayers on time",
+        "Read Quran for 10 minutes daily",
+        "Give charity this week",
+        "Make dua for your intention",
+        "Write daily gratitude reflections",
+      ];
+    } catch (error) {
+      this.logger.error("Failed to generate tasks", error);
+      return [
+        "Pray all 5 daily prayers on time",
+        "Read Quran for 10 minutes daily",
+        "Give charity this week",
+        "Make dua for your intention",
+        "Write daily gratitude reflections",
+      ];
+    }
+  }
+
+  /**
+   * Analyze sentiment of a reflection text using GLM-5.
+   */
+  async analyzeSentiment(
+    transcriptText: string,
+  ): Promise<{ label: string; score: number }> {
+    const systemPrompt = `You are an Islamic spiritual counselor analyzing the sentiment of a reflection.
+Return ONLY a valid JSON object with "label" and "score" fields.
+"label" must be one of: hopeful, grateful, peaceful, content, focused, anxious, struggling, uncertain, heavy, other
+"score" must be a number between 0.0 (very negative) and 1.0 (very positive).
+Example: {"label":"grateful","score":0.85}
+Do not include any explanation or extra text.`;
+
+    try {
+      const response = await this.callGLM5(systemPrompt, transcriptText);
+      const parsed = this.parseJSONResponse<{ label: string; score: number }>(response);
+      if (parsed?.label && typeof parsed.score === "number") {
+        return {
+          label: parsed.label,
+          score: Math.max(0, Math.min(1, parsed.score)),
+        };
+      }
+      return { label: "other", score: 0.5 };
+    } catch (error) {
+      this.logger.error("Failed to analyze sentiment", error);
+      return { label: "other", score: 0.5 };
+    }
+  }
+
+  /**
    * Extract 3 Islamic spiritual themes from image + intent text using GLM-5V.
    */
   async extractThemesVision(

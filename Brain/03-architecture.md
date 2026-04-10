@@ -391,7 +391,8 @@ model User {
   id             String          @id @default(cuid())
   email          String          @unique
   name           String?
-  quranAuthToken String?         // OAuth token from Quran.com
+  password       String?         // bcrypt hashed password for email/password auth
+  quranApiKey    String?         // Quran Foundation Content API key (per-user, optional)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -586,11 +587,8 @@ ZHIPU_API_KEY=your_zhipu_api_key
 QURAN_FOUNDATION_API_KEY=your_quran_api_key
 QURAN_API_BASE_URL=https://api.quran.com/api/v4
 
-# Auth (choose one)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key
-# OR
-CLERK_SECRET_KEY=your_clerk_secret_key
+# Auth (self-hosted JWT)
+JWT_SECRET=your_jwt_secret_min_32_chars
 
 # Redis
 REDIS_URL=redis://localhost:6379
@@ -622,8 +620,8 @@ Reason: The hackathon specifically integrates Quran Foundation APIs. Using it fo
 ### ADR-06: Redis for Quran API caching
 Reason: Quran Foundation API has rate limits. Tafsir and audio data are static — safe to cache for 24 hours. ImanSync results for the same input cached for 1 hour to reduce GLM-5 costs.
 
-### ADR-07: Supabase Auth as primary OAuth2 handler
-Reason: Supabase supports custom OAuth2 providers. Quran.com OAuth2 can be configured as a custom provider. Fallback: Clerk supports the same. Either gives JWT tokens compatible with NestJS guards.
+### ADR-07: Self-hosted NestJS JWT Auth (email/password)
+Reason: App runs on VPS Contabo (self-hosted). No need for external auth services (Supabase/Clerk). NestJS + Passport + JWT + bcrypt handles email/password auth natively. Quran.com Content API uses API key authentication (x-api-key header), not OAuth2 — no client_id/client_secret needed. Per-user API keys stored in `quranApiKey` field if needed.
 
 ### ADR-08: PostgreSQL over MongoDB
 Reason: Relational structure — User → Manifestation → Task, User → Reflection. Prisma ORM is already in the team's standard stack. ACID compliance for task completion state.
