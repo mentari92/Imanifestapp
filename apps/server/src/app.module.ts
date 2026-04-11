@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { DatabaseModule } from "@imanifest/database";
+import { RedisModule } from "./common/redis.module";
 import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/auth.guard";
 import { ImanSyncModule } from "./iman-sync/iman-sync.module";
@@ -9,7 +10,7 @@ import { HeartPulseModule } from "./heart-pulse/heart-pulse.module";
 import { SakinahModule } from "./sakinah/sakinah.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, ImanSyncModule, DuaToDoModule, HeartPulseModule, SakinahModule],
+  imports: [DatabaseModule, RedisModule, AuthModule, ImanSyncModule, DuaToDoModule, HeartPulseModule, SakinahModule],
   controllers: [],
   providers: [
     // Apply JWT guard globally — use @Public() to skip
