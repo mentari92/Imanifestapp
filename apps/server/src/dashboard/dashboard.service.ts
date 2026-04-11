@@ -68,7 +68,7 @@ export class DashboardService {
     ]);
 
     // ─── Assemble response ────────────────────────────────
-    const sentiment7Days: SentimentDay[] = recentReflections.map((r) => ({
+    const sentiment7Days: SentimentDay[] = recentReflections.map((r: { sentiment: string | null; sentimentScore: number | null; createdAt: Date }) => ({
       date: r.createdAt.toISOString().slice(0, 10),
       sentiment: r.sentiment!,
       score: r.sentimentScore ?? 0.5,
