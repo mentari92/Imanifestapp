@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,23 +10,11 @@ import {
 import { Mic, Keyboard, Flame, RotateCcw } from "lucide-react-native";
 import { useHeartPulse } from "../../hooks/useHeartPulse";
 import { VoiceRecorder } from "../../components/heart-pulse/VoiceRecorder";
+import { SentimentBadge } from "../../components/heart-pulse/SentimentBadge";
 import { LoadingSpinner } from "../../components/shared/LoadingSpinner";
 import { ErrorMessage } from "../../components/shared/ErrorMessage";
 
 type InputMode = "text" | "voice";
-
-const SENTIMENT_COLORS: Record<string, { bg: string; text: string }> = {
-  hopeful: { bg: "bg-emerald-100", text: "text-emerald-800" },
-  grateful: { bg: "bg-amber-100", text: "text-amber-800" },
-  peaceful: { bg: "bg-teal-100", text: "text-teal-800" },
-  content: { bg: "bg-green-100", text: "text-green-800" },
-  focused: { bg: "bg-blue-100", text: "text-blue-800" },
-  anxious: { bg: "bg-rose-100", text: "text-rose-800" },
-  struggling: { bg: "bg-red-100", text: "text-red-800" },
-  uncertain: { bg: "bg-orange-100", text: "text-orange-800" },
-  heavy: { bg: "bg-stone-100", text: "text-stone-800" },
-  other: { bg: "bg-gray-100", text: "text-gray-800" },
-};
 
 export default function HeartPulseScreen() {
   const [reflectionText, setReflectionText] = useState("");
@@ -36,13 +24,21 @@ export default function HeartPulseScreen() {
     sentiment,
     sentimentScore,
     streakCount,
+    history,
+    historyLoading,
     isLoading,
     error,
     submitTextReflection,
     submitVoiceReflection,
+    fetchHistory,
     reset,
   } = useHeartPulse();
   const [submitted, setSubmitted] = useState(false);
+
+  // Fetch history on mount
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const handleSubmitText = async () => {
     if (!reflectionText.trim()) return;
@@ -61,8 +57,6 @@ export default function HeartPulseScreen() {
     setSubmitted(false);
   };
 
-  const colors = sentiment ? SENTIMENT_COLORS[sentiment] || SENTIMENT_COLORS.other : null;
-
   // Result view — same for both text and voice
   if (submitted && reflection) {
     return (
@@ -77,28 +71,9 @@ export default function HeartPulseScreen() {
         </View>
 
         {/* Sentiment Badge */}
-        {sentiment && colors && (
-          <View className={`mt-4 self-start rounded-full px-4 py-2 ${colors.bg}`}>
-            <Text className={`font-sans text-body-sm font-semibold capitalize ${colors.text}`}>
-              {sentiment}
-            </Text>
-          </View>
-        )}
-
-        {/* Score bar */}
-        {sentimentScore !== null && (
-          <View className="mt-3">
-            <View className="flex-row items-center">
-              <View className="flex-1 h-2 bg-border rounded-full overflow-hidden">
-                <View
-                  className="h-full bg-primary rounded-full"
-                  style={{ width: `${Math.round(sentimentScore * 100)}%` }}
-                />
-              </View>
-              <Text className="font-sans text-body-sm text-ink-secondary ml-3">
-                {Math.round(sentimentScore * 100)}%
-              </Text>
-            </View>
+        {sentiment && (
+          <View className="mt-4">
+            <SentimentBadge sentiment={sentiment} score={sentimentScore} />
           </View>
         )}
 
@@ -124,6 +99,9 @@ export default function HeartPulseScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Sentiment History */}
+        <HistorySection history={history} historyLoading={historyLoading} />
       </ScrollView>
     );
   }
@@ -216,6 +194,67 @@ export default function HeartPulseScreen() {
       {inputMode === "voice" && (
         <VoiceRecorder onSubmit={handleSubmitVoice} isLoading={isLoading} />
       )}
+
+      {/* Sentiment History — visible in input view too */}
+      <HistorySection history={history} historyLoading={historyLoading} />
     </ScrollView>
+  );
+}
+
+/** Reusable history section — used in both input and result views */
+function HistorySection({
+  history,
+  historyLoading,
+}: {
+  history: Array<{
+    id: string;
+    sentiment: string | null;
+    sentimentScore: number | null;
+    transcriptText: string | null;
+    createdAt: string;
+  }>;
+  historyLoading: boolean;
+}) {
+  return (
+    <View className="mt-6">
+      <Text className="font-display text-display-md text-primary mb-3">
+        Recent Reflections
+      </Text>
+      {historyLoading ? (
+        <LoadingSpinner />
+      ) : history.length === 0 ? (
+        <Text className="font-sans text-body-sm text-ink-secondary">
+          No reflections yet.
+        </Text>
+      ) : (
+        <View className="gap-3">
+          {history.slice(0, 7).map((r) => (
+            <View
+              key={r.id}
+              className="bg-surface rounded-xl px-4 py-3 border border-border"
+            >
+              <View className="flex-row items-center justify-between">
+                <SentimentBadge
+                  sentiment={r.sentiment ?? "other"}
+                  score={r.sentimentScore}
+                  size="sm"
+                />
+                <Text className="font-mono text-xs text-ink-secondary">
+                  {new Date(r.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+              {r.transcriptText && (
+                <Text
+                  className="font-sans text-body-sm text-ink-secondary mt-2"
+                  numberOfLines={2}
+                >
+                  {r.transcriptText}
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Request,
@@ -56,8 +57,18 @@ export class HeartPulseController {
   }
 
   /** Get reflection history + streak */
-  @Post("history")
+  @Get("history")
   async getHistory(@Request() req: { user: { userId: string } }) {
-    return this.heartPulseService.getHistory(req.user.userId);
+    return this.handleHistory(req.user.userId);
+  }
+
+  /** Get reflection history + streak (POST — legacy alias) */
+  @Post("history")
+  async getHistoryPost(@Request() req: { user: { userId: string } }) {
+    return this.handleHistory(req.user.userId);
+  }
+
+  private handleHistory(userId: string) {
+    return this.heartPulseService.getHistory(userId);
   }
 }

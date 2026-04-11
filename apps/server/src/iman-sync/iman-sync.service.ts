@@ -20,13 +20,13 @@ export interface AnalyzeVisionResult extends AnalyzeResult {
 const CACHE_TTL = 3600; // 1 hour
 
 /**
- * ImanSync service — orchestrates the full text analysis flow:
- * 1. Check Redis cache for existing result
- * 2. Extract themes from intent via GLM-5
+ * ImanSync service — orchestrates text and vision analysis flows:
+ * 1. Check Redis cache for existing result (text only)
+ * 2. Extract themes from intent via GLM-5 / GLM-5V
  * 3. Search Quran verses matching themes
  * 4. Generate AI summary via GLM-5
  * 5. Save to Manifestation table
- * 6. Cache result in Redis
+ * 6. Cache result in Redis (text only)
  */
 @Injectable()
 export class ImanSyncService {
@@ -44,34 +44,11 @@ export class ImanSyncService {
   }
 
   /**
-   * Full ImanSync text analysis pipeline with caching.
-   * Target: < 8 seconds response time, < 200ms on cache hit.
+   * Search Quran verses for given themes, returning up to 3 unique results.
    */
-  async analyze(
-    userId: string,
-    dto: AnalyzeDto,
-  ): Promise<AnalyzeResult> {
-    // Check cache first — include userId to ensure data isolation
-    const cacheKey = `iman-sync:cache:${userId}:${this.hashText(dto.intentText)}`;
-    try {
-      const cached = await this.redis.get(cacheKey);
-      if (cached) {
-        this.logger.log(`Cache hit for intentText hash: ${cacheKey.substring(0, 30)}...`);
-        return JSON.parse(cached) as AnalyzeResult;
-      }
-    } catch {
-      // Cache read failed — continue with full pipeline
-    }
+  private async searchVersesForThemes(themes: string[]): Promise<VerseResult[]> {
+    this.logger.log(`Searching Quran verses for themes: ${themes.join(", ")}`);
 
-    const startTime = Date.now();
-
-    // Step 1: Extract spiritual themes from intent text
-    this.logger.log(`Extracting themes for user ${userId}`);
-    const themes = await this.zhipu.extractThemes(dto.intentText);
-    this.logger.log(`Themes extracted: ${themes.join(", ")}`);
-
-    // Step 2: Search Quran verses in parallel for all themes, collect unique results
-    this.logger.log("Searching Quran verses...");
     const allVerses: VerseResult[] = [];
     const seenKeys = new Set<string>();
 
@@ -89,45 +66,90 @@ export class ImanSyncService {
       if (allVerses.length >= 3) break;
     }
 
-    // If no verses found from API, create fallback
     if (allVerses.length === 0) {
-      this.logger.warn("No verses found from Quran API, using empty fallback");
+      this.logger.warn("No verses found from Quran API");
     }
 
-    // Step 3: Generate AI summary
+    return allVerses;
+  }
+
+  /**
+   * Shared pipeline: generate summary, save manifestation, build result.
+   */
+  private async buildAndSaveManifestation(params: {
+    userId: string;
+    intentText: string;
+    verses: VerseResult[];
+    imagePath?: string;
+  }): Promise<{ manifestationId: string; verses: VerseResult[]; aiSummary: string }> {
+    const { userId, intentText, verses, imagePath } = params;
+
+    // Generate AI summary
     this.logger.log("Generating AI summary...");
     const aiSummary = await this.zhipu.generateSummary(
-      dto.intentText,
-      allVerses.map((v) => ({ verseKey: v.verseKey, translation: v.translation })),
+      intentText,
+      verses.map((v) => ({ verseKey: v.verseKey, translation: v.translation })),
     );
 
-    // Step 4: Save to Manifestation table
+    // Save to Manifestation table
     const manifestation = await this.prisma.manifestation.create({
       data: {
         userId,
-        intentText: dto.intentText,
-        verses: allVerses.length > 0 ? (allVerses as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+        intentText,
+        imagePath: imagePath ?? null,
+        verses: verses.length > 0 ? (verses as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
         aiSummary,
       },
     });
 
-    const elapsed = Date.now() - startTime;
-    this.logger.log(
-      `Analysis complete in ${elapsed}ms — manifestation ${manifestation.id}`,
-    );
+    this.logger.log(`Saved manifestation ${manifestation.id}`);
 
-    const result: AnalyzeResult = {
-      manifestationId: manifestation.id,
+    return { manifestationId: manifestation.id, verses, aiSummary };
+  }
+
+  /**
+   * Full ImanSync text analysis pipeline with caching.
+   * Target: < 8 seconds response time, < 200ms on cache hit.
+   */
+  async analyze(userId: string, dto: AnalyzeDto): Promise<AnalyzeResult> {
+    // Check cache first — include userId to ensure data isolation
+    const cacheKey = `iman-sync:cache:${userId}:${this.hashText(dto.intentText)}`;
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        this.logger.log(`Cache hit for intentText hash: ${cacheKey.substring(0, 30)}...`);
+        return JSON.parse(cached) as AnalyzeResult;
+      }
+    } catch (err) {
+      this.logger.warn("Cache read failed — continuing with full pipeline", err instanceof Error ? err.message : err);
+    }
+
+    const startTime = Date.now();
+
+    // Step 1: Extract spiritual themes from intent text
+    this.logger.log(`Extracting themes for user ${userId}`);
+    const themes = await this.zhipu.extractThemes(dto.intentText);
+    this.logger.log(`Themes extracted: ${themes.join(", ")}`);
+
+    // Step 2: Search Quran verses
+    const allVerses = await this.searchVersesForThemes(themes);
+
+    // Step 3+4: Generate summary + save manifestation
+    const result = await this.buildAndSaveManifestation({
+      userId,
+      intentText: dto.intentText,
       verses: allVerses,
-      aiSummary,
-    };
+    });
+
+    const elapsed = Date.now() - startTime;
+    this.logger.log(`Analysis complete in ${elapsed}ms — manifestation ${result.manifestationId}`);
 
     // Cache the result
     try {
       await this.redis.set(cacheKey, JSON.stringify(result), CACHE_TTL);
       this.logger.log(`Cached result for key: ${cacheKey.substring(0, 30)}...`);
-    } catch {
-      // Cache write failed — non-critical
+    } catch (err) {
+      this.logger.warn("Cache write failed — non-critical", err instanceof Error ? err.message : err);
     }
 
     return result;
@@ -148,64 +170,23 @@ export class ImanSyncService {
 
     // Step 1: Extract spiritual themes from image + text via GLM-5V
     this.logger.log(`Extracting vision themes for user ${userId}`);
-    const themes = await this.zhipu.extractThemesVision(
-      intentText,
-      imageBase64,
-      mimeType,
-    );
+    const themes = await this.zhipu.extractThemesVision(intentText, imageBase64, mimeType);
     this.logger.log(`Vision themes extracted: ${themes.join(", ")}`);
 
-    // Step 2: Search Quran verses (same as text flow)
-    this.logger.log("Searching Quran verses for vision analysis...");
-    const allVerses: VerseResult[] = [];
-    const seenKeys = new Set<string>();
+    // Step 2: Search Quran verses
+    const allVerses = await this.searchVersesForThemes(themes);
 
-    const searchResults = await Promise.all(
-      themes.map((theme) => this.quranApi.searchVerses(theme, 3)),
-    );
-
-    for (const results of searchResults) {
-      for (const verse of results) {
-        if (!seenKeys.has(verse.verseKey) && allVerses.length < 3) {
-          seenKeys.add(verse.verseKey);
-          allVerses.push(verse);
-        }
-      }
-      if (allVerses.length >= 3) break;
-    }
-
-    if (allVerses.length === 0) {
-      this.logger.warn("No verses found from Quran API for vision analysis");
-    }
-
-    // Step 3: Generate AI summary
-    this.logger.log("Generating AI summary for vision analysis...");
-    const aiSummary = await this.zhipu.generateSummary(
+    // Step 3+4: Generate summary + save manifestation
+    const baseResult = await this.buildAndSaveManifestation({
+      userId,
       intentText,
-      allVerses.map((v) => ({ verseKey: v.verseKey, translation: v.translation })),
-    );
-
-    // Step 4: Save to Manifestation table with imagePath
-    const manifestation = await this.prisma.manifestation.create({
-      data: {
-        userId,
-        intentText,
-        imagePath,
-        verses: allVerses.length > 0 ? (allVerses as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
-        aiSummary,
-      },
+      verses: allVerses,
+      imagePath,
     });
 
     const elapsed = Date.now() - startTime;
-    this.logger.log(
-      `Vision analysis complete in ${elapsed}ms — manifestation ${manifestation.id}`,
-    );
+    this.logger.log(`Vision analysis complete in ${elapsed}ms — manifestation ${baseResult.manifestationId}`);
 
-    return {
-      manifestationId: manifestation.id,
-      verses: allVerses,
-      aiSummary,
-      imagePath,
-    };
+    return { ...baseResult, imagePath };
   }
 }

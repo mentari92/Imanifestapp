@@ -2,7 +2,7 @@
 title: 'Voice Recording for HeartPulse'
 type: 'feature'
 created: '2026-04-11'
-status: 'in-review'
+status: 'done'
 baseline_commit: '0c68ad1b243d174f629ed36cd4d2c49080a0c1a6'
 context: []
 ---

@@ -11,6 +11,15 @@ export class ZhipuService {
   private readonly apiKey = process.env.ZHIPU_API_KEY || "";
   private readonly baseUrl = "https://open.bigmodel.cn/api/paas/v4";
 
+  private static readonly THEME_FALLBACK = ["tawakkul", "sabr", "shukr"];
+  private static readonly TASK_FALLBACK = [
+    "Pray all 5 daily prayers on time",
+    "Read Quran for 10 minutes daily",
+    "Give charity this week",
+    "Make dua for your intention",
+    "Write daily gratitude reflections",
+  ];
+
   /**
    * Extract 3 Islamic spiritual themes from intent text using GLM-5.
    */
@@ -28,10 +37,10 @@ Do not include any explanation or extra text.`;
         return parsed.slice(0, 3);
       }
       this.logger.warn("Unexpected themes response, using fallback");
-      return ["tawakkul", "sabr", "shukr"];
+      return [...ZhipuService.THEME_FALLBACK];
     } catch (error) {
       this.logger.error("Failed to extract themes", error);
-      return ["tawakkul", "sabr", "shukr"];
+      return [...ZhipuService.THEME_FALLBACK];
     }
   }
 
@@ -89,22 +98,10 @@ Do not include any explanation or extra text.`;
         return parsed.slice(0, 5);
       }
       this.logger.warn("Unexpected tasks response, using fallback");
-      return [
-        "Pray all 5 daily prayers on time",
-        "Read Quran for 10 minutes daily",
-        "Give charity this week",
-        "Make dua for your intention",
-        "Write daily gratitude reflections",
-      ];
+      return [...ZhipuService.TASK_FALLBACK];
     } catch (error) {
       this.logger.error("Failed to generate tasks", error);
-      return [
-        "Pray all 5 daily prayers on time",
-        "Read Quran for 10 minutes daily",
-        "Give charity this week",
-        "Make dua for your intention",
-        "Write daily gratitude reflections",
-      ];
+      return [...ZhipuService.TASK_FALLBACK];
     }
   }
 
@@ -154,10 +151,10 @@ Do not include any explanation or extra text.`;
         return parsed.slice(0, 3);
       }
       this.logger.warn("Unexpected vision themes response, using fallback");
-      return ["tawakkul", "sabr", "shukr"];
+      return [...ZhipuService.THEME_FALLBACK];
     } catch (error) {
       this.logger.error("Failed to extract themes from vision", error);
-      return ["tawakkul", "sabr", "shukr"];
+      return [...ZhipuService.THEME_FALLBACK];
     }
   }
 

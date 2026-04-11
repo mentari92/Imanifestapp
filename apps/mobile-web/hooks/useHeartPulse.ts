@@ -17,10 +17,13 @@ interface UseHeartPulseReturn {
   sentiment: string | null;
   sentimentScore: number | null;
   streakCount: number;
+  history: Reflection[];
+  historyLoading: boolean;
   isLoading: boolean;
   error: string | null;
   submitTextReflection: (text: string) => Promise<void>;
   submitVoiceReflection: (audioUri: string, transcriptText: string) => Promise<void>;
+  fetchHistory: () => Promise<void>;
   reset: () => void;
 }
 
@@ -31,6 +34,8 @@ export function useHeartPulse(): UseHeartPulseReturn {
   const [streakCount, setStreakCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<Reflection[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const submitTextReflection = useCallback(async (text: string) => {
     setIsLoading(true);
@@ -76,6 +81,21 @@ export function useHeartPulse(): UseHeartPulseReturn {
     }
   }, []);
 
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await api.get("/heart-pulse/history");
+      setHistory(res.data.reflections ?? []);
+      if (typeof res.data.streakCount === "number") {
+        setStreakCount(res.data.streakCount);
+      }
+    } catch (err) {
+      console.warn("[HeartPulse] Failed to fetch history:", err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
   const reset = useCallback(() => {
     setReflection(null);
     setSentiment(null);
@@ -90,10 +110,13 @@ export function useHeartPulse(): UseHeartPulseReturn {
     sentiment,
     sentimentScore,
     streakCount,
+    history,
+    historyLoading,
     isLoading,
     error,
     submitTextReflection,
     submitVoiceReflection,
+    fetchHistory,
     reset,
   };
 }
