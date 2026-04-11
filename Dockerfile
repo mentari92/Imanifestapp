@@ -21,13 +21,10 @@ COPY tsconfig.json ./
 COPY turbo.json ./
 
 # Generate Prisma client
-RUN pnpm --filter @imanifest/database prisma generate
+RUN cd packages/database && npx prisma generate
 
 # Build the server
-RUN pnpm --filter @imanifest/server build
-
-# Skip pruning devDependencies for now (pnpm workspaces symlink issue)
-# TODO: optimize with pnpm deploy later
+RUN cd apps/server && npx nest build
 
 # ─── Stage 2: Production ──────────────────────────────────
 FROM node:20-alpine AS runner
@@ -35,16 +32,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy built app + production node_modules
-COPY --from=builder /app/apps/server/dist ./apps/server/dist
-COPY --from=builder /app/apps/server/package.json ./apps/server/
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-COPY --from=builder /app/packages/database/node_modules ./packages/database/node_modules
-COPY --from=builder /app/packages/database/package.json ./packages/database/
-COPY --from=builder /app/packages/database/src ./packages/database/src
-COPY --from=builder /app/packages/shared ./packages/shared
+# Copy entire workspace with node_modules (preserves pnpm symlinks)
+COPY --from=builder /app ./
 
 # Non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
@@ -52,5 +41,4 @@ USER nestjs
 
 EXPOSE 3001
 
-# Prisma migrate on startup, then start server
 CMD ["node", "apps/server/dist/main.js"]
