@@ -1,0 +1,17 @@
+node_modules
+dist
+.turbo
+.expo
+.web-build
+coverage
+.git
+.env
+.env.local
+.env.*.local
+*.md
+!packages/*/README.md
+_bmad
+_bmad-output
+.cline
+.DS_Store
+apps/mobile-web
