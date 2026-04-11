@@ -7,10 +7,11 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { Mic, Keyboard, Flame, RotateCcw } from "lucide-react-native";
+import { Mic, Keyboard, RotateCcw } from "lucide-react-native";
 import { useHeartPulse } from "../../hooks/useHeartPulse";
 import { VoiceRecorder } from "../../components/heart-pulse/VoiceRecorder";
 import { SentimentBadge } from "../../components/heart-pulse/SentimentBadge";
+import { StreakCard } from "../../components/heart-pulse/StreakCard";
 import { LoadingSpinner } from "../../components/shared/LoadingSpinner";
 import { ErrorMessage } from "../../components/shared/ErrorMessage";
 
@@ -88,17 +89,7 @@ export default function HeartPulseScreen() {
         </View>
 
         {/* Streak Card */}
-        <View className="mt-6 bg-primary rounded-2xl px-5 py-4 flex-row items-center">
-          <Flame size={24} color="#E3C567" />
-          <View className="ml-3">
-            <Text className="font-sans text-body-sm text-white/70">
-              Current Streak
-            </Text>
-            <Text className="font-display text-display-md text-white">
-              {streakCount} {streakCount === 1 ? "day" : "days"}
-            </Text>
-          </View>
-        </View>
+        <StreakCard streakCount={streakCount} />
 
         {/* Sentiment History */}
         <HistorySection history={history} historyLoading={historyLoading} />
@@ -114,6 +105,9 @@ export default function HeartPulseScreen() {
       <Text className="font-sans text-body-md text-ink-secondary mt-2">
         Journal your spiritual heartbeat.
       </Text>
+
+      {/* Streak Card — always visible */}
+      <StreakCard streakCount={streakCount} loading={historyLoading} />
 
       {/* Mode Toggle */}
       <View className="mt-6 flex-row bg-surface rounded-2xl p-1 border border-border">

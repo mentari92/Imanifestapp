@@ -8,6 +8,10 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 /** Max lookback window for streak calculation */
 const STREAK_LOOKBACK_DAYS = 35;
 
+/** Quran Foundation User API — configurable, graceful fallback if not set */
+const QF_USER_API_URL = process.env.QURAN_FOUNDATION_USER_API_URL || "";
+const QF_API_KEY = process.env.QURAN_FOUNDATION_API_KEY || "";
+
 @Injectable()
 export class HeartPulseService {
   private readonly logger = new Logger(HeartPulseService.name);
@@ -16,6 +20,77 @@ export class HeartPulseService {
     private readonly prisma: PrismaService,
     private readonly zhipu: ZhipuService,
   ) {}
+
+  /** Sync reflection to Quran Foundation User API (stub — graceful no-op if not configured). */
+  async syncToQuranFoundation(
+    userId: string,
+    reflectionData: { transcriptText: string; sentiment: string },
+  ): Promise<void> {
+    if (!QF_USER_API_URL) {
+      this.logger.debug("QF User API not configured — skipping sync");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${QF_USER_API_URL}/reflections`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(QF_API_KEY ? { "X-API-Key": QF_API_KEY } : {}),
+        },
+        body: JSON.stringify({
+          userId,
+          text: reflectionData.transcriptText,
+          sentiment: reflectionData.sentiment,
+        }),
+      });
+
+      if (!response.ok) {
+        this.logger.warn(
+          `QF User API sync failed: ${response.status} ${response.statusText}`,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(
+        `QF User API unavailable: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+  }
+
+  /** Fetch streak from Quran Foundation User API (stub — returns null if not configured). */
+  async fetchQuranFoundationStreak(
+    userId: string,
+  ): Promise<number | null> {
+    if (!QF_USER_API_URL) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        `${QF_USER_API_URL}/streak?userId=${userId}`,
+        {
+          headers: {
+            ...(QF_API_KEY ? { "X-API-Key": QF_API_KEY } : {}),
+          },
+        },
+      );
+
+      if (!response.ok) {
+        this.logger.warn(
+          `QF User API streak fetch failed: ${response.status}`,
+        );
+        return null;
+      }
+
+      const data = await response.json() as { streakCount?: number };
+      return typeof data.streakCount === "number" ? data.streakCount : null;
+    } catch (err) {
+      this.logger.warn(
+        `QF User API streak unavailable: ${err instanceof Error ? err.message : err}`,
+      );
+      return null;
+    }
+  }
 
   /** Process a text reflection — sentiment analysis + save. */
   async reflectText(userId: string, transcriptText: string) {
@@ -49,6 +124,12 @@ export class HeartPulseService {
     });
 
     const streakCount = await this.calculateStreak(userId);
+
+    // Fire-and-forget sync to Quran Foundation (don't block response)
+    this.syncToQuranFoundation(userId, {
+      transcriptText: data.transcriptText,
+      sentiment: label,
+    }).catch(() => {});
 
     const elapsed = Date.now() - startTime;
     this.logger.log(`${mode} reflection complete in ${elapsed}ms — ${label} (${score})`);

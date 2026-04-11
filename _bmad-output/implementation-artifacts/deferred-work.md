@@ -17,3 +17,7 @@
 - **Missing DTO for PATCH body** — `dua-todo.controller.ts:23` menggunakan inline `{ isCompleted: boolean }` tanpa class-validator DTO. Low risk karena AuthGuard, tapi produksi perlu validation. Defer ke hardening pass. [`apps/server/src/dua-todo/dua-todo.controller.ts`]
 - **Race condition on rapid toggle** — `useDuaToDo.ts:43-56` optimistic update bisa konflik jika user tap cepat berturut-turut. Unlikely di praktik. Defer ke UI polish pass. [`apps/mobile-web/hooks/useDuaToDo.ts`]
 - **Empty state in TaskChecklist** — Ketika tasks=[], tampilan "0/0" kurang informatif. Perlu design input. Defer ke UI polish pass. [`apps/mobile-web/components/dua-todo/TaskChecklist.tsx`]
+
+## Deferred from: code review of spec-4-3-streak-tracking (2026-04-11)
+
+- **`fetchQuranFoundationStreak` is dead code** — public method declared but never called from controller or service. Intentional stub for future QF API activation, but currently unreachable. Defer ke QF API integration story. [`apps/server/src/heart-pulse/heart-pulse.service.ts`]
