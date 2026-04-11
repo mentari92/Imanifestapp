@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Sparkles, CheckSquare, Mic, Headphones } from "lucide-react-native";
+import { LayoutDashboard, Sparkles, CheckSquare, Mic, Headphones } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -13,7 +13,7 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           fontFamily: "Lora-Regular",
-          fontSize: 12,
+          fontSize: 11,
         },
         headerStyle: {
           backgroundColor: "#F8FAFC",
@@ -24,6 +24,13 @@ export default function TabLayout() {
         },
       }}
     >
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Dashboard",
+          tabBarIcon: ({ color, size }) => <LayoutDashboard size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{

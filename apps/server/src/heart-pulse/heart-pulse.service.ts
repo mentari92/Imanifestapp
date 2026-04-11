@@ -1,12 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
-
-/** Allow up to 36h gap between reflection days for timezone flexibility */
-const STREAK_TOLERANCE_DAYS = 1.5;
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-/** Max lookback window for streak calculation */
-const STREAK_LOOKBACK_DAYS = 35;
+import { calculateReflectionStreak } from "../common/streak.util";
 
 /** Quran Foundation User API — configurable, graceful fallback if not set */
 const QF_USER_API_URL = process.env.QURAN_FOUNDATION_USER_API_URL || "";
@@ -57,7 +52,14 @@ export class HeartPulseService {
     }
   }
 
-  /** Fetch streak from Quran Foundation User API (stub — returns null if not configured). */
+  /**
+   * Fetch streak from Quran Foundation User API.
+   *
+   * ⚠️ INTENTIONAL STUB: This method is declared for future QF API integration.
+   * It is NOT called from any controller or service method yet.
+   * Will be activated when Quran Foundation User API is ready for integration.
+   * See: deferred-work.md
+   */
   async fetchQuranFoundationStreak(
     userId: string,
   ): Promise<number | null> {
@@ -123,7 +125,7 @@ export class HeartPulseService {
       },
     });
 
-    const streakCount = await this.calculateStreak(userId);
+    const streakCount = await calculateReflectionStreak(this.prisma, userId);
 
     // Fire-and-forget sync to Quran Foundation (don't block response)
     this.syncToQuranFoundation(userId, {
@@ -151,37 +153,6 @@ export class HeartPulseService {
     };
   }
 
-  /** Calculate current streak for user. */
-  private async calculateStreak(userId: string): Promise<number> {
-    const lookbackDate = new Date(Date.now() - STREAK_LOOKBACK_DAYS * ONE_DAY_MS);
-    const reflections = await this.prisma.reflection.findMany({
-      where: {
-        userId,
-        streakDate: { gte: lookbackDate },
-      },
-      orderBy: { streakDate: "desc" },
-      take: STREAK_LOOKBACK_DAYS,
-    });
-
-    if (reflections.length === 0) return 0;
-
-    let streak = 1;
-
-    for (let i = 1; i < reflections.length; i++) {
-      const diff =
-        new Date(reflections[i - 1].streakDate).getTime() -
-        new Date(reflections[i].streakDate).getTime();
-
-      if (diff <= ONE_DAY_MS * STREAK_TOLERANCE_DAYS) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-
-    return streak;
-  }
-
   /** Get reflection history for user. */
   async getHistory(userId: string) {
     const reflections = await this.prisma.reflection.findMany({
@@ -190,7 +161,7 @@ export class HeartPulseService {
       take: 30,
     });
 
-    const streakCount = await this.calculateStreak(userId);
+    const streakCount = await calculateReflectionStreak(this.prisma, userId);
 
     return { reflections, streakCount };
   }

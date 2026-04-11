@@ -25,6 +25,7 @@ const VISION_RATE_LIMIT = 5; // max 5 vision requests per hour
 const RATE_WINDOW_SECONDS = 3600; // 1 hour
 
 @Controller("iman-sync")
+@UseGuards(JwtAuthGuard)
 export class ImanSyncController {
   constructor(
     private readonly imanSyncService: ImanSyncService,
@@ -59,7 +60,6 @@ export class ImanSyncController {
   }
 
   @Post("analyze")
-  @UseGuards(JwtAuthGuard)
   async analyze(
     @Request() req: { user: { userId: string } },
     @Body() dto: AnalyzeDto,
@@ -69,7 +69,6 @@ export class ImanSyncController {
   }
 
   @Post("analyze-vision")
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor("image", {
       limits: { fileSize: MAX_FILE_SIZE },
@@ -92,38 +91,20 @@ export class ImanSyncController {
     @Body("intentText") intentText: string,
     @UploadedFile() file?: Express.Multer.File,
   ) {
-    // Validate intentText
-    if (!intentText || intentText.trim().length === 0) {
+    if (!intentText?.trim()) {
       throw new BadRequestException("intentText is required");
     }
     if (intentText.length > 500) {
       throw new BadRequestException("intentText must be 500 characters or less");
     }
-
-    // Validate file presence
     if (!file) {
       throw new BadRequestException("Image file is required");
     }
 
-    // Validate file type
-    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-      throw new BadRequestException(
-        "Invalid file type. Only JPG and PNG images are allowed.",
-      );
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      throw new BadRequestException(
-        "File too large. Maximum size is 5MB.",
-      );
-    }
-
     await this.checkRateLimit(req.user.userId, "vision", VISION_RATE_LIMIT);
 
-    // Convert to base64
     const imageBase64 = file.buffer.toString("base64");
-    const imagePath = `vision:${file.originalname}:${Date.now()}`;
+    const imagePath = `vision:${Date.now()}`;
 
     return this.imanSyncService.analyzeVision(
       req.user.userId,

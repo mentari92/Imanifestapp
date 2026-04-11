@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from "@nestjs/common";
 import { Public } from "../auth/public.decorator";
 import { SakinahService } from "./sakinah.service";
+import { GetAudioUrlDto } from "./dto/get-audio-url.dto";
 
 @Controller("sakinah")
 @Public()
@@ -18,13 +19,7 @@ export class SakinahController {
   }
 
   @Get("audio")
-  async getAudioUrl(
-    @Query("reciterId") reciterId: string,
-    @Query("surahNumber") surahNumber: string,
-  ) {
-    return this.sakinahService.getAudioUrl(
-      parseInt(reciterId, 10) || 7,
-      parseInt(surahNumber, 10) || 1,
-    );
+  async getAudioUrl(@Query() dto: GetAudioUrlDto) {
+    return this.sakinahService.getAudioUrl(dto.reciterId, dto.surahNumber);
   }
 }

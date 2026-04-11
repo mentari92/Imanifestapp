@@ -8,9 +8,10 @@ import { ImanSyncModule } from "./iman-sync/iman-sync.module";
 import { DuaToDoModule } from "./dua-todo/dua-todo.module";
 import { HeartPulseModule } from "./heart-pulse/heart-pulse.module";
 import { SakinahModule } from "./sakinah/sakinah.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
 
 @Module({
-  imports: [DatabaseModule, RedisModule, AuthModule, ImanSyncModule, DuaToDoModule, HeartPulseModule, SakinahModule],
+  imports: [DatabaseModule, RedisModule, AuthModule, ImanSyncModule, DuaToDoModule, HeartPulseModule, SakinahModule, DashboardModule],
   controllers: [],
   providers: [
     // Apply JWT guard globally — use @Public() to skip

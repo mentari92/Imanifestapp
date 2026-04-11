@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { api } from "../lib/api";
 
 interface Task {
@@ -25,6 +25,9 @@ export function useDuaToDo(): UseDuaToDoReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Track in-flight toggles to prevent race conditions on rapid tap
+  const pendingToggles = useRef<Set<string>>(new Set());
+
   const generateTasks = useCallback(async (manifestationId: string) => {
     setIsLoading(true);
     setError(null);
@@ -41,6 +44,10 @@ export function useDuaToDo(): UseDuaToDoReturn {
   }, []);
 
   const toggleTask = useCallback(async (taskId: string, isCompleted: boolean) => {
+    // Prevent concurrent toggle on the same task
+    if (pendingToggles.current.has(taskId)) return;
+    pendingToggles.current.add(taskId);
+
     // Optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, isCompleted } : t)),
@@ -52,6 +59,8 @@ export function useDuaToDo(): UseDuaToDoReturn {
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, isCompleted: !isCompleted } : t)),
       );
+    } finally {
+      pendingToggles.current.delete(taskId);
     }
   }, []);
 
@@ -59,6 +68,7 @@ export function useDuaToDo(): UseDuaToDoReturn {
     setTasks([]);
     setError(null);
     setIsLoading(false);
+    pendingToggles.current.clear();
   }, []);
 
   return { tasks, isLoading, error, generateTasks, toggleTask, reset };

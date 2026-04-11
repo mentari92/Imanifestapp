@@ -2,6 +2,7 @@ import { Controller, Post, Patch, Body, Param, Request, UseGuards } from "@nestj
 import { JwtAuthGuard } from "../auth/auth.guard";
 import { DuaToDoService } from "./dua-todo.service";
 import { GenerateTasksDto } from "./dto/generate-tasks.dto";
+import { UpdateTaskDto } from "./dto/update-task.dto";
 
 @Controller("dua-to-do")
 @UseGuards(JwtAuthGuard)
@@ -20,7 +21,7 @@ export class DuaToDoController {
   async updateTask(
     @Request() req: { user: { userId: string } },
     @Param("taskId") taskId: string,
-    @Body() body: { isCompleted: boolean },
+    @Body() body: UpdateTaskDto,
   ) {
     return this.duaToDoService.updateTask(req.user.userId, taskId, body.isCompleted);
   }

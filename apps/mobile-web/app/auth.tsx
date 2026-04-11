@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useAuth } from "../lib/auth";
+import { colors } from "../constants/theme";
 
 export default function AuthScreen() {
   const { login, register } = useAuth();
@@ -55,7 +56,7 @@ export default function AuthScreen() {
         <TextInput
           className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-4 border border-surface"
           placeholder="Name (optional)"
-          placeholderTextColor="#A8A29E"
+          placeholderTextColor={colors.ink.disabled}
           value={name}
           onChangeText={setName}
         />
@@ -64,7 +65,7 @@ export default function AuthScreen() {
       <TextInput
         className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-4 border border-surface"
         placeholder="Email"
-        placeholderTextColor="#A8A29E"
+        placeholderTextColor={colors.ink.disabled}
         keyboardType="email-address"
         autoCapitalize="none"
         value={email}
@@ -74,7 +75,7 @@ export default function AuthScreen() {
       <TextInput
         className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-6 border border-surface"
         placeholder="Password"
-        placeholderTextColor="#A8A29E"
+        placeholderTextColor={colors.ink.disabled}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
