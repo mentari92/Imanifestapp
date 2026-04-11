@@ -20,10 +20,12 @@ COPY packages/shared/ packages/shared/
 COPY tsconfig.json ./
 COPY turbo.json ./
 
-# Generate Prisma client
-RUN cd packages/database && npx prisma generate
-
-# Build the NestJS server
+# Build workspace packages in dependency order
+# 1. Generate Prisma client + compile TypeScript
+RUN cd packages/database && npx prisma generate && npx tsc
+# 2. Compile shared package
+RUN cd packages/shared && npx tsc
+# 3. Build the NestJS server
 RUN cd apps/server && npx nest build
 
 # ─── Stage 2: Production ──────────────────────────────────
@@ -34,14 +36,11 @@ WORKDIR /app
 # Copy entire workspace from builder (preserves pnpm symlinks)
 COPY --from=builder /app ./
 
-# Install tsx for runtime TypeScript support (needed for workspace packages)
-RUN npm install -g tsx
-
 # Non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 USER nestjs
 
 EXPOSE 3001
 
-# Use tsx to handle TS imports from workspace packages
-CMD ["npx", "tsx", "apps/server/src/main.ts"]
+# Run compiled server (all workspace deps resolved via compiled dist/)
+CMD ["node", "apps/server/dist/main.js"]
