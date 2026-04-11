@@ -14,4 +14,5 @@ _bmad
 _bmad-output
 .cline
 .DS_Store
-apps/mobile-web
+# Note: apps/mobile-web is NOT excluded — Dockerfile.web needs it for Expo web build
+# The backend Dockerfile does not COPY from apps/mobile-web, so excluding it is unnecessary

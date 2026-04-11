@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { api } from "./api";
 
@@ -22,6 +23,30 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const TOKEN_KEY = "imanifest_jwt_token";
 const USER_KEY = "imanifest_user";
 
+// Web falls back to localStorage since SecureStore is native-only
+async function storageGet(key: string): Promise<string | null> {
+  if (Platform.OS === "web") {
+    return typeof localStorage !== "undefined" ? localStorage.getItem(key) : null;
+  }
+  return SecureStore.getItemAsync(key);
+}
+
+async function storageSet(key: string, value: string): Promise<void> {
+  if (Platform.OS === "web") {
+    if (typeof localStorage !== "undefined") localStorage.setItem(key, value);
+    return;
+  }
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function storageDelete(key: string): Promise<void> {
+  if (Platform.OS === "web") {
+    if (typeof localStorage !== "undefined") localStorage.removeItem(key);
+    return;
+  }
+  await SecureStore.deleteItemAsync(key);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -30,18 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Load saved token on mount
   useEffect(() => {
     async function loadSavedAuth() {
-      try {
-        const savedToken = await SecureStore.getItemAsync(TOKEN_KEY);
-        const savedUser = await SecureStore.getItemAsync(USER_KEY);
-        if (savedToken && savedUser) {
-          setToken(savedToken);
-          setUser(JSON.parse(savedUser));
-        }
-      } catch {
-        // SecureStore not available (web) — ignore
-      } finally {
-        setLoading(false);
+      const savedToken = await storageGet(TOKEN_KEY);
+      const savedUser = await storageGet(USER_KEY);
+      if (savedToken && savedUser) {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
       }
+      setLoading(false);
     }
     loadSavedAuth();
   }, []);
@@ -59,23 +79,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    try {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-      await SecureStore.deleteItemAsync(USER_KEY);
-    } catch {
-      // Ignore if SecureStore not available
-    }
+    await storageDelete(TOKEN_KEY);
+    await storageDelete(USER_KEY);
     setToken(null);
     setUser(null);
   }
 
   async function saveAuth(accessToken: string, userData: User) {
-    try {
-      await SecureStore.setItemAsync(TOKEN_KEY, accessToken);
-      await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userData));
-    } catch {
-      // SecureStore not available (web) — fallback to memory only
-    }
+    await storageSet(TOKEN_KEY, accessToken);
+    await storageSet(USER_KEY, JSON.stringify(userData));
     setToken(accessToken);
     setUser(userData);
   }

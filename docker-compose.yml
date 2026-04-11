@@ -54,6 +54,17 @@ services:
       redis:
         condition: service_healthy
 
+  # ─── Expo Web App (built from Dockerfile.web) ──────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        EXPO_PUBLIC_API_URL: https://api.imanifestapp.com
+    restart: unless-stopped
+    depends_on:
+      - api
+
   # ─── Nginx Reverse Proxy (SSL termination via Cloudflare) ─
   nginx:
     image: nginx:alpine
@@ -63,8 +74,10 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - api
+      - web
 
 volumes:
   pgdata:

@@ -1,5 +1,6 @@
 import "../global.css";
 import { Stack, Redirect } from "expo-router";
+import { Component } from "react";
 import { useFonts } from "expo-font";
 import {
   PlayfairDisplay_700Bold,
@@ -14,6 +15,22 @@ import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, Text } from "react-native";
 import { AuthProvider, useAuth } from "../lib/auth";
+
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { error: string | null }> {
+  state = { error: null };
+  static getDerivedStateFromError(e: Error) { return { error: e.message + "\n" + e.stack }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <View style={{ flex: 1, padding: 20, backgroundColor: "#fff", justifyContent: "center" }}>
+          <Text style={{ color: "red", fontWeight: "bold", fontSize: 16, marginBottom: 10 }}>App Error — copy this and share:</Text>
+          <Text style={{ color: "#333", fontSize: 12, fontFamily: "monospace" }}>{this.state.error}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -54,6 +71,7 @@ export default function RootLayout() {
   }
 
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <AuthGate>
         <StatusBar style="dark" />
@@ -73,5 +91,6 @@ export default function RootLayout() {
         </Stack>
       </AuthGate>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }

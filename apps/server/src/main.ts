@@ -23,6 +23,7 @@ async function bootstrap() {
       "http://localhost:19006",
       "exp://localhost:8081",
       "https://imanifestapp.com",
+      "https://www.imanifestapp.com",
       "https://api.imanifestapp.com",
     ],
     credentials: true,
