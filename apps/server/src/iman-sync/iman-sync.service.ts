@@ -97,7 +97,7 @@ export class ImanSyncService {
         userId,
         intentText,
         imagePath: imagePath ?? null,
-        verses: verses.length > 0 ? (verses as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+        verses: verses.length > 0 ? (verses as any) : [],
         aiSummary,
       },
     });
