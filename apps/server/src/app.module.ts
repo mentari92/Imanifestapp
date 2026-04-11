@@ -9,10 +9,11 @@ import { DuaToDoModule } from "./dua-todo/dua-todo.module";
 import { HeartPulseModule } from "./heart-pulse/heart-pulse.module";
 import { SakinahModule } from "./sakinah/sakinah.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
+import { AppController } from "./app.controller";
 
 @Module({
   imports: [DatabaseModule, RedisModule, AuthModule, ImanSyncModule, DuaToDoModule, HeartPulseModule, SakinahModule, DashboardModule],
-  controllers: [],
+  controllers: [AppController],
   providers: [
     // Apply JWT guard globally — use @Public() to skip
     { provide: APP_GUARD, useClass: JwtAuthGuard },
