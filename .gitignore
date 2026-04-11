@@ -33,3 +33,11 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+# BMad internal tooling
+_bmad/
+.cline/
+
+# BMad output internals (keep implementation-artifacts/story specs)
+_bmad-output/planning-artifacts/
+_bmad-output/test-artifacts/
