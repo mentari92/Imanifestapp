@@ -25,15 +25,12 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
     uri: string;
     base64: string;
   } | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = () => {
     const trimmed = intentText.trim();
     if (!trimmed || trimmed.length > 500 || isLoading) return;
-    onSubmit(
-      trimmed,
-      selectedImage?.uri,
-      selectedImage?.base64,
-    );
+    onSubmit(trimmed, selectedImage?.uri, selectedImage?.base64);
   };
 
   const pickImage = useCallback(async () => {
@@ -49,22 +46,18 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
 
     const asset = result.assets[0];
 
-    // Validate file size (base64 is ~33% larger than actual bytes)
     if (asset.base64) {
       const sizeInBytes = (asset.base64.length * 3) / 4;
       const sizeInMB = sizeInBytes / (1024 * 1024);
       if (sizeInMB > MAX_IMAGE_SIZE_MB) {
         setImageSizeError(
-          `Image is too large (${sizeInMB.toFixed(1)}MB). Maximum size is ${MAX_IMAGE_SIZE_MB}MB.`,
+          `Gambar terlalu besar (${sizeInMB.toFixed(1)}MB). Maks ${MAX_IMAGE_SIZE_MB}MB.`,
         );
         return;
       }
     }
 
-    setSelectedImage({
-      uri: asset.uri,
-      base64: asset.base64 || "",
-    });
+    setSelectedImage({ uri: asset.uri, base64: asset.base64 || "" });
   }, []);
 
   const removeImage = useCallback(() => {
@@ -74,19 +67,65 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
   const charCount = intentText.length;
   const isOverLimit = charCount > 500;
   const isEmpty = intentText.trim().length === 0;
+  const isDisabled = isLoading || isEmpty || isOverLimit;
 
   return (
-    <View className="bg-surface rounded-verse p-card-p shadow-card">
-      <Text className="font-sans text-body-md text-ink-secondary mb-3">
-        What's your intention today?
+    <View
+      style={{
+        backgroundColor: "#FFFFFF",
+        borderRadius: 16,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: "#E2E8E0",
+        shadowColor: "#064E3B",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 10,
+        elevation: 3,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: "PlayfairDisplay-Bold",
+          fontSize: 17,
+          color: "#1C1917",
+          marginBottom: 4,
+        }}
+      >
+        Apa niatmu hari ini?
+      </Text>
+      <Text
+        style={{
+          fontFamily: "Lora-Regular",
+          fontSize: 13,
+          color: "#78716C",
+          marginBottom: 14,
+        }}
+      >
+        Tuliskan niatmu dan kami akan temukan ayat Al-Quran yang sesuai.
       </Text>
 
+      {/* Text Input */}
       <TextInput
-        className="bg-surface-input rounded-button p-4 font-sans text-body-lg text-text-primary min-h-[120px] text-top"
-        placeholder="I want to become more patient in my daily life..."
+        style={{
+          backgroundColor: "#F8FAFC",
+          borderRadius: 12,
+          padding: 14,
+          fontFamily: "Lora-Regular",
+          fontSize: 15,
+          color: "#1C1917",
+          minHeight: 130,
+          lineHeight: 24,
+          borderWidth: 1.5,
+          borderColor: isFocused ? "#064E3B" : "#E2E8E0",
+          textAlignVertical: "top",
+        }}
+        placeholder="Contoh: Aku ingin menjadi lebih sabar dalam kehidupan sehari-hari..."
         placeholderTextColor="#A8A29E"
         value={intentText}
         onChangeText={setIntentText}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         multiline
         maxLength={500}
         editable={!isLoading}
@@ -94,34 +133,53 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
       />
 
       {/* Character counter */}
-      <View className="flex-row justify-between items-center mt-2">
-        <Text
-          className={`font-sans text-body-sm ${
-            isOverLimit ? "text-status-error" : "text-ink-secondary"
-          }`}
-        >
-          {charCount}/500
-        </Text>
-      </View>
+      <Text
+        style={{
+          fontFamily: "JetBrainsMono-Regular",
+          fontSize: 11,
+          color: isOverLimit ? "#9F1239" : "#A8A29E",
+          textAlign: "right",
+          marginTop: 6,
+        }}
+      >
+        {charCount}/500
+      </Text>
 
       {/* Image picker section */}
-      <View className="mt-4">
+      <View style={{ marginTop: 12 }}>
         {selectedImage ? (
-          <View className="relative">
+          <View style={{ position: "relative" }}>
             <Image
               source={{ uri: selectedImage.uri }}
-              className="w-full h-48 rounded-button"
+              style={{ width: "100%", height: 180, borderRadius: 12 }}
               resizeMode="cover"
             />
             <Pressable
               onPress={removeImage}
-              className="absolute top-2 right-2 bg-surface/80 rounded-full p-1.5"
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                backgroundColor: "rgba(255,255,255,0.9)",
+                borderRadius: 999,
+                padding: 6,
+              }}
             >
-              <X size={16} color="#064E3B" />
+              <X size={14} color="#54161B" />
             </Pressable>
-            <View className="absolute bottom-2 left-2 bg-primary/80 rounded-button px-2 py-1">
-              <Text className="font-sans text-body-sm text-text-inverse">
-                Image attached
+            <View
+              style={{
+                position: "absolute",
+                bottom: 8,
+                left: 8,
+                backgroundColor: "rgba(6, 78, 59, 0.85)",
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+              }}
+            >
+              <Text style={{ fontFamily: "Lora-Regular", fontSize: 11, color: "#FFFFFF" }}>
+                Gambar terlampir
               </Text>
             </View>
           </View>
@@ -129,11 +187,22 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
           <Pressable
             onPress={pickImage}
             disabled={isLoading}
-            className="border-2 border-dashed border-primary/30 rounded-button py-4 flex-row items-center justify-center gap-2"
+            style={{
+              borderWidth: 1.5,
+              borderStyle: "dashed",
+              borderColor: "rgba(6, 78, 59, 0.3)",
+              borderRadius: 12,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              backgroundColor: "rgba(6, 78, 59, 0.02)",
+            }}
           >
-            <ImagePlus size={20} color="#064E3B" />
-            <Text className="font-sans text-body-md text-primary">
-              Add image (optional)
+            <ImagePlus size={18} color="#064E3B" />
+            <Text style={{ fontFamily: "Lora-Regular", fontSize: 14, color: "#064E3B" }}>
+              Tambah gambar (opsional)
             </Text>
           </Pressable>
         )}
@@ -141,7 +210,7 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
 
       {/* Image size error */}
       {imageSizeError && (
-        <View className="mt-3">
+        <View style={{ marginTop: 10 }}>
           <ErrorMessage message={imageSizeError} />
         </View>
       )}
@@ -149,29 +218,51 @@ export function IntentionForm({ onSubmit, isLoading }: IntentionFormProps) {
       {/* Submit button */}
       <TouchableOpacity
         onPress={handleSubmit}
-        disabled={isLoading || isEmpty || isOverLimit}
-        className={`mt-4 rounded-button py-3.5 px-6 flex-row items-center justify-center gap-2 ${
-          isLoading || isEmpty || isOverLimit
-            ? "bg-primary/40"
-            : "bg-primary"
-        }`}
+        disabled={isDisabled}
+        style={{
+          marginTop: 16,
+          borderRadius: 12,
+          paddingVertical: 16,
+          paddingHorizontal: 24,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          backgroundColor: isDisabled ? "#E2E8E0" : "#064E3B",
+        }}
         activeOpacity={0.8}
       >
-        <Sparkles size={18} color="#F8FAFC" />
+        <Sparkles size={18} color={isDisabled ? "#A8A29E" : "#E3C567"} />
         <Text
-          className={`font-sans text-label text-text-inverse ${
-            isLoading || isEmpty || isOverLimit ? "opacity-60" : ""
-          }`}
+          style={{
+            fontFamily: "Lora-Regular",
+            fontWeight: "600",
+            fontSize: 15,
+            color: isDisabled ? "#A8A29E" : "#FFFFFF",
+          }}
         >
           {isLoading
             ? selectedImage
-              ? "Analyzing image & finding verses..."
-              : "Finding your verses..."
+              ? "Menganalisis gambar & ayat..."
+              : "Menemukan ayat untukmu..."
             : selectedImage
-              ? "Validate with Quran + Image"
-              : "Validate with Quran"}
+              ? "Validasi dengan Quran + Gambar"
+              : "Validasi dengan Al-Quran"}
         </Text>
       </TouchableOpacity>
+
+      {/* Gold accent bar at bottom when not disabled */}
+      {!isDisabled && (
+        <View
+          style={{
+            height: 3,
+            backgroundColor: "#E3C567",
+            borderRadius: 999,
+            marginTop: 12,
+            opacity: 0.6,
+          }}
+        />
+      )}
     </View>
   );
 }
