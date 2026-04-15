@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -6,8 +6,13 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
+
+const API_URL =
+  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_URL) ||
+  "https://api.imanifestapp.com";
 
 const glass = (radius = 28) => ({
   backgroundColor: "rgba(255,255,255,0.6)",
@@ -35,6 +40,83 @@ export default function QalbScreen() {
   const router = useRouter();
   const [note, setNote] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const startVoice = () => {
+    if (Platform.OS !== "web") return;
+    setError(null);
+    try {
+      const SR =
+        (window as any).SpeechRecognition ||
+        (window as any).webkitSpeechRecognition;
+      if (!SR) {
+        setError("Voice not supported in this browser. Please type below.");
+        return;
+      }
+      const recognition = new SR();
+      recognition.lang = "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognitionRef.current = recognition;
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setNote((prev) => (prev ? prev + " " + transcript : transcript));
+        setIsRecording(false);
+      };
+      recognition.onerror = () => setIsRecording(false);
+      recognition.onend = () => setIsRecording(false);
+      setIsRecording(true);
+      recognition.start();
+    } catch {
+      setIsRecording(false);
+      setError("Voice recording failed. Please type your reflection below.");
+    }
+  };
+
+  const stopVoice = () => {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+  };
+
+  const submit = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      setError("Please share what's in your heart before seeking guidance.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/iman-sync/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer demo_token_high_vibration_888",
+        },
+        body: JSON.stringify({ intentText: trimmed }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error((errBody as any)?.message || `Server error ${res.status}`);
+      }
+      const data = await res.json();
+      router.push({
+        pathname: "/qalb-result",
+        params: {
+          userText: trimmed,
+          sentiment: selected || "",
+          resultJson: JSON.stringify(data),
+        },
+      });
+    } catch (err: any) {
+      setError(err?.message || "Unable to connect. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -45,36 +127,21 @@ export default function QalbScreen() {
       {/* Holographic blobs */}
       <View
         pointerEvents="none"
-        style={{
-          position: "absolute",
-          inset: 0,
-          overflow: "hidden",
-          zIndex: -1,
-        } as any}
+        style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: -1 } as any}
       >
         <View
           style={{
-            position: "absolute",
-            top: "-10%",
-            left: "-10%",
-            width: "60%",
-            height: "60%",
-            backgroundColor: "#e5dff8",
-            borderRadius: 9999,
-            opacity: 0.4,
+            position: "absolute", top: "-10%", left: "-10%",
+            width: "60%", height: "60%",
+            backgroundColor: "#e5dff8", borderRadius: 9999, opacity: 0.4,
             ...(Platform.OS === "web" ? ({ filter: "blur(80px)" } as any) : {}),
           } as any}
         />
         <View
           style={{
-            position: "absolute",
-            bottom: "-10%",
-            right: "-10%",
-            width: "50%",
-            height: "50%",
-            backgroundColor: "#ffe4f2",
-            borderRadius: 9999,
-            opacity: 0.4,
+            position: "absolute", bottom: "-10%", right: "-10%",
+            width: "50%", height: "50%",
+            backgroundColor: "#ffe4f2", borderRadius: 9999, opacity: 0.4,
             ...(Platform.OS === "web" ? ({ filter: "blur(80px)" } as any) : {}),
           } as any}
         />
@@ -83,247 +150,56 @@ export default function QalbScreen() {
       {/* Header */}
       <View
         style={{
-          paddingHorizontal: 24,
-          paddingVertical: 16,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
+          paddingHorizontal: 24, paddingVertical: 16,
+          flexDirection: "row", justifyContent: "space-between", alignItems: "center",
           backgroundColor: "rgba(255,255,255,0.6)",
           ...(Platform.OS === "web"
-            ? ({
-                position: "sticky",
-                top: 0,
-                zIndex: 50,
-                backdropFilter: "blur(24px)",
-              } as any)
+            ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)" } as any)
             : {}),
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: "#e5dff8",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5dff8", alignItems: "center", justifyContent: "center" }}>
             <Text style={{ fontSize: 18 }}>🌸</Text>
           </View>
-          <Text
-            style={{
-              fontFamily: "Newsreader",
-              fontSize: 22,
-              fontStyle: "italic",
-              fontWeight: "600",
-              color: "#1e1b2e",
-            }}
-          >
-            Qalb Voice
+          <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>
+            Qalb
           </Text>
         </View>
-        <TouchableOpacity
-          style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
-        >
+        <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ fontSize: 22 }}>🔔</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={{ paddingHorizontal: 24, gap: 48, paddingTop: 40 }}>
+      <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 32, maxWidth: 680, alignSelf: "center", width: "100%" }}>
         {/* Hero */}
-        <View style={{ gap: 12 }}>
-          <Text
-            style={{
-              fontFamily: "Newsreader",
-              fontSize: 40,
-              fontStyle: "italic",
-              fontWeight: "600",
-              color: "#2f3338",
-              lineHeight: 48,
-              maxWidth: 320,
-            }}
-          >
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontFamily: "Newsreader", fontSize: 38, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 46 }}>
             A Sanctuary for your Spiritual Voice
           </Text>
-          <Text
-            style={{
-              fontFamily: "Plus Jakarta Sans",
-              fontSize: 15,
-              color: "#5b5f65",
-              maxWidth: 280,
-              lineHeight: 22,
-            }}
-          >
-            Speak your truth into the silence. Let your intentions ripple through the holographic expanse.
+          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#5b5f65", lineHeight: 20 }}>
+            Share what weighs on your heart. Receive guidance from the Quran and wisdom of the Prophet ﷺ.
           </Text>
         </View>
 
-        {/* Central Mic Button */}
-        <View style={{ alignItems: "center", paddingVertical: 24 }}>
-          {/* Outer glow */}
-          <View
-            style={{
-              position: "absolute",
-              width: 280,
-              height: 280,
-              borderRadius: 140,
-              backgroundColor: "rgba(255,228,242,0.2)",
-              ...(Platform.OS === "web"
-                ? ({ filter: "blur(40px)" } as any)
-                : {}),
-            }}
-          />
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push("/qalb-result")}
-            style={[
-              glass(9999),
-              {
-                width: 240,
-                height: 240,
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              },
-            ]}
-          >
-            <View
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                backgroundColor: "rgba(96,93,113,0.1)",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 8,
-              }}
-            >
-              <Text style={{ fontSize: 36 }}>🎙️</Text>
-            </View>
-            <Text
-              style={{
-                fontFamily: "Plus Jakarta Sans",
-                fontSize: 10,
-                fontWeight: "700",
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                color: "#605d71",
-              }}
-            >
-              BEGIN
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Newsreader",
-                fontSize: 16,
-                fontStyle: "italic",
-                color: "#524f63",
-                textAlign: "center",
-                paddingHorizontal: 24,
-              }}
-            >
-              Tap to Commence Reflection
-            </Text>
-          </TouchableOpacity>
-
-          {/* Streak Pill */}
-          <View
-            style={[
-              glass(9999),
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-                marginTop: 24,
-              },
-            ]}
-          >
-            <Text style={{ fontSize: 18 }}>⭐</Text>
-            <Text
-              style={{
-                fontFamily: "Plus Jakarta Sans",
-                fontSize: 16,
-                fontWeight: "700",
-                color: "#6d5965",
-              }}
-            >
-              12 Days
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Plus Jakarta Sans",
-                fontSize: 13,
-                color: "#5b5f65",
-                borderLeftWidth: 1,
-                borderLeftColor: "rgba(174,178,185,0.3)",
-                paddingLeft: 10,
-              }}
-            >
-              Reflection Streak
-            </Text>
-          </View>
-        </View>
-
-        {/* Sentiment Landscape */}
-        <View style={{ gap: 16 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: "Newsreader",
-                fontSize: 26,
-                fontStyle: "italic",
-                color: "#2f3338",
-              }}
-            >
-              Sentiment Landscape
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Plus Jakarta Sans",
-                fontSize: 10,
-                textTransform: "uppercase",
-                letterSpacing: 2,
-                color: "#5b5f65",
-              }}
-            >
-              Current Vibrations
-            </Text>
-          </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        {/* How are you feeling? */}
+        <View style={{ gap: 12 }}>
+          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+            How are you feeling?
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {SENTIMENTS.map((s) => (
               <TouchableOpacity
                 key={s.label}
                 onPress={() => setSelected(selected === s.label ? null : s.label)}
-                style={[
-                  glass(9999),
-                  {
-                    paddingHorizontal: 20,
-                    paddingVertical: 10,
-                    backgroundColor:
-                      selected === s.label
-                        ? "rgba(229,223,248,0.8)"
-                        : "rgba(255,255,255,0.6)",
-                  },
-                ]}
+                style={{
+                  paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999,
+                  backgroundColor: selected === s.label ? s.color : "rgba(255,255,255,0.6)",
+                  borderWidth: 1,
+                  borderColor: selected === s.label ? s.color : "rgba(174,178,185,0.3)",
+                }}
               >
-                <Text
-                  style={{
-                    fontFamily: "Plus Jakarta Sans",
-                    fontSize: 14,
-                    fontWeight: "500",
-                    color: s.color,
-                  }}
-                >
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "600", color: selected === s.label ? "#fff" : s.color }}>
                   {s.label}
                 </Text>
               </TouchableOpacity>
@@ -331,76 +207,98 @@ export default function QalbScreen() {
           </View>
         </View>
 
-        {/* Write Section */}
-        <View style={[glass(32), { padding: 28, gap: 16 }]}>
-          <View>
-            <Text
+        {/* Main Input */}
+        <View style={{ gap: 12 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+              Share your reflection
+            </Text>
+            <TouchableOpacity
+              onPress={isRecording ? stopVoice : startVoice}
               style={{
-                fontFamily: "Newsreader",
-                fontSize: 22,
-                fontStyle: "italic",
-                color: "#2f3338",
+                flexDirection: "row", alignItems: "center", gap: 6,
+                paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9999,
+                backgroundColor: isRecording ? "#be185d" : "rgba(255,255,255,0.7)",
+                borderWidth: 1, borderColor: isRecording ? "#be185d" : "rgba(174,178,185,0.4)",
               }}
             >
-              Prefer to write?
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Plus Jakarta Sans",
-                fontSize: 13,
-                color: "#5b5f65",
-                marginTop: 4,
-              }}
-            >
-              Transcribe your internal dialogue into the physical realm.
-            </Text>
+              <Text style={{ fontSize: 14 }}>{isRecording ? "⏹" : "🎙️"}</Text>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: isRecording ? "#fff" : "#524f63" }}>
+                {isRecording ? "Stop" : "Voice"}
+              </Text>
+            </TouchableOpacity>
           </View>
-          <View>
+
+          <View style={[glass(24), { padding: 20, minHeight: 160 }]}>
+            {isRecording ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "rgba(190,24,93,0.2)" }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#be185d" }} />
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#be185d", fontWeight: "600" }}>
+                  Listening... speak clearly
+                </Text>
+              </View>
+            ) : null}
             <TextInput
               value={note}
               onChangeText={setNote}
               multiline
-              placeholder="Pour your thoughts here..."
-              placeholderTextColor="rgba(119,123,129,0.6)"
+              placeholder="Write or speak what is in your heart... What worries you? What do you hope for?"
+              placeholderTextColor="rgba(91,95,101,0.45)"
               style={{
-                backgroundColor: "rgba(236,238,243,0.3)",
-                borderRadius: 16,
-                padding: 20,
-                fontFamily: "Noto Serif",
-                fontSize: 16,
-                color: "#2f3338",
-                minHeight: 140,
-                textAlignVertical: "top",
+                fontFamily: "Noto Serif", fontSize: 16, fontStyle: "italic",
+                color: "#2f3338", minHeight: 120, textAlignVertical: "top", lineHeight: 28,
+                ...(Platform.OS === "web" ? ({ outline: "none" } as any) : {}),
               }}
             />
-            <TouchableOpacity
-              onPress={() => router.push("/qalb-result")}
-              style={{
-                position: "absolute",
-                bottom: 12,
-                right: 12,
-                backgroundColor: "#605d71",
-                paddingHorizontal: 20,
-                paddingVertical: 8,
-                borderRadius: 9999,
-                shadowColor: "#605d71",
-                shadowOpacity: 0.2,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 4 },
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Plus Jakarta Sans",
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: "#fcf7ff",
-                }}
-              >
-                Archive Soul-Note
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 8 }}>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "rgba(91,95,101,0.4)" }}>
+                {note.length}/500
               </Text>
-            </TouchableOpacity>
+            </View>
           </View>
+        </View>
+
+        {/* Error */}
+        {error ? (
+          <View style={[glass(16), { padding: 16, backgroundColor: "rgba(254,202,202,0.4)" }]}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#991b1b" }}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Submit */}
+        <TouchableOpacity
+          onPress={() => submit(note)}
+          disabled={loading}
+          activeOpacity={0.85}
+          style={{
+            backgroundColor: loading ? "rgba(22,101,52,0.5)" : "#166534",
+            paddingVertical: 20, paddingHorizontal: 32, borderRadius: 9999,
+            flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12,
+            shadowColor: "#166534", shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+          }}
+        >
+          {loading ? (
+            <>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: "#fff" }}>
+                Seeking Guidance...
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={{ fontSize: 18 }}>✨</Text>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: "#fff" }}>
+                Receive Guidance
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Streak pill */}
+        <View style={[glass(9999), { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 24, paddingVertical: 12, alignSelf: "center" }]}>
+          <Text style={{ fontSize: 18 }}>⭐</Text>
+          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 16, fontWeight: "700", color: "#6d5965" }}>12 Days</Text>
+          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#5b5f65" }}>Reflection Streak</Text>
         </View>
       </View>
     </ScrollView>

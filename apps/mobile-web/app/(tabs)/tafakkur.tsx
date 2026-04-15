@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
 
 const glass = (radius = 24) => ({
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -21,23 +21,182 @@ const glass = (radius = 24) => ({
     : {}),
 });
 
+// Verified reciter IDs from api.quran.com (recitation_id → slug for verses.quran.com)
 const RECITERS = [
-  { name: "Mishary Rashid Alafasy", desc: "Kuwait · Melodic & Emotive", emoji: "🎙️", active: true },
-  { name: "Abdur-Rahman as-Sudais", desc: "Makkah · Grand Mosque Imam", emoji: "🕌", active: false },
-  { name: "Yasser Al-Dosari", desc: "Saudi Arabia · Clear & Soothing", emoji: "🌙", active: false },
+  {
+    id: 7,
+    slug: "mishary_rashid_alafasy",
+    name: "Mishary Rashid Alafasy",
+    origin: "Kuwait",
+    style: "Melodic & Emotive",
+    initials: "MA",
+    bg: "#7c3aed",
+  },
+  {
+    id: 1,
+    slug: "abdurrahmaan_as-sudais",
+    name: "Abdur-Rahman as-Sudais",
+    origin: "Makkah",
+    style: "Grand Mosque Imam",
+    initials: "AS",
+    bg: "#0e6030",
+  },
+  {
+    id: 6,
+    slug: "yasser_ad-dussary",
+    name: "Yasser Al-Dosari",
+    origin: "Saudi Arabia",
+    style: "Clear & Soothing",
+    initials: "YD",
+    bg: "#1d4ed8",
+  },
+];
+
+const SURAHS = [
+  { num: 55, name: "Ar-Rahman", desc: "The Most Gracious · 78 verses" },
+  { num: 67, name: "Al-Mulk", desc: "The Sovereignty · 30 verses" },
+  { num: 56, name: "Al-Waqi'ah", desc: "The Inevitable Event · 96 verses" },
+  { num: 36, name: "Ya-Sin", desc: "Heart of the Quran · 83 verses" },
 ];
 
 const DHIKR_LIST = [
   { arabic: "سُبْحَانَ ٱللَّٰهِ", transliteration: "Subhanallah", meaning: "Glory be to Allah" },
   { arabic: "ٱلْحَمْدُ لِلَّٰهِ", transliteration: "Alhamdulillah", meaning: "All praise is to Allah" },
   { arabic: "ٱللَّٰهُ أَكْبَرُ", transliteration: "Allahu Akbar", meaning: "Allah is the Greatest" },
+  { arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ", transliteration: "La ilaha illallah", meaning: "There is no god but Allah" },
 ];
 
+function formatTime(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, "0")}`;
+}
+
 export default function TafakkurHubScreen() {
-  const router = useRouter();
   const [activeReciter, setActiveReciter] = useState(0);
+  const [activeSurah, setActiveSurah] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [dhikrIndex, setDhikrIndex] = useState(0);
+  const [dhikrCount, setDhikrCount] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const progressInterval = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (progressInterval.current) clearInterval(progressInterval.current);
+    };
+  }, []);
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (progressInterval.current) clearInterval(progressInterval.current);
+    setIsPlaying(false);
+    setProgress(0);
+    setCurrentTime(0);
+  };
+
+  const playAudio = async (reciterIdx: number, surahIdx: number) => {
+    if (Platform.OS !== "web") return;
+    stopAudio();
+    setAudioError(null);
+    setIsLoading(true);
+
+    const reciter = RECITERS[reciterIdx];
+    const surah = SURAHS[surahIdx];
+    // Build the audio URL using the Quran CDN verse-by-verse URL (verse 1 of selected surah)
+    const surahPadded = String(surah.num).padStart(3, "0");
+    const audioUrl = `https://verses.quran.com/${reciter.slug}/${surahPadded}001.mp3`;
+
+    try {
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.oncanplaythrough = () => {
+        setIsLoading(false);
+        setDuration(audio.duration || 0);
+        audio.play().then(() => {
+          setIsPlaying(true);
+          progressInterval.current = setInterval(() => {
+            if (audio.duration > 0) {
+              setCurrentTime(audio.currentTime);
+              setProgress((audio.currentTime / audio.duration) * 100);
+            }
+          }, 500);
+        }).catch(() => {
+          setAudioError("Playback blocked. Tap play again.");
+          setIsLoading(false);
+        });
+      };
+
+      audio.onerror = () => {
+        setIsLoading(false);
+        setAudioError("Audio unavailable for this reciter. Try another.");
+        setIsPlaying(false);
+      };
+
+      audio.onended = () => {
+        setIsPlaying(false);
+        setProgress(0);
+        setCurrentTime(0);
+        if (progressInterval.current) clearInterval(progressInterval.current);
+      };
+
+      audio.load();
+    } catch {
+      setIsLoading(false);
+      setAudioError("Audio not supported in this browser.");
+    }
+  };
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+      if (progressInterval.current) clearInterval(progressInterval.current);
+    } else if (audioRef.current && audioRef.current.src) {
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+        progressInterval.current = setInterval(() => {
+          if (audioRef.current && audioRef.current.duration > 0) {
+            setCurrentTime(audioRef.current.currentTime);
+            setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+          }
+        }, 500);
+      });
+    } else {
+      playAudio(activeReciter, activeSurah);
+    }
+  };
+
+  const selectReciter = (idx: number) => {
+    if (idx === activeReciter && (isPlaying || isLoading)) {
+      togglePlay();
+      return;
+    }
+    setActiveReciter(idx);
+    playAudio(idx, activeSurah);
+  };
+
+  const selectSurah = (idx: number) => {
+    setActiveSurah(idx);
+    if (isPlaying || isLoading) {
+      playAudio(activeReciter, idx);
+    }
+  };
+
+  const dhikr = DHIKR_LIST[dhikrIndex];
 
   return (
     <View style={{ flex: 1 }}>
@@ -46,24 +205,25 @@ export default function TafakkurHubScreen() {
         pointerEvents="none"
         style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: -1 } as any}
       >
-        <View
-          style={{
-            position: "absolute", top: "-5%", left: "-10%",
-            width: "65%", height: "50%",
-            backgroundColor: "rgba(229,223,248,0.35)",
-            borderRadius: 9999, opacity: 0.5,
-            ...(Platform.OS === "web" ? ({ filter: "blur(90px)" } as any) : {}),
-          } as any}
-        />
-        <View
-          style={{
-            position: "absolute", bottom: "10%", right: "-10%",
-            width: "55%", height: "45%",
-            backgroundColor: "rgba(169,247,183,0.25)",
-            borderRadius: 9999, opacity: 0.5,
-            ...(Platform.OS === "web" ? ({ filter: "blur(90px)" } as any) : {}),
-          } as any}
-        />
+        {[
+          { top: "-5%", left: "-10%", w: "65%", h: "55%", bg: "rgba(229,223,248,0.3)" },
+          { bottom: "10%", right: "-10%", w: "55%", h: "45%", bg: "rgba(169,247,183,0.25)" },
+          { top: "40%", left: "20%", w: "40%", h: "30%", bg: "rgba(255,228,242,0.2)" },
+        ].map((b, i) => (
+          <View
+            key={i}
+            style={{
+              position: "absolute",
+              ...(b.top ? { top: b.top } : {}),
+              ...(b.bottom ? { bottom: b.bottom } : {}),
+              ...(b.left ? { left: b.left } : {}),
+              ...(b.right ? { right: b.right } : {}),
+              width: b.w, height: b.h,
+              backgroundColor: b.bg, borderRadius: 9999, opacity: 0.5,
+              ...(Platform.OS === "web" ? ({ filter: "blur(90px)" } as any) : {}),
+            } as any}
+          />
+        ))}
       </View>
 
       <ScrollView
@@ -83,17 +243,11 @@ export default function TafakkurHubScreen() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <View
-              style={{
-                width: 40, height: 40, borderRadius: 20,
-                backgroundColor: "#e5dff8", alignItems: "center", justifyContent: "center",
-                borderWidth: 2, borderColor: "rgba(255,255,255,0.4)",
-              }}
-            >
-              <Text style={{ fontSize: 18 }}>🌟</Text>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ fontSize: 18 }}>🧘</Text>
             </View>
             <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>
-              Imanifest
+              Tafakkur Hub
             </Text>
           </View>
           <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
@@ -101,337 +255,245 @@ export default function TafakkurHubScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 32 }}>
-          {/* Hero Title */}
+        <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 32, maxWidth: 680, alignSelf: "center", width: "100%" }}>
+
+          {/* Hero */}
           <View style={{ gap: 6 }}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 3, color: "rgba(91,95,101,0.7)", fontWeight: "700" }}>
               Curated Spiritual Guidance
             </Text>
-            <Text style={{ fontFamily: "Newsreader", fontSize: 44, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 52 }}>
+            <Text style={{ fontFamily: "Newsreader", fontSize: 38, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 46 }}>
               Tafakkur Hub
             </Text>
-            <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#5b5f65", lineHeight: 22, maxWidth: 300 }}>
+            <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#5b5f65", lineHeight: 22 }}>
               Contemplate the divine through recitation, reflection, and remembrance.
             </Text>
           </View>
 
-          {/* Featured Surah Card */}
-          <View style={{ gap: 8 }}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "rgba(91,95,101,0.7)", fontWeight: "700" }}>
-              Featured Recitation
-            </Text>
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={() => setIsPlaying(!isPlaying)}
-              style={[glass(32), {
-                overflow: "hidden",
-                backgroundColor: "rgba(14,96,48,0.08)",
-                borderColor: "rgba(22,101,52,0.2)",
-              }]}
-            >
-              {/* Gradient overlay area */}
-              <View style={{
-                padding: 32, gap: 20,
-                backgroundColor: "rgba(14,96,48,0.06)",
-                ...(Platform.OS === "web"
-                  ? ({ background: "linear-gradient(135deg, rgba(14,96,48,0.12) 0%, rgba(169,247,183,0.15) 100%)" } as any)
-                  : {}),
-              }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-                  <View style={{
-                    width: 64, height: 64, borderRadius: 32,
-                    backgroundColor: "rgba(22,101,52,0.12)",
-                    alignItems: "center", justifyContent: "center",
-                    borderWidth: 1, borderColor: "rgba(22,101,52,0.2)",
-                  }}>
-                    <Text style={{ fontSize: 32 }}>🌿</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#206c3a", fontWeight: "700" }}>
-                      Now Playing
-                    </Text>
-                    <Text style={{ fontFamily: "Newsreader", fontSize: 24, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>
-                      Surah Ar-Rahman
-                    </Text>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#5b5f65", marginTop: 2 }}>
-                      Mishary Rashid Alafasy
-                    </Text>
-                  </View>
-                  <View style={{
-                    width: 52, height: 52, borderRadius: 26,
-                    backgroundColor: "#206c3a",
-                    alignItems: "center", justifyContent: "center",
-                    shadowColor: "#166534", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
-                  }}>
-                    <Text style={{ fontSize: 22, color: "#fff" }}>{isPlaying ? "⏸" : "▶️"}</Text>
-                  </View>
-                </View>
-
-                {/* Progress bar */}
-                <View style={{ gap: 8 }}>
-                  <View style={{ height: 4, backgroundColor: "rgba(22,101,52,0.12)", borderRadius: 2, overflow: "hidden" }}>
-                    <View style={{ width: "35%", height: "100%", backgroundColor: "#206c3a", borderRadius: 2 }} />
-                  </View>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65" }}>2:18</Text>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65" }}>6:43</Text>
-                  </View>
-                </View>
-
-                {/* Arabic title */}
-                <View style={{ alignItems: "center" }}>
-                  <Text style={{
-                    fontFamily: "Amiri", fontSize: 28, color: "#1e1b2e",
-                    ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}),
-                  }}>
-                    سُوْرَةُ الرَّحْمٰنِ
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Curated Reciters */}
+          {/* Surah Selection */}
           <View style={{ gap: 12 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", color: "#2f3338" }}>
-                Curated Reciters
-              </Text>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#545164" }}>
-                See All →
-              </Text>
-            </View>
-            <View style={{ gap: 10 }}>
-              {RECITERS.map((r, i) => (
-                <TouchableOpacity
-                  key={r.name}
-                  onPress={() => setActiveReciter(i)}
-                  activeOpacity={0.85}
-                  style={[glass(20), {
-                    flexDirection: "row", alignItems: "center", gap: 16,
-                    paddingHorizontal: 20, paddingVertical: 16,
-                    backgroundColor: activeReciter === i ? "rgba(22,101,52,0.08)" : "rgba(255,255,255,0.45)",
-                    borderColor: activeReciter === i ? "rgba(22,101,52,0.25)" : "rgba(255,255,255,0.5)",
-                  }]}
-                >
-                  <View style={{
-                    width: 48, height: 48, borderRadius: 24,
-                    backgroundColor: activeReciter === i ? "rgba(22,101,52,0.12)" : "rgba(229,223,248,0.5)",
-                    alignItems: "center", justifyContent: "center",
-                  }}>
-                    <Text style={{ fontSize: 22 }}>{r.emoji}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontWeight: "600", color: "#2f3338" }}>
-                      {r.name}
-                    </Text>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2 }}>
-                      {r.desc}
-                    </Text>
-                  </View>
-                  {activeReciter === i && (
-                    <View style={{
-                      width: 8, height: 8, borderRadius: 4,
-                      backgroundColor: "#206c3a",
-                    }} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Read & Reflect */}
-          <View style={{ gap: 12 }}>
-            <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", color: "#2f3338" }}>
-              Read & Reflect
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+              Choose Surah
             </Text>
-            <View style={[glass(28), {
-              padding: 28, gap: 20,
-              backgroundColor: "rgba(226,221,248,0.2)",
-              borderColor: "rgba(226,221,248,0.5)",
-            }]}>
-              {/* Verse reference */}
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(174,178,185,0.25)" }} />
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 9, textTransform: "uppercase", letterSpacing: 2, color: "#605d71", fontWeight: "700" }}>
-                  Surah Al-Mulk · 67:1
-                </Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: "rgba(174,178,185,0.25)" }} />
-              </View>
-
-              {/* Arabic verse */}
-              <Text style={{
-                fontFamily: "Amiri", fontSize: 26, lineHeight: 50, color: "#2f3338",
-                textAlign: "center",
-                ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}),
-              }}>
-                تَبَٰرَكَ ٱلَّذِى بِيَدِهِ ٱلْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَىْءٍ قَدِيرٌ
-              </Text>
-
-              {/* Translation */}
-              <Text style={{
-                fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic",
-                color: "#5b5f65", textAlign: "center", lineHeight: 24,
-              }}>
-                "Blessed is He in Whose hand is the dominion, and He is over all things competent."
-              </Text>
-
-              {/* Divider */}
-              <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
-
-              {/* Tafakkur reflection */}
-              <View style={{ gap: 6 }}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 9, textTransform: "uppercase", letterSpacing: 2, color: "#605d71", fontWeight: "700" }}>
-                  Tafakkur
-                </Text>
-                <Text style={{ fontFamily: "Noto Serif", fontSize: 13, color: "#5b5f65", lineHeight: 22, fontStyle: "italic" }}>
-                  Pause and contemplate: every power, every provision, every moment of ease — it is all in His hand. The word تَبَٰرَكَ (Tabarak) carries layers of infinite blessing. How has His dominion manifested in your life today?
-                </Text>
-              </View>
-
-              {/* Action buttons */}
-              <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {SURAHS.map((s, i) => (
                 <TouchableOpacity
-                  activeOpacity={0.85}
+                  key={i}
+                  onPress={() => selectSurah(i)}
                   style={{
-                    flex: 1, backgroundColor: "#605d71",
-                    paddingVertical: 14, borderRadius: 9999,
-                    alignItems: "center",
+                    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16,
+                    backgroundColor: activeSurah === i ? "#166534" : "rgba(255,255,255,0.6)",
+                    borderWidth: 1, borderColor: activeSurah === i ? "#166534" : "rgba(174,178,185,0.3)",
                   }}
                 >
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, color: "#fff" }}>
-                    📖 Read More
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: activeSurah === i ? "#fff" : "#2f3338" }}>
+                    {s.name}
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={[glass(9999), {
-                    flex: 1, paddingVertical: 14,
-                    alignItems: "center",
-                  }]}
-                >
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, color: "#605d71" }}>
-                    ↑ Share
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: activeSurah === i ? "rgba(255,255,255,0.7)" : "#5b5f65", marginTop: 2 }}>
+                    {s.desc}
                   </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          {/* Bento: Daily Dhikr + Nature Sounds */}
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            {/* Daily Dhikr */}
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => setDhikrIndex((dhikrIndex + 1) % DHIKR_LIST.length)}
-              style={[glass(24), {
-                flex: 1, padding: 24, gap: 12,
-                backgroundColor: "rgba(226,221,248,0.3)",
-                borderColor: "rgba(226,221,248,0.5)",
-              }]}
-            >
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 9, textTransform: "uppercase", letterSpacing: 2, color: "#605d71", fontWeight: "700" }}>
-                Daily Dhikr
-              </Text>
-              <Text style={{
-                fontFamily: "Amiri", fontSize: 22, lineHeight: 38, color: "#2f3338", textAlign: "center",
-                ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}),
-              }}>
-                {DHIKR_LIST[dhikrIndex].arabic}
-              </Text>
-              <Text style={{ fontFamily: "Noto Serif", fontSize: 13, fontStyle: "italic", color: "#605d71", textAlign: "center" }}>
-                {DHIKR_LIST[dhikrIndex].transliteration}
-              </Text>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 9, color: "#5b5f65", textAlign: "center", letterSpacing: 1 }}>
-                {DHIKR_LIST[dhikrIndex].meaning}
-              </Text>
-              <View style={{ alignItems: "center", marginTop: 4 }}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 8, textTransform: "uppercase", letterSpacing: 2, color: "rgba(96,93,113,0.5)" }}>
-                  Tap to rotate
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Nature Sounds */}
-            <View style={[glass(24), {
-              flex: 1, padding: 24, gap: 12,
-              backgroundColor: "rgba(169,247,183,0.15)",
-              borderColor: "rgba(169,247,183,0.4)",
-            }]}>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 9, textTransform: "uppercase", letterSpacing: 2, color: "#206c3a", fontWeight: "700" }}>
-                Nature Sounds
-              </Text>
-              <Text style={{ fontSize: 36, textAlign: "center" }}>🌊</Text>
-              <Text style={{ fontFamily: "Noto Serif", fontSize: 13, fontStyle: "italic", color: "#2f3338", textAlign: "center" }}>
-                Gentle Rain & River
-              </Text>
-              {[
-                { label: "Rain", emoji: "🌧️" },
-                { label: "Forest", emoji: "🌲" },
-                { label: "Ocean", emoji: "🌊" },
-              ].map((s) => (
-                <TouchableOpacity
-                  key={s.label}
-                  activeOpacity={0.8}
-                  style={[glass(9999), { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8 }]}
-                >
-                  <Text style={{ fontSize: 14 }}>{s.emoji}</Text>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#206c3a", fontWeight: "600" }}>{s.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
-        </View>
-      </ScrollView>
 
-      {/* Fixed Mini Player */}
-      <View
-        style={{
-          position: "absolute", bottom: 108, left: 16, right: 16,
-          ...(Platform.OS === "web" ? { bottom: 100 } : {}),
-        }}
-      >
-        <View style={[glass(20), {
-          flexDirection: "row", alignItems: "center", gap: 12,
-          paddingHorizontal: 20, paddingVertical: 14,
-          backgroundColor: "rgba(255,255,255,0.8)",
-          shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 4 },
-        }]}>
-          <View style={{
-            width: 40, height: 40, borderRadius: 12,
-            backgroundColor: "rgba(22,101,52,0.1)",
-            alignItems: "center", justifyContent: "center",
-          }}>
-            <Text style={{ fontSize: 18 }}>🌿</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Noto Serif", fontSize: 13, fontWeight: "600", color: "#2f3338" }}>
-              Al-Mulk · Mishary Rashid Alafasy
+          {/* Reciters */}
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+              Choose Reciter · Tap to Play
             </Text>
-            <View style={{ height: 3, backgroundColor: "rgba(174,178,185,0.3)", borderRadius: 2, overflow: "hidden", marginTop: 6 }}>
-              <View style={{ width: "35%", height: "100%", backgroundColor: "#206c3a", borderRadius: 2 }} />
-            </View>
+            {RECITERS.map((r, i) => (
+              <TouchableOpacity
+                key={i}
+                onPress={() => selectReciter(i)}
+                activeOpacity={0.85}
+                style={[
+                  glass(20),
+                  {
+                    flexDirection: "row", alignItems: "center", gap: 16, padding: 18,
+                    ...(activeReciter === i
+                      ? { backgroundColor: "rgba(169,247,183,0.15)", borderColor: "rgba(22,101,52,0.3)" }
+                      : {}),
+                  },
+                ]}
+              >
+                {/* Avatar with initials */}
+                <View
+                  style={{
+                    width: 56, height: 56, borderRadius: 28,
+                    backgroundColor: r.bg, alignItems: "center", justifyContent: "center",
+                    shadowColor: r.bg, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+                  }}
+                >
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "700", color: "#fff" }}>
+                    {r.initials}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 14, fontWeight: "700", color: "#2f3338" }}>{r.name}</Text>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2 }}>
+                    {r.origin} · {r.style}
+                  </Text>
+                </View>
+                <View style={{
+                  width: 40, height: 40, borderRadius: 20,
+                  backgroundColor: activeReciter === i && (isPlaying || isLoading) ? "#166534" : "rgba(229,223,248,0.5)",
+                  alignItems: "center", justifyContent: "center",
+                }}>
+                  {isLoading && activeReciter === i ? (
+                    <ActivityIndicator size="small" color="#166534" />
+                  ) : (
+                    <Text style={{ fontSize: 18 }}>
+                      {activeReciter === i && isPlaying ? "⏸" : "▶"}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <TouchableOpacity style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ fontSize: 16 }}>⏮</Text>
-            </TouchableOpacity>
+
+          {/* Audio Player */}
+          {(isPlaying || isLoading || progress > 0 || audioError) ? (
+            <View style={[glass(24), { padding: 24, gap: 16 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 }}>
+                <Text style={{ fontSize: 18 }}>🎵</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: "#2f3338" }}>
+                    {SURAHS[activeSurah].name} · {RECITERS[activeReciter].name}
+                  </Text>
+                  {audioError ? (
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#991b1b", marginTop: 2 }}>{audioError}</Text>
+                  ) : (
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2 }}>
+                      {isLoading ? "Loading audio..." : `${formatTime(currentTime)} / ${formatTime(duration)}`}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={isLoading ? undefined : togglePlay}
+                  style={{
+                    width: 48, height: 48, borderRadius: 24,
+                    backgroundColor: "#166534", alignItems: "center", justifyContent: "center",
+                    shadowColor: "#166534", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+                  }}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={{ fontSize: 20, color: "#fff" }}>{isPlaying ? "⏸" : "▶"}</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={stopAudio}
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(229,223,248,0.5)", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text style={{ fontSize: 16 }}>⏹</Text>
+                </TouchableOpacity>
+              </View>
+              {/* Progress bar */}
+              {!audioError && (
+                <View style={{ height: 6, backgroundColor: "#eceef3", borderRadius: 3, overflow: "hidden" }}>
+                  <View style={{ width: `${progress}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
+                </View>
+              )}
+            </View>
+          ) : null}
+
+          {/* Dhikr Counter */}
+          <View style={[glass(28), { padding: 28, gap: 20, alignItems: "center" }]}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 3, color: "#5b5f65", fontWeight: "700" }}>
+              Dhikr Counter
+            </Text>
+
+            <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+              {DHIKR_LIST.map((d, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => { setDhikrIndex(i); setDhikrCount(0); }}
+                  style={{
+                    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 9999,
+                    backgroundColor: dhikrIndex === i ? "#166534" : "rgba(255,255,255,0.6)",
+                    borderWidth: 1, borderColor: dhikrIndex === i ? "#166534" : "rgba(174,178,185,0.3)",
+                  }}
+                >
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "600", color: dhikrIndex === i ? "#fff" : "#524f63" }}>
+                    {d.transliteration}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <TouchableOpacity
-              onPress={() => setIsPlaying(!isPlaying)}
+              onPress={() => setDhikrCount((c) => c + 1)}
+              activeOpacity={0.8}
               style={{
-                width: 36, height: 36, borderRadius: 18,
-                backgroundColor: "#206c3a",
-                alignItems: "center", justifyContent: "center",
+                width: 140, height: 140, borderRadius: 70,
+                backgroundColor: "rgba(169,247,183,0.2)",
+                borderWidth: 2, borderColor: "rgba(22,101,52,0.2)",
+                alignItems: "center", justifyContent: "center", gap: 4,
               }}
             >
-              <Text style={{ fontSize: 14, color: "#fff" }}>{isPlaying ? "⏸" : "▶"}</Text>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 42, fontWeight: "700", color: "#0e6030" }}>
+                {dhikrCount}
+              </Text>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65", textTransform: "uppercase", letterSpacing: 1 }}>
+                Tap to count
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ fontSize: 16 }}>⏭</Text>
-            </TouchableOpacity>
+
+            <View style={{ alignItems: "center", gap: 6 }}>
+              <Text
+                style={{
+                  fontFamily: "Amiri", fontSize: 28, color: "#2f3338", textAlign: "center",
+                  ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}),
+                }}
+              >
+                {dhikr.arabic}
+              </Text>
+              <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#524f63" }}>
+                {dhikr.transliteration}
+              </Text>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>
+                {dhikr.meaning}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => setDhikrCount(0)}
+                style={[glass(9999), { paddingHorizontal: 20, paddingVertical: 10 }]}
+              >
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "600", color: "#524f63" }}>Reset</Text>
+              </TouchableOpacity>
+              <View style={[glass(9999), { paddingHorizontal: 20, paddingVertical: 10 }]}>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>
+                  {dhikrCount >= 33 ? `${Math.floor(dhikrCount / 33)}× 33 ✓` : `${33 - dhikrCount} to 33`}
+                </Text>
+              </View>
+            </View>
           </View>
+
+          {/* Featured Verse */}
+          <View style={[glass(24), { padding: 28, gap: 16, backgroundColor: "rgba(169,247,183,0.08)" }]}>
+            <Text
+              style={{
+                fontFamily: "Amiri", fontSize: 26, lineHeight: 50, color: "#2f3338", textAlign: "center",
+                ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}),
+              }}
+            >
+              فَبِأَيِّ آلَاءِ رَبِّكُمَا تُكَذِّبَانِ
+            </Text>
+            <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
+            <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#2f3338", textAlign: "center", lineHeight: 26 }}>
+              "So which of the favors of your Lord would you deny?"
+            </Text>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
+              — Ar-Rahman (55:13)
+            </Text>
+          </View>
+
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
