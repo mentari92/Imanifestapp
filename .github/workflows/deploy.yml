@@ -3,11 +3,12 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
+  workflow_dispatch: # allow manual trigger from GitHub UI
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Deploy to VPS via SSH
@@ -19,23 +20,53 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
             set -e
-            cd /root/imanifestapp
 
+            # ── Find repo directory ────────────────────────────────
+            REPO_DIR=""
+            for candidate in /root/imanifestapp /root/Imanifestapp /home/imanifestapp /var/www/imanifestapp /opt/imanifestapp; do
+              if [ -f "$candidate/docker-compose.yml" ]; then
+                REPO_DIR="$candidate"
+                break
+              fi
+            done
+
+            if [ -z "$REPO_DIR" ]; then
+              # Try to find by docker-compose.yml anywhere under /root or /home
+              REPO_DIR=$(find /root /home /opt /var/www -maxdepth 3 -name "docker-compose.yml" 2>/dev/null | head -1 | xargs dirname 2>/dev/null || true)
+            fi
+
+            if [ -z "$REPO_DIR" ]; then
+              echo "ERROR: Cannot find repo with docker-compose.yml. Cloning fresh..."
+              git clone https://github.com/mentari92/Imanifestapp.git /root/imanifestapp
+              REPO_DIR="/root/imanifestapp"
+            fi
+
+            echo "=== Using repo at: $REPO_DIR ==="
+            cd "$REPO_DIR"
+
+            # ── Pull latest code ───────────────────────────────────
             echo "=== Pulling latest code ==="
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
-            echo "=== Building web container (no cache) ==="
-            docker compose build --no-cache web
+            # ── Rebuild API + Web containers ───────────────────────
+            echo "=== Rebuilding all containers (no cache) ==="
+            docker compose build --no-cache api web
 
-            echo "=== Restarting web container ==="
-            docker compose up -d --force-recreate web
+            echo "=== Restarting containers ==="
+            docker compose up -d --force-recreate api web
 
-            echo "=== Waiting for container to be ready ==="
-            sleep 5
+            # ── Wait for startup ───────────────────────────────────
+            echo "=== Waiting 10s for containers to start ==="
+            sleep 10
 
-            echo "=== Reconnecting to n8n network with alias ==="
-            WEB_ID=$(docker compose ps -q web)
-            docker network connect --alias imanifest-web n8n_default "$WEB_ID" 2>/dev/null || true
+            # ── Reconnect web to n8n network ───────────────────────
+            WEB_ID=$(docker compose ps -q web 2>/dev/null || true)
+            if [ -n "$WEB_ID" ]; then
+              docker network connect --alias imanifest-web n8n_default "$WEB_ID" 2>/dev/null && \
+                echo "=== Connected web to n8n_default ===" || \
+                echo "=== (n8n_default network not found, skipping) ==="
+            fi
 
             echo "=== Deploy complete ==="
-            docker compose ps web
+            docker compose ps
