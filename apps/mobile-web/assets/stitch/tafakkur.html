@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tafakkur Hub</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Noto+Serif:ital,wght@0,100..900;1,100..900&amp;family=Plus+Jakarta+Sans:wght@200..800&amp;family=Amiri:ital,wght@0,400;0,700;1,400;1,700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "error-dim": "#770326",
+            "surface-dim": "#d6dae2",
+            "primary-fixed-dim": "#d7d1e9",
+            "inverse-primary": "#e5dff8",
+            "tertiary": "#206c3a",
+            "on-primary": "#fcf7ff",
+            "surface-container-low": "#f2f3f8",
+            "outline": "#777b81",
+            "background": "#f9f9fd",
+            "on-primary-fixed-variant": "#5c596d",
+            "surface-variant": "#dfe2ea",
+            "on-error": "#fff7f7",
+            "surface-container": "#eceef3",
+            "tertiary-container": "#a9f7b7",
+            "on-error-container": "#68001f",
+            "primary": "#605d71",
+            "on-tertiary-fixed": "#004c22",
+            "on-primary-container": "#524f63",
+            "surface-container-highest": "#dfe2ea",
+            "on-tertiary-fixed-variant": "#1d6b39",
+            "on-secondary": "#fff7f8",
+            "on-primary-fixed": "#403d50",
+            "primary-fixed": "#e5dff8",
+            "inverse-on-surface": "#9c9da0",
+            "secondary-fixed": "#ffe4f2",
+            "tertiary-fixed": "#a9f7b7",
+            "secondary": "#6d5965",
+            "surface": "#f9f9fd",
+            "error": "#ac3149",
+            "tertiary-fixed-dim": "#9be9aa",
+            "surface-bright": "#f9f9fd",
+            "tertiary-dim": "#0e6030",
+            "primary-dim": "#545164",
+            "on-background": "#2f3338",
+            "outline-variant": "#aeb2b9",
+            "on-tertiary": "#e8ffe8",
+            "error-container": "#f76a80",
+            "on-surface-variant": "#5b5f65",
+            "on-secondary-fixed": "#513f4a",
+            "on-surface": "#2f3338",
+            "secondary-container": "#ffe4f2",
+            "surface-container-high": "#e6e8ee",
+            "on-tertiary-container": "#0e6030",
+            "primary-container": "#e5dff8",
+            "on-secondary-fixed-variant": "#6f5b67",
+            "on-secondary-container": "#65515d",
+            "surface-tint": "#605d71",
+            "secondary-dim": "#614e59",
+            "surface-container-lowest": "#ffffff",
+            "secondary-fixed-dim": "#f0d6e4",
+            "inverse-surface": "#0c0e11"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "headline": ["Newsreader"],
+            "body": ["Noto Serif"],
+            "label": ["Plus Jakarta Sans"],
+            "arabic": ["Amiri", "serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .glass-panel {
+      backdrop-filter: blur(24px) saturate(140%);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(242, 243, 248, 0.4) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .holographic-bg {
+      background: radial-gradient(circle at top left, #FFE4F2 0%, transparent 40%),
+                  radial-gradient(circle at bottom right, #E2DDF8 0%, transparent 40%),
+                  #f9f9fd;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .text-display-md {
+      font-size: 2.75rem;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    .arabic-text {
+      direction: rtl;
+      font-family: 'Amiri', serif;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="holographic-bg font-body text-on-surface min-h-screen pb-40">
+<!-- Shared Component: TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl shadow-none">
+<div class="flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-3">
+<img alt="User profile" class="w-10 h-10 rounded-full object-cover border-2 border-white/50" data-alt="Close-up of a serene young man with a slight smile and thoughtful expression, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAi9jFFzUZ8s-T3GP0a9m_UI9fS2U6peBuhqrUNPJleg0ENebngY0tMICb_des17Me6xIQg_Q8em5nvW6rYPesv8MwGQ67ixB3LrW9xxHLSjHFUPqBM22CxgMvOojhehuc0OVoK3Rh01Xv7yThOb-9gWPlGxL_PiZxcME4-tSQ4fMXpv_CnfxWcl_3T8ZwrF15pv4zuJHoplN_y00p--uPwKPPWon9UwgLYwgqXVJ9gKTa1Nh_EkJGhKNtvm2HFqE7qAZvjll3Rgu8"/>
+<span class="font-['Newsreader'] italic text-2xl font-semibold text-slate-800 dark:text-white">Imanifest</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-white/20 dark:hover:bg-slate-800/20 rounded-full transition-all scale-95 duration-300 ease-in-out">
+<span class="material-symbols-outlined text-slate-800 dark:text-slate-100">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<main class="pt-28 px-6 max-w-5xl mx-auto">
+<!-- Intention Header -->
+<section class="mb-12">
+<h1 class="font-headline italic text-display-md text-primary max-w-xs leading-tight">
+        Tafakkur Hub
+      </h1>
+<p class="font-label text-on-surface-variant mt-4 text-sm tracking-wide">CURATED SPIRITUAL GUIDANCE</p>
+</section>
+<!-- Bento Grid Content -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Featured Surah Card (Asymmetric Layout) -->
+<div class="md:col-span-8 group relative overflow-hidden rounded-[32px] shadow-[0_20px_50px_rgba(26,24,41,0.06)] h-[440px]">
+<img alt="Surah of the day background" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Sunlight filtering through a dense, foggy pine forest with soft emerald and golden hues creating a ethereal atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhdqko49_aUh6C7QtCYznz-4E5Nb8UKqhfNEUHDTLOhZNn3yVv0XQ7WXH7vq0h6TkbAPqkrFYyJTkJvTdt48xpOwQcPHDQ9r-gZoOA4MwVugIxvTtCiifO4SJIlqhPBJ5c7E0j2HItLF5KQprvw-xRuoD4uu5ElMG5is1ZF9OkdPqeIJG-jKQl3FDKE9kTdN7RJj9PyU3KILl_YkR5TiOGM7Sx67XxTNTIFbiYhVwkA1-cvcpOQ2p6Sg1UNgVjIaB4R7sP3Le_HDA"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
+<div class="absolute inset-0 flex flex-col justify-end p-10 glass-panel border-none m-4 rounded-[24px]">
+<span class="font-label text-xs uppercase tracking-widest text-primary-dim/70 mb-2">Featured Selection</span>
+<h2 class="font-headline text-4xl text-primary-dim mb-2 italic">Surah Ar-Rahman</h2>
+<p class="font-body text-on-surface-variant text-lg leading-relaxed max-w-md">
+            "Then which of the favors of your Lord will you deny?"
+          </p>
+<div class="mt-8 flex items-center gap-4">
+<button class="bg-primary text-on-primary px-8 py-3 rounded-full font-label text-sm font-medium flex items-center gap-2 hover:bg-primary-dim transition-all">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+              Listen Now
+            </button>
+<button class="p-3 bg-white/40 backdrop-blur-md rounded-full text-primary hover:bg-white/60 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">bookmark</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Curated Reciters List -->
+<div class="md:col-span-4 flex flex-col gap-6">
+<h3 class="font-headline text-2xl text-primary italic">Curated Reciters</h3>
+<div class="space-y-4">
+<!-- Reciter 1 -->
+<div class="flex items-center gap-4 p-4 rounded-2xl glass-panel group cursor-pointer hover:bg-white/80 transition-all">
+<img alt="Mishary Rashid Alafasy avatar" class="w-14 h-14 rounded-full object-cover" data-alt="Professional headshot of a dignified middle-aged man with a trimmed beard and warm, peaceful eyes, studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHz1kWvyPCWSqImlZp56wC4ak-K0DQ2aFkLA7UFibcVnbL76vRPPGe748x3xEuATns0jxuD6cxx8uwZR0S69dUGtGoPmCp8h6CuhV9B7pR0qMwiILj0b9AG5CmpNl7Z74HvTHyazxpuLT1Q71wHaNd7OYB7bUfauzcJ3Kug1ex_4t8DUIE8iXA5_O3h41toXCEVcK-IrSpoQA3Vgo8VubCe17swLG2NdbrQ_xtJ_prwoPa0YU8TvZsutU3WsGd392_9LvieJxS51Y"/>
+<div>
+<p class="font-headline text-lg text-primary leading-none">Mishary Rashid Alafasy</p>
+<p class="font-label text-[11px] text-on-surface-variant uppercase tracking-wider mt-1">114 Surahs</p>
+</div>
+<span class="material-symbols-outlined ml-auto text-primary/30 group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+<!-- Reciter 2 -->
+<div class="flex items-center gap-4 p-4 rounded-2xl glass-panel group cursor-pointer hover:bg-white/80 transition-all">
+<img alt="Abdur-Rahman as-Sudais avatar" class="w-14 h-14 rounded-full object-cover" data-alt="Dignified man with traditional attire, kind expression, soft focus high-end photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ6YPOXAK4_sPkQTpthURjvO_LT1MKUj5Lt2IoA2GEOmY-u22Cwo35068W6L8NzaVnupTQuDXoVN8bKmkdPJpXs2yV6QPhqGGsNqudmO-q-EMGckg4jg-12j15CYK_ZSIpSc96I_VL6EWO-TV15ST71Vw4s8vNrP2JkihkdpQJySQZ9fMlkY0d4XiynX1OOLx1mJlA9r3fZJaW1MpnD3eb9b8UYXFbOYNrS3YY4E_3O5zxCuOq5F4ksEcUKmYor_0vNKyMUEAUnc8"/>
+<div>
+<p class="font-headline text-lg text-primary leading-none">Abdur-Rahman as-Sudais</p>
+<p class="font-label text-[11px] text-on-surface-variant uppercase tracking-wider mt-1">Makkah Imam</p>
+</div>
+<span class="material-symbols-outlined ml-auto text-primary/30 group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+<!-- Reciter 3 -->
+<div class="flex items-center gap-4 p-4 rounded-2xl glass-panel group cursor-pointer hover:bg-white/80 transition-all">
+<img alt="Yasser Al-Dosari avatar" class="w-14 h-14 rounded-full object-cover" data-alt="Young man with serene face, professional lighting, soft background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnvSkB9NirXXFURT6SfJJjGX1ZCJ7jdvBE25uj_WyJZxCT8sK8FVjTsMWUox5kTCfX2bTWEQ3ZE0ulY9nKLdwGvBvMVQd_imCWuE6HoVHg0w63MY98EVR8Q17S-5FmTXggQorsSOWI314E6lXIFlgnpixHluS5IjDUsqiUSaZ7-JFZhiV_qKdOdxuF3kLcnJkLl9W0P-FMJatSEV5ZYsacfgJze5S7_Nj21yUIDjmb0h0QxTmq0Qk9GDkuXGso7f1x39vUela7ddI"/>
+<div>
+<p class="font-headline text-lg text-primary leading-none">Yasser Al-Dosari</p>
+<p class="font-label text-[11px] text-on-surface-variant uppercase tracking-wider mt-1">Melodic Style</p>
+</div>
+<span class="material-symbols-outlined ml-auto text-primary/30 group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Read Quran / Tafakkur Section -->
+<section class="mt-12">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline text-2xl text-primary italic">Read &amp; Reflect</h3>
+<button class="text-primary-dim text-sm font-label flex items-center gap-2 hover:underline">
+<span class="material-symbols-outlined text-base">auto_stories</span>
+        Full Surah
+      </button>
+</div>
+<div class="glass-panel p-8 md:p-12 rounded-[40px] shadow-sm relative overflow-hidden group">
+<!-- Subtle decorative element -->
+<div class="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
+<div class="max-w-3xl mx-auto text-center space-y-8">
+<div class="space-y-4">
+<p class="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60">Currently Playing • Verse 1</p>
+<div class="text-4xl md:text-5xl text-primary font-arabic leading-[1.8] tracking-wide pt-4" dir="rtl">
+            تَبَٰرَكَ ٱلَّذِى بِيَدِهِ ٱلْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَىْءٍ قَدِيرٌ
+          </div>
+</div>
+<div class="h-px w-24 bg-primary-container mx-auto"></div>
+<div class="space-y-6">
+<p class="font-headline italic text-2xl md:text-3xl text-on-primary-fixed leading-relaxed">
+            "Blessed is He in whose hand is kingship, and He is over all things competent."
+          </p>
+<p class="font-body text-on-surface-variant/80 text-base leading-loose max-w-2xl mx-auto italic">
+            Pause here. Reflect on the absolute sovereignty of the Divine over every atom in existence. How does this realization bring peace to your heart today?
+          </p>
+</div>
+<div class="flex justify-center gap-6 pt-4">
+<button class="flex flex-col items-center gap-2 group/icon">
+<div class="w-12 h-12 rounded-full border border-primary-container flex items-center justify-center text-primary/60 group-hover/icon:bg-primary group-hover/icon:text-on-primary transition-all">
+<span class="material-symbols-outlined">lightbulb</span>
+</div>
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Tafakkur</span>
+</button>
+<button class="flex flex-col items-center gap-2 group/icon">
+<div class="w-12 h-12 rounded-full border border-primary-container flex items-center justify-center text-primary/60 group-hover/icon:bg-primary group-hover/icon:text-on-primary transition-all">
+<span class="material-symbols-outlined">share</span>
+</div>
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Share Ayah</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Secondary Bento Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+<div class="glass-panel p-8 rounded-[32px] flex items-center justify-between shadow-sm">
+<div>
+<h4 class="font-headline text-2xl text-primary italic">Daily Dhikr</h4>
+<p class="font-body text-on-surface-variant mt-2">Find peace in rhythmic remembrance.</p>
+</div>
+<div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-3xl">waves</span>
+</div>
+</div>
+<div class="glass-panel p-8 rounded-[32px] flex items-center justify-between shadow-sm">
+<div>
+<h4 class="font-headline text-2xl text-primary italic">Nature Sounds</h4>
+<p class="font-body text-on-surface-variant mt-2">Rain, forest, and desert ambient wind.</p>
+</div>
+<div class="w-16 h-16 rounded-full bg-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-3xl">forest</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Mini Player Component -->
+<div class="fixed bottom-32 left-1/2 -translate-x-1/2 w-[92%] max-w-2xl z-40">
+<div class="glass-panel p-4 rounded-3xl shadow-[0_12px_40px_rgba(26,24,41,0.08)] flex items-center gap-4">
+<div class="relative w-16 h-16 rounded-2xl overflow-hidden shadow-md">
+<img alt="Al-Mulk thumbnail" class="w-full h-full object-cover" data-alt="Abstract mystical artwork with flowing light particles in shades of deep blue and violet with a faint crescent moon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAesy0HfKHaaO7qfSZsRqL6_d-eQ0bchNxokzBfSjTeC_B60ri4MGdzb4lmlMHd3yriTwh4WL4QTRHKhNzOTAWoP_-v4MO1I5Jd8nWUsejzJtQau36Red0lvW-jw5MQDjeOB1WlxqO75ETvdpY8DPa7U1vMU8KotyOiiaLY660EFg8eL1pLW6Y95pAgtrsMTStxXFlc2KExYQck-OXu3sLMmfxE90F59aQGewR01pHq0jc0vWg5M9f-wLA0nXHxJwztZtywioERxFA"/>
+</div>
+<div class="flex-grow">
+<h5 class="font-headline text-lg text-primary leading-tight">Al-Mulk</h5>
+<p class="font-label text-xs text-on-surface-variant">Mishary Rashid Alafasy</p>
+</div>
+<div class="flex items-center gap-2 pr-2">
+<button class="p-2 text-primary/60 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">skip_previous</span>
+</button>
+<button class="w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center hover:bg-primary-dim transition-all shadow-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">pause</span>
+</button>
+<button class="p-2 text-primary/60 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">skip_next</span>
+</button>
+</div>
+</div>
+<!-- Subtle progress bar -->
+<div class="mt-2 w-full h-1 bg-primary-container rounded-full overflow-hidden">
+<div class="h-full bg-primary w-1/3 rounded-full"></div>
+</div>
+</div>
+<!-- Shared Component: BottomNavBar -->
+<nav class="fixed bottom-8 left-0 right-0 mx-auto w-[92%] z-50 flex justify-around items-center px-4 py-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-label mt-1 uppercase tracking-tighter">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#">
+<span class="material-symbols-outlined">favorite</span>
+<span class="text-[10px] font-label mt-1 uppercase tracking-tighter">Qalb</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="text-[10px] font-label mt-1 uppercase tracking-tighter">Imanifest</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#">
+<span class="material-symbols-outlined">checklist_rtl</span>
+<span class="text-[10px] font-label mt-1 uppercase tracking-tighter">Dua-to-Do</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-emerald-700/10 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 rounded-2xl p-2 transition-all duration-500 scale-105" href="#">
+<span class="material-symbols-outlined">self_improvement</span>
+<span class="text-[10px] font-label mt-1 uppercase tracking-tighter">Tafakkur</span>
+</a>
+</nav>
+</body></html>

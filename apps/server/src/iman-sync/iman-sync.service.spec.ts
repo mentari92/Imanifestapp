@@ -68,6 +68,7 @@ describe("ImanSyncService", () => {
         },
       ],
       aiSummary: "Your intention is supported by the Quran.",
+      tasks: ["Pray on time", "Read 5 ayat daily"],
     };
 
     it("should return cached result when cache hit", async () => {

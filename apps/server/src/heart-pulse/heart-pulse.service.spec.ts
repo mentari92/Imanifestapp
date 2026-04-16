@@ -17,6 +17,7 @@ describe("HeartPulseService", () => {
 
   const mockZhipu = {
     analyzeSentiment: jest.fn(),
+    generateReflectionInsight: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -32,6 +33,12 @@ describe("HeartPulseService", () => {
     prisma = module.get<PrismaService>(PrismaService);
     zhipu = module.get<ZhipuService>(ZhipuService);
     jest.clearAllMocks();
+
+    mockZhipu.generateReflectionInsight.mockResolvedValue({
+      spiritual: "May Allah grant your heart peace.",
+      tafsir: "Reflection brings clarity.",
+      scientific: "Reflection helps regulate stress.",
+    });
   });
 
   it("should be defined", () => {

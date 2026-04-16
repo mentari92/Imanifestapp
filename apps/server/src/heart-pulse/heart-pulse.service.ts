@@ -10,6 +10,13 @@ const QF_API_KEY = process.env.QURAN_FOUNDATION_API_KEY || "";
 @Injectable()
 export class HeartPulseService {
   private readonly logger = new Logger(HeartPulseService.name);
+  private static readonly INSIGHT_TIMEOUT_MS = 9000;
+  private static readonly INSIGHT_FALLBACK = {
+    spiritual: "May Allah grant your heart peace.",
+    tafsir: "Reflecting on one's state is a form of ibadah that brings tranquility.",
+    scientific:
+      "Neural studies suggest that focused prayer or meditation activates the frontal lobes associated with calm.",
+  };
 
   constructor(
     private readonly prisma: PrismaService,
@@ -73,7 +80,7 @@ export class HeartPulseService {
     this.logger.log(`Analyzing ${mode} sentiment and generating insight for user ${userId}`);
     const [sentimentResult, insight] = await Promise.all([
       this.zhipu.analyzeSentiment(data.transcriptText),
-      this.zhipu.generateReflectionInsight(data.transcriptText, "uncertain") // Use generic if not known yet
+      this.generateReflectionInsightWithTimeout(data.transcriptText, "uncertain"),
     ]);
     
     const { label, score } = sentimentResult;
@@ -138,6 +145,33 @@ export class HeartPulseService {
         scientific: insight.scientific,
       },
     };
+  }
+
+  /**
+   * Ensure reflection endpoint remains responsive even when external AI is slow.
+   */
+  private async generateReflectionInsightWithTimeout(
+    transcriptText: string,
+    sentiment: string,
+  ): Promise<{ spiritual: string; tafsir: string; scientific: string }> {
+    try {
+      return await Promise.race([
+        this.zhipu.generateReflectionInsight(transcriptText, sentiment),
+        new Promise<{ spiritual: string; tafsir: string; scientific: string }>((resolve) => {
+          setTimeout(() => {
+            this.logger.warn(
+              `Reflection insight timed out after ${HeartPulseService.INSIGHT_TIMEOUT_MS}ms, using fallback`,
+            );
+            resolve(HeartPulseService.INSIGHT_FALLBACK);
+          }, HeartPulseService.INSIGHT_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (err) {
+      this.logger.warn(
+        `Reflection insight failed, using fallback: ${err instanceof Error ? err.message : err}`,
+      );
+      return HeartPulseService.INSIGHT_FALLBACK;
+    }
   }
 
   /** Get reflection history for user. */

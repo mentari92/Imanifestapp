@@ -22,4 +22,9 @@ export class SakinahController {
   async getAudioUrl(@Query() dto: GetAudioUrlDto) {
     return this.sakinahService.getAudioUrl(dto.reciterId, dto.surahNumber);
   }
+
+  @Get("read-reflect")
+  async getReadReflect(@Query("surahNumber") surahNumber: string) {
+    return this.sakinahService.getReadReflect(Number(surahNumber));
+  }
 }

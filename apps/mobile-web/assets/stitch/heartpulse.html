@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Qalb Journal</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400;1,600&amp;family=Noto+Serif:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-dim": "#770326",
+                    "surface-dim": "#d6dae2",
+                    "primary-fixed-dim": "#d7d1e9",
+                    "inverse-primary": "#e5dff8",
+                    "tertiary": "#206c3a",
+                    "on-primary": "#fcf7ff",
+                    "surface-container-low": "#f2f3f8",
+                    "outline": "#777b81",
+                    "background": "#f9f9fd",
+                    "on-primary-fixed-variant": "#5c596d",
+                    "surface-variant": "#dfe2ea",
+                    "on-error": "#fff7f7",
+                    "surface-container": "#eceef3",
+                    "tertiary-container": "#a9f7b7",
+                    "on-error-container": "#68001f",
+                    "primary": "#605d71",
+                    "on-tertiary-fixed": "#004c22",
+                    "on-primary-container": "#524f63",
+                    "surface-container-highest": "#dfe2ea",
+                    "on-tertiary-fixed-variant": "#1d6b39",
+                    "on-secondary": "#fff7f8",
+                    "on-primary-fixed": "#403d50",
+                    "primary-fixed": "#e5dff8",
+                    "inverse-on-surface": "#9c9da0",
+                    "secondary-fixed": "#ffe4f2",
+                    "tertiary-fixed": "#a9f7b7",
+                    "secondary": "#6d5965",
+                    "surface": "#f9f9fd",
+                    "error": "#ac3149",
+                    "tertiary-fixed-dim": "#9be9aa",
+                    "surface-bright": "#f9f9fd",
+                    "tertiary-dim": "#0e6030",
+                    "primary-dim": "#545164",
+                    "on-background": "#2f3338",
+                    "outline-variant": "#aeb2b9",
+                    "on-tertiary": "#e8ffe8",
+                    "error-container": "#f76a80",
+                    "on-surface-variant": "#5b5f65",
+                    "on-secondary-fixed": "#513f4a",
+                    "on-surface": "#2f3338",
+                    "secondary-container": "#ffe4f2",
+                    "surface-container-high": "#e6e8ee",
+                    "on-tertiary-container": "#0e6030",
+                    "primary-container": "#e5dff8",
+                    "on-secondary-fixed-variant": "#6f5b67",
+                    "on-secondary-container": "#65515d",
+                    "surface-tint": "#605d71",
+                    "secondary-dim": "#614e59",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#f0d6e4",
+                    "inverse-surface": "#0c0e11"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Newsreader"],
+                    "body": ["Noto Serif"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(24px) saturate(140%);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .holographic-blob {
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container min-h-screen overflow-x-hidden pb-32">
+<!-- Background Holographic Elements -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none">
+<div class="holographic-blob absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary-container rounded-full"></div>
+<div class="holographic-blob absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-secondary-container rounded-full"></div>
+<div class="holographic-blob absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-tertiary-container rounded-full"></div>
+</div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl shadow-[0_12px_40px_rgba(26,24,41,0.04)]">
+<div class="flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-primary-container flex items-center justify-center">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Soft portrait of a serene woman in natural morning light, artistic and ethereal style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAaZ_KoE6ajk-YjTdyDnNAhPS2-fFbw0yPtN9gESWzSXL9Lu6N7bCeC179NBVSqa_xutNvpb2fZ5WPbSpROk0EnGvhYjTB8-4Xfliqan9vGwIak5xZa8--w4GPMEYmRHlLlz_7WNPGMRy8nKljzwtMWiyEHPQQEiUZpv7kdPAePslpKohZcoL6afuT6JG-MjDyYnUeGAPBudJ1LKFs2h-k-IxksxEdQMopY6DpBM_snkruix4kmZ-nx05vJYskVJv-sxdhScJ24Yg"/>
+</div>
+<span class="text-2xl font-['Newsreader'] italic font-semibold text-slate-800 dark:text-white">Qalb Voice</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center hover:bg-white/20 dark:hover:bg-slate-800/20 rounded-full transition-all active:scale-95 duration-300 ease-in-out">
+<span class="material-symbols-outlined text-slate-800 dark:text-white">notifications</span>
+</button>
+</div>
+</header>
+<main class="relative pt-32 px-6 max-w-4xl mx-auto space-y-16">
+<!-- Hero Intention -->
+<section class="space-y-4">
+<h1 class="font-headline italic text-5xl md:text-7xl text-on-surface leading-tight tracking-tight max-w-2xl">
+                A Sanctuary for your Spiritual Voice
+            </h1>
+<p class="font-label text-on-surface-variant text-lg max-w-md">
+                Speak your truth into the silence. Let your intentions ripple through the holographic expanse.
+            </p>
+</section>
+<!-- Central Reflection Action -->
+<section class="flex flex-col items-center justify-center py-12 relative">
+<!-- Breath Indicator / Pulse -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-80 h-80 bg-secondary-container/20 rounded-full blur-3xl animate-pulse"></div>
+</div>
+<button class="relative glass-panel group flex flex-col items-center justify-center w-72 h-72 rounded-full transition-all duration-700 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 active:scale-95">
+<div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-5xl text-primary" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+<span class="font-label font-semibold text-primary tracking-wide uppercase text-xs mb-1">Begin</span>
+<span class="font-headline italic text-xl text-on-primary-container px-8 text-center leading-tight">Tap to Commence Reflection</span>
+</button>
+<!-- Streak Counter -->
+<div class="mt-12 flex items-center gap-3 glass-panel px-6 py-3 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label font-bold text-secondary text-lg">12 Days</span>
+<span class="font-label text-on-surface-variant text-sm border-l border-outline-variant/30 pl-3">Reflection Streak</span>
+</div>
+</section>
+<!-- Sentiment Landscape -->
+<section class="space-y-6">
+<div class="flex items-center justify-between">
+<h2 class="font-headline text-3xl italic text-on-surface">Sentiment Landscape</h2>
+<span class="font-label text-xs text-on-surface-variant uppercase tracking-widest">Current Vibrations</span>
+</div>
+<div class="flex flex-wrap gap-4">
+<!-- Badges -->
+<button class="px-8 py-3 rounded-full glass-panel border-none text-on-primary-container font-label font-medium hover:bg-primary-container transition-all">
+                    Hopeful
+                </button>
+<button class="px-8 py-3 rounded-full glass-panel border-none text-on-secondary-container font-label font-medium hover:bg-secondary-container transition-all">
+                    Peaceful
+                </button>
+<button class="px-8 py-3 rounded-full glass-panel border-none bg-tertiary-container/40 text-tertiary-dim font-label font-medium hover:bg-tertiary-container transition-all">
+                    Grounded
+                </button>
+<button class="px-8 py-3 rounded-full glass-panel border-none text-on-surface-variant font-label font-medium hover:bg-surface-variant transition-all">
+                    Anxious
+                </button>
+<button class="px-8 py-3 rounded-full glass-panel border-none text-on-primary-container font-label font-medium hover:bg-primary-container transition-all">
+                    Seeking
+                </button>
+<button class="px-8 py-3 rounded-full glass-panel border-none text-on-secondary-container font-label font-medium hover:bg-secondary-container transition-all">
+                    Grateful
+                </button>
+</div>
+</section>
+<!-- Writing Section -->
+<section class="glass-panel rounded-[32px] p-8 md:p-12 space-y-6">
+<div class="space-y-2">
+<h3 class="font-headline text-2xl italic">Prefer to write?</h3>
+<p class="font-label text-on-surface-variant text-sm">Transcribe your internal dialogue into the physical realm.</p>
+</div>
+<div class="relative group">
+<textarea class="w-full bg-surface-container/30 border-none rounded-2xl p-6 font-body text-lg focus:ring-2 focus:ring-primary-fixed-dim min-h-[160px] placeholder:text-outline-variant/60 transition-all" placeholder="Pour your thoughts here..."></textarea>
+<div class="absolute bottom-4 right-4">
+<button class="bg-primary text-on-primary font-label px-6 py-2 rounded-full text-sm font-medium hover:bg-primary-dim transition-all shadow-lg shadow-primary/20">
+                        Archive Soul-Note
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-8 left-0 right-0 mx-auto w-[92%] z-50 flex justify-around items-center px-4 py-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
+<a class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#"><span class="material-symbols-outlined">grid_view</span></a>
+<a class="flex items-center justify-center bg-emerald-700/10 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 rounded-full p-3 transition-all duration-500 scale-110" href="#"><span class="material-symbols-outlined">favorite</span></a>
+<a class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#"><span class="material-symbols-outlined">sync</span></a>
+<a class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#"><span class="material-symbols-outlined">checklist</span></a>
+<a class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#"><span class="material-symbols-outlined">self_improvement</span></a>
+</nav>
+</body></html>

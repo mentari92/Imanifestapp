@@ -27,7 +27,7 @@ const API_BASE_URL = resolveApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 12000, // 12s — fast fail so UI fallbacks trigger quickly
+  timeout: 120000,
   headers: {
     "Content-Type": "application/json",
   },

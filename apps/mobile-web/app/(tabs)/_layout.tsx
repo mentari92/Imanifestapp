@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { View, TouchableOpacity, Platform } from "react-native";
+import { View, TouchableOpacity, Platform, Text } from "react-native";
 import { LayoutGrid, Heart, Sparkles, CheckSquare, Brain } from "lucide-react-native";
 
 const TABS = [
@@ -15,27 +15,27 @@ function GlassTabBar({ state, navigation }: any) {
     <View
       style={{
         position: "absolute",
-        bottom: 32,
-        left: 16,
-        right: 16,
+        bottom: 18,
+        left: 12,
+        right: 12,
         flexDirection: "row",
         justifyContent: "space-around",
         alignItems: "center",
-        paddingHorizontal: 8,
-        paddingVertical: 8,
-        backgroundColor: "rgba(255,255,255,0.75)",
-        borderRadius: 32,
+        paddingHorizontal: 10,
+        paddingVertical: 10,
+        backgroundColor: "rgba(255,255,255,0.82)",
+        borderRadius: 20,
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.1,
-        shadowRadius: 24,
-        elevation: 12,
+        shadowOffset: { width: 0, height: 14 },
+        shadowOpacity: 0.08,
+        shadowRadius: 32,
+        elevation: 8,
         borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.3)",
+        borderColor: "rgba(255,255,255,0.35)",
         ...(Platform.OS === "web"
           ? ({
-              backdropFilter: "blur(24px) saturate(140%)",
-              WebkitBackdropFilter: "blur(24px) saturate(140%)",
+              backdropFilter: "blur(24px) saturate(125%)",
+              WebkitBackdropFilter: "blur(24px) saturate(125%)",
             } as any)
           : {}),
       }}
@@ -64,16 +64,28 @@ function GlassTabBar({ state, navigation }: any) {
               flex: 1,
               alignItems: "center",
               justifyContent: "center",
-              paddingVertical: 10,
+              paddingVertical: 8,
               borderRadius: 9999,
-              backgroundColor: isFocused ? "rgba(22,101,52,0.1)" : "transparent",
+              backgroundColor: isFocused ? "rgba(22,101,52,0.12)" : "transparent",
             }}
           >
             <Icon
-              size={22}
+              size={18}
               color={isFocused ? "#166534" : "#64748b"}
               strokeWidth={isFocused ? 2.2 : 1.5}
             />
+            <View style={{ height: 4 }} />
+            <Text
+              style={{
+                fontSize: 10,
+                fontFamily: "Plus Jakarta Sans",
+                color: isFocused ? "#166534" : "#64748b",
+                fontWeight: isFocused ? "700" : "600",
+                letterSpacing: 0.2,
+              }}
+            >
+              {TABS[index]?.label ?? "Tab"}
+            </Text>
           </TouchableOpacity>
         );
       })}

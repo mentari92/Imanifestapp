@@ -1,10 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import axios from "axios";
 
-/**
- * GLM-5 (Zhipu AI) client for ImanSync text analysis.
- * Handles theme extraction and verse summary generation.
- */
 @Injectable()
 export class ZhipuService {
   private readonly logger = new Logger(ZhipuService.name);
@@ -16,18 +12,44 @@ export class ZhipuService {
   private static readonly GLM_BASE_HEADERS: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  private static readonly THEME_FALLBACK = ["patience", "gratitude", "trust in God"];
+
+  private static readonly THEME_FALLBACK = ["patience", "gratitude", "trust in Allah"];
   private static readonly TASK_FALLBACK = [
-    "Pray all 5 daily prayers on time",
-    "Read Quran for 10 minutes daily",
-    "Give charity this week",
-    "Make dua for your intention",
-    "Write daily gratitude reflections",
+    "Shalat 5 waktu tepat waktu hari ini",
+    "Baca Al-Quran 10-15 menit setelah Subuh",
+    "Tulis 3 syukur spesifik sebelum tidur",
+    "Perbanyak istighfar 100x dengan sadar",
+    "Lakukan 1 ikhtiar dunia nyata untuk tujuanmu",
   ];
 
-  /**
-   * Extract 3 Islamic spiritual themes from intent text using GLM-5.
-   */
+  private hasAnyAiProvider(): boolean {
+    return Boolean(this.zhipuApiKey || this.openRouterApiKey);
+  }
+
+  private extractThemesHeuristic(text: string): string[] {
+    const source = text.toLowerCase();
+    const bucket: string[] = [];
+
+    const pick = (regex: RegExp, value: string) => {
+      if (regex.test(source) && !bucket.includes(value)) bucket.push(value);
+    };
+
+    pick(/sedih|galau|cemas|anxious|takut|gagal|kehilangan|down/, "patience");
+    pick(/syukur|nikmat|grateful|alhamdulillah/, "gratitude");
+    pick(/rezeki|pekerjaan|karier|kerja|usaha|bisnis/, "provision");
+    pick(/dosa|taubat|ampun|istighfar/, "repentance");
+    pick(/doa|hajat|keinginan|manifest|niat|cita/, "supplication");
+    pick(/tenang|hati|qalb|damai|gelisah/, "remembrance of Allah");
+    pick(/keluarga|ortu|suami|istri|anak|silaturahmi/, "family ties");
+
+    while (bucket.length < 3) {
+      const candidate = ZhipuService.THEME_FALLBACK[bucket.length];
+      if (!bucket.includes(candidate)) bucket.push(candidate);
+    }
+
+    return bucket.slice(0, 3);
+  }
+
   async extractThemes(intentText: string): Promise<string[]> {
     const systemPrompt = `You are an Islamic spiritual guide and Quran scholar.
 Extract the 3 most relevant Islamic spiritual themes from the user's intention.
@@ -35,23 +57,23 @@ Return ONLY a valid JSON array of English keywords.
 Example: ["tawakkul","sabr","shukr"]
 Do not include any explanation or extra text.`;
 
+    if (!this.hasAnyAiProvider()) {
+      return this.extractThemesHeuristic(intentText);
+    }
+
     try {
       const response = await this.callGLM5(systemPrompt, intentText);
       const parsed = this.parseJSONResponse<string[]>(response);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.slice(0, 3);
       }
-      this.logger.warn("Unexpected themes response, using fallback");
-      return [...ZhipuService.THEME_FALLBACK];
+      return this.extractThemesHeuristic(intentText);
     } catch (error) {
       this.logger.error("Failed to extract themes", error);
-      return [...ZhipuService.THEME_FALLBACK];
+      return this.extractThemesHeuristic(intentText);
     }
   }
 
-  /**
-   * Generate a 2-sentence spiritual validation summary using GLM-5.
-   */
   async generateSummary(
     intentText: string,
     verses: { verseKey: string; translation: string }[],
@@ -61,24 +83,71 @@ Do not include any explanation or extra text.`;
       .join("\n");
 
     const systemPrompt = `You are a warm, knowledgeable Islamic life coach.
-Given the user's intention and 3 related Quranic verses, write a 2-sentence spiritual 
-validation in English — affirming their intention through the lens of these verses.
-Be sincere and specific to the actual verses. Avoid generic phrasing.`;
+Given the user's intention and related Quranic verses, write a concise and practical guidance in Indonesian.
+Return 2 short paragraphs:
+1) spiritual reassurance with a cited verse key
+2) concrete next steps for today.`;
 
     const userMessage = `Intention: ${intentText}\n\nVerses:\n${versesContext}`;
 
+    if (!this.hasAnyAiProvider()) {
+      const verse = verses[0];
+      if (verse) {
+        return `Allah memahami perjuanganmu. Pegang pesan ${verse.verseKey}: \"${verse.translation}\" sebagai jangkar hati agar tetap tenang dan tidak menyerah.\n\nLangkah hari ini: pilih 1 ikhtiar kecil yang bisa kamu selesaikan dalam 30 menit, tutup dengan doa singkat, lalu evaluasi progres sebelum tidur.`;
+      }
+      return "Allah tidak meninggalkan hamba-Nya yang terus berikhtiar. Jaga hati dengan dzikir dan lanjutkan usaha kecil yang konsisten.\n\nLangkah hari ini: tetapkan satu target realistis, kerjakan tanpa distraksi, lalu tutup dengan syukur atas kemajuan sekecil apa pun.";
+    }
+
     try {
       const response = await this.callGLM5(systemPrompt, userMessage);
-      return response.trim();
+      const cleaned = response.trim();
+      if (cleaned) return cleaned;
+      throw new Error("Empty summary response");
     } catch (error) {
       this.logger.error("Failed to generate summary", error);
-      return "Your intention aligns with the Quranic guidance of striving for what is good. May Allah bless your journey.";
+      const verse = verses[0];
+      if (verse) {
+        return `Allah memahami perjuanganmu. Pegang pesan ${verse.verseKey}: \"${verse.translation}\" sebagai jangkar hati agar tetap tenang dan tidak menyerah.\n\nLangkah hari ini: pilih 1 ikhtiar kecil yang bisa kamu selesaikan dalam 30 menit, tutup dengan doa singkat, lalu evaluasi progres sebelum tidur.`;
+      }
+      return "Allah tidak meninggalkan hamba-Nya yang terus berikhtiar. Jaga hati dengan dzikir dan lanjutkan usaha kecil yang konsisten.\n\nLangkah hari ini: tetapkan satu target realistis, kerjakan tanpa distraksi, lalu tutup dengan syukur atas kemajuan sekecil apa pun.";
     }
   }
 
-  /**
-   * Generate 5 actionable Ikhtiar steps from intention + verses using GLM-5.
-   */
+  private generateTasksHeuristic(
+    intentText: string,
+    verses: { verseKey: string; translation: string }[],
+  ): string[] {
+    const source = intentText.toLowerCase();
+    const tasks: string[] = [];
+
+    tasks.push("Shalat 5 waktu tepat waktu dan catat konsistensinya");
+
+    if (/pekerjaan|kerja|karier|cv|lamaran/.test(source)) {
+      tasks.push("Perbarui CV/portofolio dan kirim minimal 2 lamaran hari ini");
+    } else if (/bisnis|usaha|jualan/.test(source)) {
+      tasks.push("Validasi 1 ide usaha: hubungi 3 calon pelanggan");
+    } else {
+      tasks.push("Kerjakan 1 tugas prioritas utama selama 45 menit fokus");
+    }
+
+    if (/utang|cicilan|keuangan|rezeki/.test(source)) {
+      tasks.push("Buat rencana keuangan 7 hari: pengeluaran wajib, hemat, dan target tabung");
+    } else {
+      tasks.push("Tuliskan 3 hal yang kamu syukuri dan 1 pelajaran hari ini");
+    }
+
+    const verse = verses[0];
+    if (verse?.verseKey) {
+      tasks.push(`Baca dan renungkan ayat ${verse.verseKey} selama 10 menit`);
+    } else {
+      tasks.push("Baca Al-Quran 2 halaman setelah salah satu shalat wajib");
+    }
+
+    tasks.push("Tutup hari dengan doa spesifik untuk niatmu dan evaluasi progres");
+
+    return tasks.slice(0, 5);
+  }
+
   async generateTasks(
     intentText: string,
     verses: { verseKey: string; translation: string }[],
@@ -89,12 +158,14 @@ Be sincere and specific to the actual verses. Avoid generic phrasing.`;
 
     const systemPrompt = `You are an Islamic life coach creating practical action plans.
 Given the user's intention and related Quranic verses, generate exactly 5 actionable steps (Ikhtiar).
-Each step should be specific, practical, and spiritually grounded.
-Return ONLY a valid JSON array of 5 short action descriptions (max 100 chars each).
-Example: ["Pray Fajr on time for 7 days","Read Surah Al-Baqarah daily","Give charity this Friday","Call a family member to maintain ties","Write 3 gratitude points each night"]
+Return ONLY a valid JSON array of 5 short action descriptions in Indonesian (max 120 chars each).
 Do not include any explanation or extra text.`;
 
     const userMessage = `Intention: ${intentText}\n\nVerses:\n${versesContext}`;
+
+    if (!this.hasAnyAiProvider()) {
+      return this.generateTasksHeuristic(intentText, verses);
+    }
 
     try {
       const response = await this.callGLM5(systemPrompt, userMessage);
@@ -102,65 +173,66 @@ Do not include any explanation or extra text.`;
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.slice(0, 5);
       }
-      this.logger.warn("Unexpected tasks response, using fallback");
-      return [...ZhipuService.TASK_FALLBACK];
+      return this.generateTasksHeuristic(intentText, verses);
     } catch (error) {
       this.logger.error("Failed to generate tasks", error);
-      return [...ZhipuService.TASK_FALLBACK];
+      return this.generateTasksHeuristic(intentText, verses);
     }
   }
 
-  /**
-   * Generate a deep spiritual insight from a reflection.
-   * Includes Quranic reference, Tafsir summary, and scientific explanation.
-   */
   async generateReflectionInsight(
     transcriptText: string,
     sentiment: string,
   ): Promise<{ spiritual: string; tafsir: string; scientific: string }> {
     const systemPrompt = `You are a warm Islamic counselor combining Quranic wisdom with modern science.
-Analyze the user's reflection: "${transcriptText}" (Detected emotion: ${sentiment}).
-Provide:
-1. "spiritual": A warm, empathetic guidance message with one specific Quranic verse citation (Surah:Verse).
-2. "tafsir": A simplified, profound Tafsir (exegesis) summary of that verse.
-3. "scientific": A brief scientific explanation of how the spiritual practice (e.g., patience, gratitude, prayer) helps psychological or physical well-being.
+Analyze the user's reflection and return ONLY a JSON object with keys spiritual, tafsir, scientific.
+Language: Indonesian. Include one Quran verse citation in spiritual.`;
 
-Return ONLY a valid JSON object with keys "spiritual", "tafsir", and "scientific". English only. 
-Example: {"spiritual": "...", "tafsir": "...", "scientific": "..."}`;
+    if (!this.hasAnyAiProvider()) {
+      const verseCitation = sentiment === "anxious" || sentiment === "struggling" ? "(94:5-6)" : "(13:28)";
+      return {
+        spiritual: `Perasaanmu valid, dan Allah tidak pernah jauh dari hamba yang berdoa. Pegang janji Allah ${verseCitation} sambil terus melangkah dengan sabar dan tawakkal.`,
+        tafsir: "Tafsir ringkasnya: ujian bukan tanda ditinggalkan, melainkan ruang pertumbuhan iman. Ketika hati kembali kepada Allah, arah hidup menjadi lebih jelas.",
+        scientific: "Secara psikologis, doa terarah, journaling syukur, dan napas teratur membantu menurunkan stres, menstabilkan emosi, dan meningkatkan fokus keputusan.",
+      };
+    }
 
     try {
-      const response = await this.callGLM5(systemPrompt, transcriptText);
+      const response = await this.callGLM5(systemPrompt, `${transcriptText}\nSentiment: ${sentiment}`);
       const parsed = this.parseJSONResponse<{ spiritual: string; tafsir: string; scientific: string }>(response);
-      if (parsed?.spiritual && parsed?.scientific) {
+      if (parsed?.spiritual && parsed?.tafsir && parsed?.scientific) {
         return parsed;
       }
-      return {
-        spiritual: "Your heart finds rest in the remembrance of Allah.",
-        tafsir: "The scholars say that sincere reflection is the path to inner clarity.",
-        scientific: "Research shows that mindfulness and spiritual reflection reduce cortisol levels and improve mental health.",
-      };
+      throw new Error("Invalid reflection JSON");
     } catch (error) {
       this.logger.error("Failed to generate reflection insight", error);
       return {
-        spiritual: "May Allah grant your heart peace.",
-        tafsir: "Reflecting on one's state is a form of ibadah that brings tranquility.",
-        scientific: "Neural studies suggest that focused prayer or meditation activates the frontal lobes associated with calm.",
+        spiritual: "Perasaanmu valid, dan Allah tidak pernah jauh dari hamba yang berdoa. Pegang janji Allah (13:28) sambil terus melangkah dengan sabar dan tawakkal.",
+        tafsir: "Tafsir ringkasnya: ketenangan hati tumbuh saat hati terhubung dengan Allah dan ikhtiar dijalankan dengan disiplin.",
+        scientific: "Secara psikologis, doa terarah, journaling syukur, dan napas teratur membantu menurunkan stres, menstabilkan emosi, dan meningkatkan fokus keputusan.",
       };
     }
   }
 
-  /**
-   * Analyze sentiment of a reflection text using GLM-5.
-   */
   async analyzeSentiment(
     transcriptText: string,
   ): Promise<{ label: string; score: number }> {
-    const systemPrompt = `You are an Islamic spiritual counselor analyzing the sentiment of a reflection.
-Return ONLY a valid JSON object with "label" and "score" fields.
-"label" must be one of: hopeful, grateful, peaceful, content, focused, anxious, struggling, uncertain, heavy, other
-"score" must be a number between 0.0 (very negative) and 1.0 (very positive).
-Example: {"label":"grateful","score":0.85}
-Do not include any explanation or extra text.`;
+    const source = transcriptText.toLowerCase();
+    const sentimentHeuristic = (): { label: string; score: number } => {
+      if (/syukur|alhamdulillah|lega|tenang|damai/.test(source)) return { label: "grateful", score: 0.86 };
+      if (/sedih|cemas|takut|stres|gelisah|bingung|capek/.test(source)) return { label: "anxious", score: 0.33 };
+      if (/berusaha|ikhtiar|fokus|bangkit/.test(source)) return { label: "hopeful", score: 0.71 };
+      return { label: "uncertain", score: 0.5 };
+    };
+
+    if (!this.hasAnyAiProvider()) {
+      return sentimentHeuristic();
+    }
+
+    const systemPrompt = `You are an Islamic spiritual counselor analyzing sentiment.
+Return ONLY JSON object with keys label and score.
+label must be one of: hopeful, grateful, peaceful, content, focused, anxious, struggling, uncertain, heavy, other
+score between 0 and 1.`;
 
     try {
       const response = await this.callGLM5(systemPrompt, transcriptText);
@@ -171,22 +243,23 @@ Do not include any explanation or extra text.`;
           score: Math.max(0, Math.min(1, parsed.score)),
         };
       }
-      return { label: "other", score: 0.5 };
+      return sentimentHeuristic();
     } catch (error) {
       this.logger.error("Failed to analyze sentiment", error);
-      return { label: "other", score: 0.5 };
+      return sentimentHeuristic();
     }
   }
 
-  /**
-   * Extract 3 Islamic spiritual themes from image + intent text using GLM-5V.
-   */
   async extractThemesVision(
     intentText: string,
     imageBase64: string,
     mimeType: string,
   ): Promise<string[]> {
-    const userMessage = `Analyze the image and the user's intention: "${intentText}". Identify 3 core Islamic spiritual themes relevant to both. Return ONLY a JSON array of theme keywords.`;
+    const userMessage = `Analyze image + intention and extract 3 Islamic themes as JSON array only. Intention: ${intentText}`;
+
+    if (!this.hasAnyAiProvider()) {
+      return this.extractThemesHeuristic(intentText);
+    }
 
     try {
       const response = await this.callGLM5Vision(userMessage, imageBase64, mimeType);
@@ -194,179 +267,194 @@ Do not include any explanation or extra text.`;
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed.slice(0, 3);
       }
-      this.logger.warn("Unexpected vision themes response, using fallback");
-      return [...ZhipuService.THEME_FALLBACK];
+      return this.extractThemesHeuristic(intentText);
     } catch (error) {
       this.logger.error("Failed to extract themes from vision", error);
-      return [...ZhipuService.THEME_FALLBACK];
+      return this.extractThemesHeuristic(intentText);
     }
   }
 
-  /**
-   * Core GLM-5 API call via OpenAI-compatible endpoint.
-   */
   private async callGLM5(
     systemPrompt: string,
     userMessage: string,
   ): Promise<string> {
-    try {
-      this.logger.log("Attempting Zhipu GLM-5 Request");
-      const response = await axios.post(
-        `${this.baseUrl}/chat/completions`,
-        {
-          model: "glm-4-flash",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-          temperature: 0.2,
-          max_tokens: 1500,
-        },
-        {
-          headers: {
-            ...ZhipuService.GLM_BASE_HEADERS,
-            Authorization: `Bearer ${this.zhipuApiKey}`,
-          },
-          timeout: 60000,
-        },
-      );
-      return response.data?.choices?.[0]?.message?.content || "";
-
-    } catch (error: any) {
-      if (error.response?.data) {
-        this.logger.error(`Zhipu API Error Response: ${JSON.stringify(error.response.data)}`);
-      }
-      if (!this.openRouterApiKey) {
-        this.logger.error("Zhipu AI Failed and no OpenRouter Fallback configured.");
-        throw error;
-      }
-      this.logger.warn("Zhipu AI Failed. Falling back to OpenRouter.");
-      const fallbackResponse = await axios.post(
-        this.openRouterUrl,
-        {
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-          temperature: 0.7,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.openRouterApiKey}`,
-            "HTTP-Referer": "https://imanifestapp.com",
-            "X-Title": "IManifestApp",
-          },
-          timeout: 15000,
-        },
-      );
-      return fallbackResponse.data?.choices?.[0]?.message?.content || "";
+    if (!this.zhipuApiKey && !this.openRouterApiKey) {
+      throw new Error("No AI provider configured");
     }
+
+    if (this.zhipuApiKey) {
+      try {
+        const response = await axios.post(
+          `${this.baseUrl}/chat/completions`,
+          {
+            model: "glm-4-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage },
+            ],
+            temperature: 0.2,
+            max_tokens: 1200,
+          },
+          {
+            headers: {
+              ...ZhipuService.GLM_BASE_HEADERS,
+              Authorization: `Bearer ${this.zhipuApiKey}`,
+            },
+            timeout: 12000,
+          },
+        );
+
+        const content = response.data?.choices?.[0]?.message?.content || "";
+        if (content) return content;
+      } catch (error: any) {
+        if (error.response?.data) {
+          this.logger.error(`Zhipu API Error: ${JSON.stringify(error.response.data)}`);
+        }
+      }
+    }
+
+    if (!this.openRouterApiKey) {
+      throw new Error("All AI providers unavailable");
+    }
+
+    const fallbackResponse = await axios.post(
+      this.openRouterUrl,
+      {
+        model: "google/gemini-2.5-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.4,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.openRouterApiKey}`,
+          "HTTP-Referer": "https://imanifestapp.com",
+          "X-Title": "IManifestApp",
+        },
+        timeout: 10000,
+      },
+    );
+
+    return fallbackResponse.data?.choices?.[0]?.message?.content || "";
   }
 
-  /**
-   * GLM-5V multimodal call — accepts base64 image + text prompt.
-   */
   private async callGLM5Vision(
     userMessage: string,
     imageBase64: string,
     mimeType: string,
   ): Promise<string> {
-    const systemPrompt = `You are an Islamic spiritual guide and Quran scholar.
-Extract the 3 most relevant Islamic spiritual themes from the user's intention and the provided image.
-Return ONLY a valid JSON array of English keywords.
-Example: ["tawakkul","sabr","shukr"]
-Do not include any explanation or extra text.`;
-
-    try {
-      this.logger.log("Attempting Zhipu GLM-5V Request");
-      const response = await axios.post(
-        `${this.baseUrl}/chat/completions`,
-        {
-          model: "glm-4v-plus",
-          messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: userMessage },
-                {
-                  type: "image_url",
-                  image_url: { url: `data:${mimeType};base64,${imageBase64}` },
-                },
-              ],
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 1500,
-        },
-        {
-          headers: {
-            ...ZhipuService.GLM_BASE_HEADERS,
-            Authorization: `Bearer ${this.zhipuApiKey}`,
-          },
-          timeout: 20000,
-        },
-      );
-      return response.data?.choices?.[0]?.message?.content || "";
-
-    } catch (error) {
-      if (!this.openRouterApiKey) {
-        this.logger.error("Zhipu Vision AI Failed and no OpenRouter Fallback configured.");
-        throw error;
-      }
-      this.logger.warn("Zhipu Vision Failed. Falling back to OpenRouter.");
-      const fallbackResponse = await axios.post(
-        this.openRouterUrl,
-        {
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: userMessage },
-                {
-                  type: "image_url",
-                  image_url: { url: `data:${mimeType};base64,${imageBase64}` },
-                },
-              ],
-            },
-          ],
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.openRouterApiKey}`,
-            "HTTP-Referer": "https://imanifestapp.com",
-            "X-Title": "IManifestApp",
-          },
-          timeout: 25000,
-        },
-      );
-      return fallbackResponse.data?.choices?.[0]?.message?.content || "";
+    if (!this.zhipuApiKey && !this.openRouterApiKey) {
+      throw new Error("No AI provider configured");
     }
+
+    const systemPrompt = `You are an Islamic spiritual guide and Quran scholar.
+Extract the 3 most relevant Islamic spiritual themes from the user's intention and image.
+Return ONLY a valid JSON array of English keywords.`;
+
+    if (this.zhipuApiKey) {
+      try {
+        const response = await axios.post(
+          `${this.baseUrl}/chat/completions`,
+          {
+            model: "glm-4v-plus",
+            messages: [
+              { role: "system", content: systemPrompt },
+              {
+                role: "user",
+                content: [
+                  { type: "text", text: userMessage },
+                  {
+                    type: "image_url",
+                    image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+                  },
+                ],
+              },
+            ],
+            temperature: 0.3,
+            max_tokens: 1200,
+          },
+          {
+            headers: {
+              ...ZhipuService.GLM_BASE_HEADERS,
+              Authorization: `Bearer ${this.zhipuApiKey}`,
+            },
+            timeout: 14000,
+          },
+        );
+
+        const content = response.data?.choices?.[0]?.message?.content || "";
+        if (content) return content;
+      } catch (error) {
+        this.logger.warn("Zhipu vision failed, trying OpenRouter fallback");
+      }
+    }
+
+    if (!this.openRouterApiKey) {
+      throw new Error("All AI providers unavailable for vision");
+    }
+
+    const fallbackResponse = await axios.post(
+      this.openRouterUrl,
+      {
+        model: "google/gemini-2.5-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userMessage },
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${imageBase64}` },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.openRouterApiKey}`,
+          "HTTP-Referer": "https://imanifestapp.com",
+          "X-Title": "IManifestApp",
+        },
+        timeout: 12000,
+      },
+    );
+
+    return fallbackResponse.data?.choices?.[0]?.message?.content || "";
   }
 
-  /**
-   * Parse JSON from GLM-5 response (handles markdown code blocks).
-   * Returns null if parsing fails instead of throwing.
-   */
   private parseJSONResponse<T>(text: string): T | null {
+    if (!text) return null;
+
     try {
-      // Find the first occurrence of [ or {
-      const startIndex = text.search(/[\[\{]/);
-      if (startIndex === -1) return null;
-      
-      // Find the last occurrence of ] or }
-      const lastBracket = text.lastIndexOf("]");
-      const lastBrace = text.lastIndexOf("}");
+      const direct = JSON.parse(text);
+      return direct as T;
+    } catch {
+      // continue
+    }
+
+    try {
+      const cleaned = text
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```$/i, "")
+        .trim();
+
+      const startIndex = cleaned.search(/[\[{]/);
+      const lastBracket = cleaned.lastIndexOf("]");
+      const lastBrace = cleaned.lastIndexOf("}");
       const endIndex = Math.max(lastBracket, lastBrace);
-      
-      if (endIndex === -1 || endIndex < startIndex) return null;
-      
-      const jsonStr = text.substring(startIndex, endIndex + 1);
+
+      if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+        return null;
+      }
+
+      const jsonStr = cleaned.substring(startIndex, endIndex + 1);
       return JSON.parse(jsonStr) as T;
     } catch (error: any) {
       this.logger.warn(`Failed to parse JSON response: ${error.message}`);
