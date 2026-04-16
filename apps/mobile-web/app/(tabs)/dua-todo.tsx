@@ -44,10 +44,9 @@ const STARTER_TASKS: Task[] = [
 
 export default function DuaTodoScreen() {
   const router = useRouter();
-  const { intentText, tasksJson, aiSummary } = useLocalSearchParams<{
+  const { intentText, tasksJson } = useLocalSearchParams<{
     intentText: string;
     tasksJson: string;
-    aiSummary: string;
   }>();
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -55,23 +54,44 @@ export default function DuaTodoScreen() {
   const [newLabel, setNewLabel] = useState("");
   const [aiSuggestLoading, setAiSuggestLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [resolvedAiSummary, setResolvedAiSummary] = useState<string>("");
+  const [resolvedIntentText, setResolvedIntentText] = useState<string>("");
   const debounceRef = useRef<any>(null);
 
-  // Load tasks from params (from Imanifest flow) or use starters
+  // Load tasks — prefer sessionStorage (avoids URL length limits), fallback to URL params
   useEffect(() => {
-    if (tasksJson) {
+    let loaded = false;
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        const stored = sessionStorage.getItem("manifest_result");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed.tasks) && parsed.tasks.length > 0) {
+            setTasks(parsed.tasks.map((label: string, i: number) => ({ id: i + 1, label, done: false })));
+            setResolvedAiSummary(parsed.aiSummary || "");
+            setResolvedIntentText(parsed.intentText || intentText || "");
+            loaded = true;
+          }
+        }
+      }
+    } catch {}
+
+    if (!loaded && tasksJson) {
       try {
         const parsed: string[] = JSON.parse(tasksJson);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setTasks(
-            parsed.map((label, i) => ({ id: i + 1, label, done: false }))
-          );
-          return;
+          setTasks(parsed.map((label, i) => ({ id: i + 1, label, done: false })));
+          setResolvedIntentText(intentText || "");
+          loaded = true;
         }
       } catch {}
     }
-    setTasks(STARTER_TASKS);
-  }, [tasksJson]);
+
+    if (!loaded) {
+      setResolvedIntentText(intentText || "");
+      setTasks(STARTER_TASKS);
+    }
+  }, []);
 
   // AI suggestions as user types new task
   useEffect(() => {
@@ -170,9 +190,9 @@ export default function DuaTodoScreen() {
         </Text>
 
         {/* Intention context */}
-        {intentText ? (
+        {resolvedIntentText ? (
           <Text style={{ fontFamily: "Noto Serif", fontSize: 14, fontStyle: "italic", color: "#5b5f65", lineHeight: 22, marginBottom: 24, opacity: 0.85 }}>
-            Intention: "{intentText}"
+            Intention: "{resolvedIntentText}"
           </Text>
         ) : (
           <Text style={{ fontFamily: "Noto Serif", fontSize: 13, color: "#5b5f65", marginBottom: 24, lineHeight: 20 }}>
@@ -181,14 +201,14 @@ export default function DuaTodoScreen() {
         )}
 
         {/* AI Summary */}
-        {aiSummary ? (
+        {resolvedAiSummary ? (
           <View style={[glass(20), { padding: 20, gap: 8, backgroundColor: "rgba(169,247,183,0.08)", marginBottom: 24 }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Text style={{ fontSize: 16 }}>✨</Text>
               <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#0e6030", fontWeight: "700" }}>AI Guidance</Text>
             </View>
             <Text style={{ fontFamily: "Noto Serif", fontSize: 14, color: "#2f3338", lineHeight: 24, fontStyle: "italic" }}>
-              {aiSummary}
+              {resolvedAiSummary}
             </Text>
           </View>
         ) : null}

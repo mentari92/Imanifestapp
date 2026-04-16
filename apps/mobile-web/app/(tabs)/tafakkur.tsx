@@ -237,8 +237,18 @@ export default function TafakkurHubScreen() {
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65", marginTop: 8 }}>Memuat daftar surah...</Text>
               </View>
             ) : (
-              <View style={[glass(20), { maxHeight: 320, overflow: "hidden" as any }]}>
-                <ScrollView nestedScrollEnabled showsVerticalScrollIndicator style={{ maxHeight: 320 }}>
+              // Outer View intentionally has NO overflow:hidden — it would block nested scroll on web.
+              // Border radius is applied to the ScrollView's contentContainer instead.
+              <View style={[glass(20)]}>
+                <ScrollView
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator
+                  style={{
+                    maxHeight: 420,
+                    borderRadius: 20,
+                    ...(Platform.OS === "web" ? ({ overflowY: "auto" } as any) : {}),
+                  }}
+                >
                   {filtered.map((s) => (
                     <TouchableOpacity
                       key={s.number}

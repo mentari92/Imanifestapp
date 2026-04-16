@@ -97,9 +97,13 @@ export default function QalbScreen() {
       });
       if (!res.ok) throw new Error(`${res.status}`);
       const data = await res.json();
+      // Use sessionStorage to avoid URL length limits with large Arabic/tafsir content
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("qalb_result", JSON.stringify(data));
+      }
       router.push({
         pathname: "/qalb-result",
-        params: { userText: trimmed, sentiment: selected || "", resultJson: JSON.stringify(data) },
+        params: { userText: trimmed, sentiment: selected || "" },
       });
     } catch {
       // Fallback: show demo guidance so app still works during demo
@@ -107,7 +111,7 @@ export default function QalbScreen() {
         manifestationId: "demo",
         aiSummary:
           "Allah SWT mendengar setiap doa dari hati yang tulus. " +
-          "Dalam setiap kesulitan terdapat kemudahan, dan sesungguhnya sesudah kesulitan itu ada kemudahan. " +
+          "Dalam setiap kesulitan terdapat kemudahan — sesungguhnya sesudah kesulitan itu ada kemudahan. " +
           "Tetaplah bersabar, berdoa, dan bertawakkal — sesungguhnya Allah tidak menyia-nyiakan amal orang yang berbuat baik.",
         verses: [
           {
@@ -133,9 +137,12 @@ export default function QalbScreen() {
           },
         ],
       };
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("qalb_result", JSON.stringify(fallback));
+      }
       router.push({
         pathname: "/qalb-result",
-        params: { userText: trimmed, sentiment: selected || "", resultJson: JSON.stringify(fallback) },
+        params: { userText: trimmed, sentiment: selected || "" },
       });
     } finally {
       setLoading(false);

@@ -163,14 +163,18 @@ export default function NiyyahBoardScreen() {
 
       if (!data) throw new Error("API unreachable");
 
+      // Use sessionStorage to avoid URL length limits with large tasks/verses content
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("manifest_result", JSON.stringify({
+          tasks: data.tasks || [],
+          verses: data.verses || [],
+          aiSummary: data.aiSummary || "",
+          intentText: trimmed,
+        }));
+      }
       router.push({
         pathname: "/dua-todo",
-        params: {
-          intentText: trimmed,
-          tasksJson: JSON.stringify(data.tasks || []),
-          versesJson: JSON.stringify(data.verses || []),
-          aiSummary: data.aiSummary || "",
-        },
+        params: { intentText: trimmed },
       });
     } catch {
       // Offline fallback — show motivational tasks
@@ -181,12 +185,17 @@ export default function NiyyahBoardScreen() {
         "Give sadaqah or help someone in need this week",
         "Write 3 gratitude points in a journal each night",
       ];
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem("manifest_result", JSON.stringify({
+          tasks: fallbackTasks,
+          verses: [],
+          aiSummary: "",
+          intentText: trimmed,
+        }));
+      }
       router.push({
         pathname: "/dua-todo",
-        params: {
-          intentText: trimmed,
-          tasksJson: JSON.stringify(fallbackTasks),
-        },
+        params: { intentText: trimmed },
       });
     } finally {
       setLoading(false);

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
@@ -26,16 +27,24 @@ interface AnalyzeResult {
 
 export default function QalbResultScreen() {
   const router = useRouter();
-  const { userText, sentiment, resultJson } = useLocalSearchParams<{
+  const { userText, sentiment } = useLocalSearchParams<{
     userText: string;
     sentiment: string;
-    resultJson: string;
   }>();
 
-  let result: AnalyzeResult | null = null;
-  try {
-    if (resultJson) result = JSON.parse(resultJson);
-  } catch {}
+  const [result, setResult] = useState<AnalyzeResult | null>(null);
+
+  // Read large result payload from sessionStorage (avoids URL length limits)
+  useEffect(() => {
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        const stored = sessionStorage.getItem("qalb_result");
+        if (stored) {
+          setResult(JSON.parse(stored));
+        }
+      }
+    } catch {}
+  }, []);
 
   const verses: Verse[] = result?.verses ?? [];
   const aiSummary = result?.aiSummary ?? "";
@@ -104,6 +113,19 @@ export default function QalbResultScreen() {
             "{userText}"
           </Text>
         </View>
+
+        {/* Loading state */}
+        {!result && (
+          <View style={[glass(24), { padding: 32, alignItems: "center", gap: 12 }]}>
+            <Text style={{ fontSize: 32 }}>🌙</Text>
+            <Text style={{ fontFamily: "Newsreader", fontSize: 18, fontStyle: "italic", color: "#2f3338", textAlign: "center" }}>
+              Loading your guidance...
+            </Text>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65", textAlign: "center" }}>
+              If this persists, go back and try again.
+            </Text>
+          </View>
+        )}
 
         {/* AI Summary */}
         {aiSummary ? (
