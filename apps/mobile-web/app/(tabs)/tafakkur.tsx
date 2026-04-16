@@ -105,34 +105,47 @@ export default function TafakkurHubScreen() {
   const ambientStopRef = useRef<(() => void) | null>(null);
   const requestIdRef  = useRef(0); // cancels stale loadAndPlay calls
 
-  // Load reciters + 114 surahs
+  // Load reciters + 114 surahs — try backend, fallback to Quran.com API directly
   useEffect(() => {
     const load = async () => {
       setLoadingSurahs(true);
       try {
+        // Primary: try Quran.com API directly (CORS-friendly, always up-to-date)
         const [rRes, sRes] = await Promise.all([
-          api.get("/sakinah/reciters", { timeout: 12000 }),
-          api.get("/sakinah/surahs",   { timeout: 12000 }),
+          fetch("https://api.quran.com/api/v4/resources/recitations?language=en"),
+          fetch("https://api.quran.com/api/v4/chapters?language=en"),
         ]);
-        const mapped: Reciter[] = (rRes.data || []).map((r: any, i: number) => {
-          const name = String(r?.name || "Unknown");
+        const rData = await rRes.json();
+        const sData = await sRes.json();
+
+        const TOP_IDS = [7, 1, 3, 10, 9];
+        const allRecitations: any[] = rData.recitations || [];
+        const topRecitations = TOP_IDS
+          .map((id) => allRecitations.find((r: any) => r.id === id))
+          .filter(Boolean)
+          .slice(0, 5);
+
+        const mapped: Reciter[] = topRecitations.map((r: any, i: number) => {
+          const name = String(r.reciter_name || "Unknown");
           const initials = name.split(" ").filter(Boolean).slice(0, 2)
             .map((p: string) => p[0]?.toUpperCase() || "").join("") || "QR";
-          const id = Number(r?.id || i + 1);
           return {
-            id, name,
-            subtitle: String(r?.origin || r?.translated_name?.name || "Quran.com"),
-            style: String(r?.style || "Murattal"),
-            initials, bg: RECITER_COLORS[i % RECITER_COLORS.length],
-            photo: RECITER_PHOTO_MAP[id] || "",
+            id: r.id,
+            name,
+            subtitle: String(r.style || "Murattal"),
+            style: String(r.style || "Murattal"),
+            initials,
+            bg: RECITER_COLORS[i % RECITER_COLORS.length],
+            photo: `https://static.qurancdn.com/images/reciters/${r.id}/profile-picture.jpg`,
           };
         });
         if (mapped.length > 0) setReciters(mapped);
-        setSurahs((sRes.data || []).map((s: any, idx: number) => ({
-          number: Number(s?.number || idx + 1),
-          name: String(s?.name || ""),
-          englishName: String(s?.englishName || `Surah ${idx + 1}`),
-          versesCount: Number(s?.versesCount || 0),
+
+        setSurahs((sData.chapters || []).map((c: any) => ({
+          number: Number(c.id),
+          name: String(c.name_arabic || ""),
+          englishName: String(c.name_simple || `Surah ${c.id}`),
+          versesCount: Number(c.verses_count || 0),
         })));
       } catch {
         setReciters(FALLBACK_RECITERS);
@@ -159,14 +172,17 @@ export default function TafakkurHubScreen() {
     (async () => {
       try {
         const res = await fetch(
-          `https://api.quran.com/api/v4/verses/by_chapter/${activeSurah.number}?language=en&words=false&translations=131&per_page=300`
+          `https://api.quran.com/api/v4/verses/by_chapter/${activeSurah.number}?language=en&words=false&translations=85,131&per_page=300`
         );
         const data = await res.json();
-        const verses: Verse[] = (data.verses || []).map((v: any) => ({
-          verseKey: v.verse_key,
-          arabic: v.text_uthmani || "",
-          translation: stripHtml(v.translations?.[0]?.text || "Translation unavailable"),
-        }));
+        const verses: Verse[] = (data.verses || []).map((v: any) => {
+          const raw = v.translations?.find((t: any) => t.text?.trim())?.text || "";
+          return {
+            verseKey: v.verse_key,
+            arabic: v.text_uthmani || "",
+            translation: stripHtml(raw),
+          };
+        });
         setSurahVerses(verses);
       } catch {
         setSurahVerses([]);
@@ -328,7 +344,7 @@ export default function TafakkurHubScreen() {
                   {r.photo && !photoErrors[r.id] ? (
                     <Image
                       source={{ uri: r.photo }}
-                      style={{ width: 60, height: 60 }}
+                      style={{ width: 60, height: 60, borderRadius: 30 } as any}
                       onError={() => setPhotoErrors((prev) => ({ ...prev, [r.id]: true }))}
                     />
                   ) : (
