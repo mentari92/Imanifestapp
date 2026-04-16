@@ -388,7 +388,7 @@ export default function NiyyahBoardScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: "rgba(174,178,185,0.3)" }} />
             <Text style={{ fontFamily: "Newsreader", fontSize: 20, fontStyle: "italic", color: "#2f3338" }}>
-              Moments of Gratitude
+              What Are You Grateful For Today?
             </Text>
             <View style={{ flex: 1, height: 1, backgroundColor: "rgba(174,178,185,0.3)" }} />
           </View>
@@ -416,6 +416,16 @@ export default function NiyyahBoardScreen() {
                 />
               </View>
             ))}
+          </View>
+
+          {/* Ibrahim 7 */}
+          <View style={{ alignItems: "center", paddingHorizontal: 8, gap: 6 }}>
+            <Text style={{ fontFamily: "Noto Serif", fontSize: 13, fontStyle: "italic", color: "#5b5f65", textAlign: "center", lineHeight: 22 }}>
+              "If you are grateful, I will surely increase you [in favor]."
+            </Text>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, color: "#206c3a", fontWeight: "700" }}>
+              — QS. Ibrahim: 7
+            </Text>
           </View>
         </View>
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { useRouter } from "expo-router";
-import { Heart, RefreshCw, ListChecks, Headphones } from "lucide-react-native";
+import { Heart, Sparkles, ListChecks, Headphones } from "lucide-react-native";
 
 const glass = {
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -279,7 +279,7 @@ export default function DashboardScreen() {
               onPress={() => router.push("/qalb")}
             />
             <QuickCard
-              icon={RefreshCw}
+              icon={Sparkles}
               iconColor="#1d4ed8"
               title="Imanifest"
               desc="Set your daily intention"

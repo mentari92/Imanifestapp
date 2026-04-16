@@ -53,10 +53,18 @@ interface Surah { number: number; name: string; englishName: string; versesCount
 interface Verse  { verseKey: string; arabic: string; translation: string; }
 
 const NATURE_SOUNDS = [
-  { id: "rain",  label: "Rain of Sakinah", emoji: "🌧️" },
-  { id: "river", label: "Zamzam Flow",     emoji: "💧" },
-  { id: "birds", label: "Garden of Peace", emoji: "🐦" },
+  { id: "rain",  label: "Rain of Sakinah",  emoji: "🌧️" },
+  { id: "ocean", label: "Ombak Samudra",    emoji: "🌊" },
+  { id: "river", label: "Zamzam Flow",      emoji: "💧" },
+  { id: "birds", label: "Subuh Garden",     emoji: "🐦" },
 ];
+
+const SOUND_FILES: Record<string, string> = {
+  rain:  "/sounds/rain.mp3",
+  ocean: "/sounds/ocean.mp3",
+  river: "/sounds/river%20flowing.mp3",
+  birds: "/sounds/birds.mp3",
+};
 
 const RECITER_CDN_MAP: Record<number, string> = {
   7: "ar.alafasy", 1: "ar.abdulsamad", 3: "ar.sudais", 10: "ar.minshawi",
@@ -71,50 +79,6 @@ function stripHtml(text: string) {
   return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
 }
 
-// Web Audio API ambient sound generator — no external CDN needed
-function createAmbient(type: string): () => void {
-  if (Platform.OS !== "web") return () => {};
-  try {
-    const ACtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!ACtx) return () => {};
-    const ctx = new ACtx() as AudioContext;
-
-    const sr = ctx.sampleRate;
-    const buf = ctx.createBuffer(1, sr * 3, sr);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-
-    const filter = ctx.createBiquadFilter();
-    if (type === "rain") {
-      filter.type = "bandpass"; filter.frequency.value = 3500; filter.Q.value = 0.4;
-    } else if (type === "river") {
-      filter.type = "lowpass";  filter.frequency.value = 500;  filter.Q.value = 0.8;
-    } else {
-      // birds — layered oscillator tones
-      const osc = ctx.createOscillator();
-      osc.type = "sine"; osc.frequency.value = 1200;
-      const osc2 = ctx.createOscillator();
-      osc2.type = "sine"; osc2.frequency.value = 1800;
-      const gainNode = ctx.createGain(); gainNode.gain.value = 0.06;
-      osc.connect(gainNode); osc2.connect(gainNode); gainNode.connect(ctx.destination);
-      osc.start(); osc2.start();
-      return () => { try { osc.stop(); osc2.stop(); ctx.close(); } catch {} };
-    }
-
-    const gain = ctx.createGain();
-    gain.gain.value = type === "rain" ? 0.18 : 0.25;
-    src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-    src.start(0);
-
-    return () => { try { src.stop(); ctx.close(); } catch {} };
-  } catch {
-    return () => {};
-  }
-}
 
 export default function TafakkurHubScreen() {
   const [reciters, setReciters]         = useState<Reciter[]>(FALLBACK_RECITERS);
@@ -296,11 +260,16 @@ export default function TafakkurHubScreen() {
   };
 
   const toggleNature = (soundId: string) => {
-    // Stop current ambient
     if (ambientStopRef.current) { ambientStopRef.current(); ambientStopRef.current = null; }
     if (activeNature === soundId) { setActiveNature(null); return; }
-    const stop = createAmbient(soundId);
-    ambientStopRef.current = stop;
+    if (Platform.OS !== "web") return;
+    const url = SOUND_FILES[soundId];
+    if (!url) return;
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.play().catch(() => {});
+    ambientStopRef.current = () => { audio.pause(); audio.currentTime = 0; };
     setActiveNature(soundId);
   };
 
