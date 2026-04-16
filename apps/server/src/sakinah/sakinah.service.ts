@@ -1,15 +1,16 @@
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import axios from "axios";
 import { RedisService } from "../common/redis.service";
+import { QuranApiService, VerseResult } from "../common/quran-api.service";
 
 const MIN_SURAH = 1;
 const MAX_SURAH = 114;
 
 const CACHE_KEY_RECITERS = "sakinah:reciters";
 const CACHE_KEY_SURAHS = "sakinah:surahs";
-const CACHE_TTL_RECITERS = 86400; // 24 hours — reciters rarely change
-const CACHE_TTL_SURAHS = 86400; // 24 hours — surahs are static data
-const CACHE_TTL_AUDIO = 3600; // 1 hour
+const CACHE_TTL_RECITERS = 86400;
+const CACHE_TTL_SURAHS = 86400;
+const CACHE_TTL_AUDIO = 3600;
 
 interface Reciter {
   id: number;
@@ -40,18 +41,16 @@ export class SakinahService {
   private readonly logger = new Logger(SakinahService.name);
   private readonly quranAudioBaseUrl = "https://api.quran.com/api/v4";
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly quranApiService: QuranApiService,
+  ) {}
 
-  /**
-   * Generic cache-aside helper. Checks Redis first, falls back to fetcher,
-   * then caches the result. Gracefully degrades when Redis is unavailable.
-   */
   private async withCache<T>(
     cacheKey: string,
     ttlSeconds: number,
     fetcher: () => Promise<T>,
   ): Promise<T> {
-    // Try Redis cache
     try {
       const cached = await this.redisService.get(cacheKey);
       if (cached) {
@@ -59,24 +58,18 @@ export class SakinahService {
         return JSON.parse(cached) as T;
       }
     } catch {
-      // Redis error — proceed to fetcher
+      // Ignore cache read errors
     }
 
-    // Fetch fresh data
     const data = await fetcher();
 
-    // Cache in Redis (fire-and-forget — don't block on failure)
     this.redisService.set(cacheKey, JSON.stringify(data), ttlSeconds).catch(() => {
-      // Silent — RedisService already logs warnings
+      // Ignore cache write errors
     });
 
     return data;
   }
 
-  /**
-   * Get list of reciters from Quran Foundation Audio API.
-   * Cached in Redis for 24 hours.
-   */
   async getReciters(): Promise<Reciter[]> {
     return this.withCache(CACHE_KEY_RECITERS, CACHE_TTL_RECITERS, async () => {
       try {
@@ -99,16 +92,13 @@ export class SakinahService {
     });
   }
 
-  /**
-   * Get audio URL for a specific reciter + surah.
-   * Cached in Redis for 1 hour.
-   */
   async getAudioUrl(reciterId: number, surahNumber: number): Promise<AudioUrl> {
     if (surahNumber < MIN_SURAH || surahNumber > MAX_SURAH) {
       throw new BadRequestException(
         `Invalid surah number: ${surahNumber}. Must be between ${MIN_SURAH} and ${MAX_SURAH}.`,
       );
     }
+
     if (reciterId <= 0) {
       throw new BadRequestException(`Invalid reciter ID: ${reciterId}. Must be a positive number.`);
     }
@@ -119,35 +109,26 @@ export class SakinahService {
         const res = await axios.get(`${this.quranAudioBaseUrl}/chapter_recitations/${reciterId}/${surahNumber}`);
         let url = res.data?.audio_file?.audio_url;
         if (!url) throw new Error("Audio URL not found");
-        
-        // Ensure https
+
         if (url.startsWith("http://")) {
-            url = url.replace("http://", "https://");
+          url = url.replace("http://", "https://");
         }
+
         return { url };
-      } catch (err) {
-        this.logger.warn(`Primary audio fetch failed for ${reciterId}/${surahNumber}, trying robust fallback...`);
-        const paddedSurah = String(surahNumber).padStart(3, "0");
-        
-        // Islamic.network is generally very solid as a 128kbps fallback
-        // Mapping common reciters to their ar. identifier
+      } catch {
         const reciterMap: Record<number, string> = {
           7: "ar.alafasy",
           1: "ar.abdulsamad",
           3: "ar.sudais",
           10: "ar.minshawi",
         };
-        
         const identifier = reciterMap[reciterId] || "ar.alafasy";
-        return { url: `https://cdn.islamic.network/quran/audio/128/${identifier}/${surahNumber}.mp3` };
+        const paddedSurah = String(surahNumber).padStart(3, "0");
+        return { url: `https://cdn.islamic.network/quran/audio/128/${identifier}/${paddedSurah}.mp3` };
       }
     });
   }
 
-  /**
-   * Get list of all 114 surahs.
-   * Cached in Redis for 24 hours — surahs are static data.
-   */
   async getSurahs(): Promise<Surah[]> {
     return this.withCache(CACHE_KEY_SURAHS, CACHE_TTL_SURAHS, async () => {
       try {
@@ -166,7 +147,6 @@ export class SakinahService {
         );
       } catch (error) {
         this.logger.error("Failed to fetch surahs", error);
-        // Return minimal fallback
         return Array.from({ length: 114 }, (_, i) => ({
           number: i + 1,
           name: "",
@@ -175,5 +155,27 @@ export class SakinahService {
         }));
       }
     });
+  }
+
+  async getReadReflect(surahNumber: number): Promise<VerseResult> {
+    if (surahNumber < MIN_SURAH || surahNumber > MAX_SURAH) {
+      throw new BadRequestException(
+        `Invalid surah number: ${surahNumber}. Must be between ${MIN_SURAH} and ${MAX_SURAH}.`,
+      );
+    }
+
+    const verseKey = `${surahNumber}:1`;
+    const verse = await this.quranApiService.getVerseWithTranslation(verseKey);
+
+    if (verse) {
+      return verse;
+    }
+
+    return {
+      verseKey,
+      arabicText: "",
+      translation: "Read this surah slowly and reflect on Allah's guidance in your current journey.",
+      tafsirSnippet: "Reflect with intention: what instruction from this surah can you apply today?",
+    };
   }
 }

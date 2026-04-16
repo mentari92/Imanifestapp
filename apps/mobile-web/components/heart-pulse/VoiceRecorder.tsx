@@ -98,7 +98,7 @@ export function VoiceRecorder({ onSubmit, isLoading }: VoiceRecorderProps) {
         </View>
         {isRecording && (
           <View className="mt-4 flex-row gap-1">
-             {[1,2,3,4].map(i => <View key={i} className="w-1.5 h-4 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: `${i*0.2}s` }} />)}
+             {[1,2,3,4].map(i => <View key={i} className="w-1.5 h-4 bg-red-500 rounded-full animate-bounce" style={Platform.OS === "web" ? ({ animationDelay: `${i*0.2}s` } as any) : undefined} />)}
           </View>
         )}
       </View>

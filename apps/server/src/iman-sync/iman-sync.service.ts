@@ -41,15 +41,16 @@ export class ImanSyncService {
 
   /**
    * Quick search for real-time verse discovery.
-   * Uses GLM-4-flash to extract a theme quickly and return verses.
+   * Uses fast AI theme extraction and lite Quran search without tafsir calls.
    */
   async quickSearch(text: string): Promise<{ verses: VerseResult[] }> {
     try {
-      // Very fast theme extraction
-      const themes = await this.zhipu.extractThemes(text.substring(0, 100));
+      const themes = await this.zhipu.extractThemes(text.substring(0, 140));
       if (themes.length === 0) return { verses: [] };
-      
-      const verses = await this.quranApi.searchVerses(themes[0], 2);
+
+      const verses = await this.quranApi.searchVerses(themes[0], 2, {
+        includeTafsir: false,
+      });
       return { verses };
     } catch (err) {
       this.logger.error("Quick search failed", err);

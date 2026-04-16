@@ -52,10 +52,26 @@ export default function NiyyahBoardScreen() {
     debounceRef.current = setTimeout(async () => {
       setHintsLoading(true);
       try {
-        const res = await api.post("/iman-sync/quick-search", { text: intention });
+        const res = await api.post(
+          "/iman-sync/quick-search",
+          { text: intention },
+          { timeout: 10000 },
+        );
         const verses: VerseHint[] = (res.data.verses || []).slice(0, 2);
         setAiHints(verses);
-      } catch {}
+      } catch {
+        const fallbackHints: VerseHint[] = [
+          {
+            verseKey: "94:5",
+            translation: "Indeed, with hardship comes ease.",
+          },
+          {
+            verseKey: "13:28",
+            translation: "Surely in the remembrance of Allah do hearts find rest.",
+          },
+        ];
+        setAiHints(fallbackHints);
+      }
       setHintsLoading(false);
     }, 1400);
     return () => clearTimeout(debounceRef.current);
@@ -65,7 +81,8 @@ export default function NiyyahBoardScreen() {
     if (Platform.OS !== "web") return;
     const input = (document as any).createElement("input");
     input.type = "file";
-    input.accept = "image/jpeg,image/png";
+    input.accept = "image/*";
+    input.capture = "environment";
     input.onchange = (e: any) => {
       const file: File = e.target?.files?.[0];
       if (!file) return;
@@ -73,6 +90,7 @@ export default function NiyyahBoardScreen() {
         setError("Photo must be under 5MB.");
         return;
       }
+      setError(null);
       setImageFile(file);
       const reader = new FileReader();
       reader.onload = (ev) => setImagePreview(ev.target?.result as string);
@@ -93,7 +111,7 @@ export default function NiyyahBoardScreen() {
         return;
       }
       const recognition = new SR();
-      recognition.lang = "en-US";
+      recognition.lang = "id-ID";
       recognition.continuous = false;
       recognition.interimResults = false;
       recognitionRef.current = recognition;
@@ -137,6 +155,7 @@ export default function NiyyahBoardScreen() {
           form.append("image", imageFile);
           const res = await api.post("/iman-sync/analyze-vision", form, {
             headers: { "Content-Type": "multipart/form-data" },
+            timeout: 30000,
           });
           if (res.data) data = res.data;
         } catch {
@@ -146,7 +165,11 @@ export default function NiyyahBoardScreen() {
 
       // Fall back to text analysis
       if (!data) {
-        const res = await api.post("/iman-sync/analyze", { intentText: trimmed });
+        const res = await api.post(
+          "/iman-sync/analyze",
+          { intentText: trimmed },
+          { timeout: 45000 },
+        );
         if (res.data) data = res.data;
       }
 
@@ -170,20 +193,24 @@ export default function NiyyahBoardScreen() {
         },
       });
     } catch {
-      // Offline fallback — show motivational tasks
+      const lower = trimmed.toLowerCase();
       const fallbackTasks = [
-        "Pray all 5 daily prayers on time today",
-        "Read Quran for 10 minutes after Fajr",
-        "Make sincere dua for your intention after each prayer",
-        "Give sadaqah or help someone in need this week",
-        "Write 3 gratitude points in a journal each night",
+        "Shalat 5 waktu tepat waktu dan catat progres harian",
+        /kerja|karier|lamaran|cv/.test(lower)
+          ? "Perbarui CV dan kirim minimal 2 lamaran hari ini"
+          : "Selesaikan 1 tugas duniawi paling berdampak selama 45 menit fokus",
+        /rezeki|utang|cicilan|keuangan/.test(lower)
+          ? "Buat rencana keuangan 7 hari dan komit ke batas pengeluaran"
+          : "Tulis 3 syukur spesifik yang kamu rasakan hari ini",
+        "Baca dan renungkan 1 ayat Al-Quran yang menguatkan niatmu",
+        "Tutup hari dengan doa spesifik untuk niat ini dan evaluasi progres",
       ];
       if (typeof sessionStorage !== "undefined") {
         sessionStorage.setItem("manifest_result", JSON.stringify({
           manifestationId: "",
           tasks: fallbackTasks,
           verses: [],
-          aiSummary: "",
+          aiSummary: "AI utama sedang sibuk. Ini rencana ikhtiar terarah agar langkahmu tetap berjalan.",
           intentText: trimmed,
         }));
       }
@@ -191,7 +218,7 @@ export default function NiyyahBoardScreen() {
         pathname: "/dua-todo",
         params: { intentText: trimmed, manifestationId: "" },
       });
-      setNotice("AI sedang lambat, memakai fallback tasks sementara.");
+      setNotice("AI sedang sibuk, memakai fallback plan yang tetap relevan.");
     } finally {
       setLoading(false);
     }

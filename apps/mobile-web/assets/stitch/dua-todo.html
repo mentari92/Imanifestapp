@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Noto+Serif:ital,wght@0,100..900;1,100..900&amp;family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-dim": "#770326",
+                    "surface-dim": "#d6dae2",
+                    "primary-fixed-dim": "#d7d1e9",
+                    "inverse-primary": "#e5dff8",
+                    "tertiary": "#206c3a",
+                    "on-primary": "#fcf7ff",
+                    "surface-container-low": "#f2f3f8",
+                    "outline": "#777b81",
+                    "background": "#f9f9fd",
+                    "on-primary-fixed-variant": "#5c596d",
+                    "surface-variant": "#dfe2ea",
+                    "on-error": "#fff7f7",
+                    "surface-container": "#eceef3",
+                    "tertiary-container": "#a9f7b7",
+                    "on-error-container": "#68001f",
+                    "primary": "#605d71",
+                    "on-tertiary-fixed": "#004c22",
+                    "on-primary-container": "#524f63",
+                    "surface-container-highest": "#dfe2ea",
+                    "on-tertiary-fixed-variant": "#1d6b39",
+                    "on-secondary": "#fff7f8",
+                    "on-primary-fixed": "#403d50",
+                    "primary-fixed": "#e5dff8",
+                    "inverse-on-surface": "#9c9da0",
+                    "secondary-fixed": "#ffe4f2",
+                    "tertiary-fixed": "#a9f7b7",
+                    "secondary": "#6d5965",
+                    "surface": "#f9f9fd",
+                    "error": "#ac3149",
+                    "tertiary-fixed-dim": "#9be9aa",
+                    "surface-bright": "#f9f9fd",
+                    "tertiary-dim": "#0e6030",
+                    "primary-dim": "#545164",
+                    "on-background": "#2f3338",
+                    "outline-variant": "#aeb2b9",
+                    "on-tertiary": "#e8ffe8",
+                    "error-container": "#f76a80",
+                    "on-surface-variant": "#5b5f65",
+                    "on-secondary-fixed": "#513f4a",
+                    "on-surface": "#2f3338",
+                    "secondary-container": "#ffe4f2",
+                    "surface-container-high": "#e6e8ee",
+                    "on-tertiary-container": "#0e6030",
+                    "primary-container": "#e5dff8",
+                    "on-secondary-fixed-variant": "#6f5b67",
+                    "on-secondary-container": "#65515d",
+                    "surface-tint": "#605d71",
+                    "secondary-dim": "#614e59",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#f0d6e4",
+                    "inverse-surface": "#0c0e11",
+                    "sage-green": "#166534"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": [
+                            "Newsreader"
+                    ],
+                    "body": [
+                            "Noto Serif"
+                    ],
+                    "label": [
+                            "Plus Jakarta Sans"
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f9f9fd;
+            background-image: 
+                radial-gradient(at 0% 0%, #ffe4f2 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #e2ddf8 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #ffe4f2 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #e2ddf8 0px, transparent 50%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(24px) saturate(130%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="font-body text-on-surface antialiased overflow-x-hidden">
+<!-- Top Navigation Header: Celestial Ether Style -->
+<header class="fixed top-0 w-full z-50 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl shadow-[0_12px_40px_rgba(26,24,41,0.04)] grid grid-cols-3 items-center px-6 py-4">
+<div class="flex justify-start">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-white/50 shadow-sm">
+<img alt="User avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPRfN4n7C8eWjrZjFjJCIYzJBJa0W-eWgspMMYPY1NKjDkAZKaC5C3zv6btdZ9hmMTOofEFl1juX7mcVRUOQH2iErYVa-swfFFpFmUgQ7OXRlNK0PN_VFsoVMBg8rsug9CbVeOTZmwCcSPtBCXDFpFrPqKU3Cr7MWngspEE575LIpz2f_h7r5nSZyUJV8r7PzFn5gu3xuBXBRFnO21DL_liC4LQHNX-7pIC77_SKiPbvS874bPE2XusF37IZaYrPEZlyL2cZ0jEu8"/>
+</div>
+</div>
+<div class="flex justify-center">
+<span class="font-headline italic text-2xl font-semibold text-slate-800 dark:text-white">Dua-to-Do</span>
+</div>
+<div class="flex justify-end">
+<button class="p-2 text-slate-800 dark:text-slate-100 hover:bg-white/20 rounded-full transition-all active:scale-95 duration-300">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-28 pb-36 px-6 max-w-2xl mx-auto">
+<!-- Intention Header Section -->
+<section class="mb-12">
+<h1 class="font-headline italic text-5xl md:text-6xl text-on-surface leading-[1.1] mb-8 max-w-md">
+                5 Steps to Manifest your Intention
+            </h1>
+<!-- Progress Bento Item -->
+<div class="glass-card rounded-[32px] p-8 flex flex-row items-center justify-between shadow-[0_12px_40px_rgba(26,24,41,0.04)] overflow-hidden relative">
+<div class="absolute -right-4 -top-4 w-32 h-32 bg-secondary-container/40 rounded-full blur-3xl"></div>
+<div class="z-10">
+<span class="font-label text-xs uppercase tracking-[0.2em] text-on-surface-variant font-bold mb-2 block">Journey Status</span>
+<p class="font-headline text-3xl italic text-on-surface-variant">3/5 Steps Completed</p>
+</div>
+<div class="relative flex items-center justify-center">
+<svg class="w-24 h-24">
+<circle class="text-surface-container stroke-current" cx="48" cy="48" fill="transparent" r="40" stroke-width="6"></circle>
+<circle class="text-tertiary stroke-current progress-ring__circle" cx="48" cy="48" fill="transparent" r="40" stroke-dasharray="251.2" stroke-dashoffset="100.48" stroke-linecap="round" stroke-width="6"></circle>
+</svg>
+<span class="absolute font-label font-bold text-tertiary">60%</span>
+</div>
+</div>
+</section>
+<!-- Checklist Section -->
+<section class="space-y-6">
+<!-- Completed Task 1 -->
+<div class="flex items-start gap-6 group">
+<div class="mt-1 flex-shrink-0">
+<div class="w-10 h-10 rounded-full bg-tertiary flex items-center justify-center text-on-tertiary shadow-lg shadow-tertiary/20">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="flex-1 pb-4">
+<h3 class="font-body text-xl line-through text-on-surface-variant/60 decoration-tertiary/40">Purify Intention with morning Dhikr</h3>
+<p class="font-label text-sm text-outline mt-1 italic">Completed at 06:15 AM</p>
+</div>
+</div>
+<!-- Completed Task 2 -->
+<div class="flex items-start gap-6 group">
+<div class="mt-1 flex-shrink-0">
+<div class="w-10 h-10 rounded-full bg-tertiary flex items-center justify-center text-on-tertiary shadow-lg shadow-tertiary/20">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="flex-1 pb-4">
+<h3 class="font-body text-xl line-through text-on-surface-variant/60 decoration-tertiary/40">Visualize Divine Support after Dhuhr</h3>
+<p class="font-label text-sm text-outline mt-1 italic">Completed at 12:45 PM</p>
+</div>
+</div>
+<!-- Completed Task 3 -->
+<div class="flex items-start gap-6 group">
+<div class="mt-1 flex-shrink-0">
+<div class="w-10 h-10 rounded-full bg-tertiary flex items-center justify-center text-on-tertiary shadow-lg shadow-tertiary/20">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="flex-1 pb-4">
+<h3 class="font-body text-xl line-through text-on-surface-variant/60 decoration-tertiary/40">Journalize 3 Gratitude Anchors</h3>
+<p class="font-label text-sm text-outline mt-1 italic">Completed at 04:30 PM</p>
+</div>
+</div>
+<!-- Active Task 4 -->
+<div class="glass-card rounded-3xl p-6 flex items-start gap-6 shadow-xl relative ml-4 md:ml-12 border-l-4 border-l-sage-green">
+<div class="mt-1 flex-shrink-0">
+<div class="w-10 h-10 rounded-full border-2 border-outline/30 flex items-center justify-center text-outline">
+<span class="material-symbols-outlined" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</div>
+</div>
+<div class="flex-1">
+<h3 class="font-body text-2xl font-medium text-on-surface">Practice Deep Presence during Isha</h3>
+<p class="font-label text-sm text-on-surface-variant mt-2 max-w-sm">Connect with the Infinite Source through focused breath and conscious movement.</p>
+</div>
+<div class="hidden md:block absolute -right-6 -bottom-6 opacity-10">
+<span class="material-symbols-outlined text-8xl" data-icon="auto_awesome">auto_awesome</span>
+</div>
+</div>
+<!-- Pending Task 5 -->
+<div class="flex items-start gap-6 group">
+<div class="mt-1 flex-shrink-0">
+<div class="w-10 h-10 rounded-full border-2 border-outline/20 flex items-center justify-center text-outline/40">
+<span class="material-symbols-outlined" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</div>
+</div>
+<div class="flex-1 pb-4 opacity-50">
+<h3 class="font-body text-xl text-on-surface">Release Outcome before Sleep</h3>
+<p class="font-label text-sm text-outline mt-1 italic">Unlocks after Task 4</p>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<div class="mt-16 flex justify-end">
+<button class="bg-sage-green hover:bg-green-900 text-on-primary font-label px-10 py-5 rounded-full shadow-2xl shadow-sage-green/30 flex items-center gap-3 transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="add_task">add_task</span>
+<span class="font-semibold tracking-wide">Add to Daily Tasks</span>
+</button>
+</div>
+</main>
+<!-- Updated Bottom Navigation: Matching User Dashboard -->
+<nav class="fixed bottom-8 left-0 right-0 mx-auto w-[92%] z-50 flex justify-around items-center px-4 py-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20">
+<a class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#" title="Dashboard">
+<span class="material-symbols-outlined">grid_view</span>
+</a>
+<a class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#" title="Qalb">
+<span class="material-symbols-outlined">favorite</span>
+</a>
+<a aria-label="Imanifest" class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#" title="Imanifest">
+<span class="material-symbols-outlined">sync</span>
+</a>
+<a class="flex items-center justify-center bg-emerald-700/10 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 rounded-full p-3 transition-all duration-500 scale-110" href="#" title="Dua-to-Do">
+<span class="material-symbols-outlined">checklist</span>
+</a>
+<a aria-label="Tafakkur" class="flex items-center justify-center text-slate-500 dark:text-slate-400 p-3 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors" href="#" title="Tafakkur">
+<span class="material-symbols-outlined">self_improvement</span>
+</a>
+</nav>
+<!-- Background Decorative Elements -->
+<div class="fixed top-1/4 -left-20 w-64 h-64 bg-primary-container/20 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="fixed bottom-1/4 -right-20 w-80 h-80 bg-secondary-container/20 rounded-full blur-[120px] pointer-events-none"></div>
+</body></html>

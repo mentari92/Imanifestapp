@@ -45,13 +45,29 @@ function completedAt(): string {
   return `Completed at ${h}:${m} ${ampm}`;
 }
 
-const STARTER_TASKS: Task[] = [
-  { id: 1, label: "Pray all 5 daily prayers on time today", done: false },
-  { id: 2, label: "Read Quran for 10 minutes after Fajr", done: false },
-  { id: 3, label: "Make sincere dua for your intention after each prayer", done: false },
-  { id: 4, label: "Give sadaqah or help someone in need", done: false },
-  { id: 5, label: "Write 3 gratitude points in a journal tonight", done: false },
-];
+function buildStarterTasks(intent: string): Task[] {
+  const source = intent.toLowerCase();
+
+  return [
+    { id: 1, label: "Shalat 5 waktu tepat waktu dan catat konsistensinya", done: false },
+    {
+      id: 2,
+      label: /kerja|karier|cv|lamaran/.test(source)
+        ? "Perbarui CV dan kirim minimal 2 lamaran hari ini"
+        : "Kerjakan 1 tugas prioritas utama selama 45 menit fokus",
+      done: false,
+    },
+    {
+      id: 3,
+      label: /rezeki|utang|cicilan|keuangan/.test(source)
+        ? "Buat rencana keuangan 7 hari dan disiplin sesuai batas"
+        : "Tulis 3 syukur spesifik dan 1 evaluasi diri hari ini",
+      done: false,
+    },
+    { id: 4, label: "Baca dan renungkan 1 ayat Al-Quran yang relevan", done: false },
+    { id: 5, label: "Tutup hari dengan doa spesifik dan review progres", done: false },
+  ];
+}
 
 export default function DuaTodoScreen() {
   const router = useRouter();
@@ -69,6 +85,7 @@ export default function DuaTodoScreen() {
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [resolvedAiSummary, setResolvedAiSummary] = useState<string>("");
   const [resolvedIntentText, setResolvedIntentText] = useState<string>("");
+  const [notice, setNotice] = useState<string | null>(null);
   const debounceRef = useRef<any>(null);
 
   // Load tasks from backend generation flow first, then local/session fallback.
@@ -105,7 +122,7 @@ export default function DuaTodoScreen() {
         try {
           const res = await api.post("/dua-to-do/generate", {
             manifestationId: resolvedManifestationId,
-          });
+          }, { timeout: 20000 });
           const generatedTasks = Array.isArray(res.data?.tasks)
             ? res.data.tasks.map((item: any, i: number) => mapTaskItem(item, i))
             : [];
@@ -113,8 +130,13 @@ export default function DuaTodoScreen() {
           if (!isCancelled && generatedTasks.length > 0) {
             setTasks(generatedTasks);
             loaded = true;
+            setNotice(null);
           }
-        } catch {}
+        } catch {
+          if (!isCancelled) {
+            setNotice("Gagal ambil task AI. Menampilkan fallback tasks.");
+          }
+        }
         setIsGeneratingFromAi(false);
       }
 
@@ -132,8 +154,9 @@ export default function DuaTodoScreen() {
       }
 
       if (!loaded && !isCancelled) {
-        setResolvedIntentText(intentText || "");
-        setTasks(STARTER_TASKS);
+        const resolvedIntent = intentText || "";
+        setResolvedIntentText(resolvedIntent);
+        setTasks(buildStarterTasks(resolvedIntent));
       }
     };
 
@@ -156,10 +179,19 @@ export default function DuaTodoScreen() {
         const searchText = intentText
           ? `${intentText} — ${newLabel}`
           : newLabel;
-        const res = await api.post("/iman-sync/quick-search", { text: searchText });
+        const res = await api.post(
+          "/iman-sync/quick-search",
+          { text: searchText },
+          { timeout: 10000 },
+        );
         const verses = (res.data.verses || []).slice(0, 2);
         setAiSuggestions(verses.map((v: any) => `"${v.translation}" — ${v.verseKey}`));
-      } catch {}
+      } catch {
+        setAiSuggestions([
+          "Mulai dari langkah kecil yang konsisten, jangan menunggu motivasi sempurna.",
+          "Pilih 1 amalan spiritual + 1 ikhtiar duniawi yang bisa dieksekusi hari ini.",
+        ]);
+      }
       setAiSuggestLoading(false);
     }, 1200);
     return () => clearTimeout(debounceRef.current);
@@ -190,6 +222,7 @@ export default function DuaTodoScreen() {
     try {
       await api.patch(`/dua-to-do/tasks/${id}`, { isCompleted: nextDone });
     } catch {
+      setNotice("Status task gagal disimpan ke server. Perubahan dibatalkan.");
       setTasks((prev) =>
         prev.map((t) =>
           t.id === id
@@ -222,6 +255,7 @@ export default function DuaTodoScreen() {
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 140 }}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       {/* Decorative blobs */}
@@ -275,6 +309,12 @@ export default function DuaTodoScreen() {
             </Text>
           </View>
         )}
+
+        {notice ? (
+          <View style={[glass(16), { padding: 12, marginBottom: 20, backgroundColor: "rgba(254,243,199,0.6)" }]}> 
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#7c2d12" }}>{notice}</Text>
+          </View>
+        ) : null}
 
         {/* AI Summary */}
         {resolvedAiSummary ? (

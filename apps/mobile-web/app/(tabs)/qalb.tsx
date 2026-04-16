@@ -40,11 +40,13 @@ export default function QalbScreen() {
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
 
   const startVoice = () => {
     if (Platform.OS !== "web") return;
     setError(null);
+    setNotice(null);
     try {
       const SR =
         (window as any).SpeechRecognition ||
@@ -54,7 +56,7 @@ export default function QalbScreen() {
         return;
       }
       const recognition = new SR();
-      recognition.lang = "en-US";
+      recognition.lang = "id-ID";
       recognition.continuous = false;
       recognition.interimResults = false;
       recognitionRef.current = recognition;
@@ -84,48 +86,78 @@ export default function QalbScreen() {
       setError("Please share what's in your heart before seeking guidance.");
       return;
     }
+
     setError(null);
+    setNotice(null);
     setLoading(true);
+
     try {
-      const res = await api.post("/iman-sync/analyze", { intentText: trimmed });
-      const data = res.data;
-      // Use sessionStorage to avoid URL length limits with large Arabic/tafsir content
+      const [reflectRes, versesRes] = await Promise.allSettled([
+        api.post(
+          "/heart-pulse/reflect",
+          { transcriptText: trimmed },
+          { timeout: 18000 },
+        ),
+        api.post(
+          "/iman-sync/quick-search",
+          { text: trimmed },
+          { timeout: 14000 },
+        ),
+      ]);
+
+      const reflectData = reflectRes.status === "fulfilled" ? reflectRes.value?.data : null;
+      const verseData = versesRes.status === "fulfilled" ? versesRes.value?.data : null;
+
+      const aiSummary = reflectData?.aiInsight
+        ? [
+            reflectData.aiInsight.spiritual,
+            reflectData.aiInsight.tafsir,
+            reflectData.aiInsight.scientific,
+          ]
+            .filter(Boolean)
+            .join("\n\n")
+        : "Allah mengetahui isi hatimu. Tetap berikhtiar, perbanyak doa, dan jaga hati dengan dzikir.";
+
+      const payload = {
+        manifestationId: "qalb-response",
+        aiSummary,
+        verses: Array.isArray(verseData?.verses) ? verseData.verses : [],
+      };
+
       if (typeof sessionStorage !== "undefined") {
-        sessionStorage.setItem("qalb_result", JSON.stringify(data));
+        sessionStorage.setItem("qalb_result", JSON.stringify(payload));
       }
+
+      if (reflectRes.status !== "fulfilled") {
+        setNotice("AI utama sedang sibuk, menampilkan guidance fallback yang tetap relevan.");
+      }
+
       router.push({
         pathname: "/qalb-result",
-        params: { userText: trimmed, sentiment: selected || "" },
+        params: {
+          userText: trimmed,
+          sentiment: reflectData?.sentiment || selected || "",
+        },
       });
     } catch {
-      // Fallback: show demo guidance so app still works during demo
+      setNotice("AI sedang sibuk, menampilkan guidance fallback.");
       const fallback = {
         manifestationId: "demo",
         aiSummary:
-          "Allah SWT mendengar setiap doa dari hati yang tulus. " +
-          "Dalam setiap kesulitan terdapat kemudahan — sesungguhnya sesudah kesulitan itu ada kemudahan. " +
-          "Tetaplah bersabar, berdoa, dan bertawakkal — sesungguhnya Allah tidak menyia-nyiakan amal orang yang berbuat baik.",
+          "Allah SWT mendengar setiap doa dari hati yang tulus. Dalam setiap kesulitan terdapat kemudahan (QS 94:5-6). " +
+          "Ambil satu langkah kecil hari ini, lalu lanjutkan dengan ikhtiar yang konsisten.",
         verses: [
           {
             verseKey: "94:5",
             arabicText: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
             translation: "For indeed, with hardship will be ease.",
-            tafsirSnippet:
-              "Allah menjanjikan bahwa bersama setiap kesulitan ada kemudahan. Ini adalah janji pasti dari Allah kepada hamba-hamba-Nya yang bersabar.",
-          },
-          {
-            verseKey: "2:286",
-            arabicText: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا",
-            translation: "Allah does not burden a soul beyond that it can bear.",
-            tafsirSnippet:
-              "Allah Maha Bijaksana — Dia tidak memberikan ujian melebihi kemampuan hamba-Nya. Setiap ujian adalah bukti kepercayaan Allah pada kekuatan kita.",
+            tafsirSnippet: "Allah menjanjikan bahwa bersama setiap kesulitan ada kemudahan.",
           },
           {
             verseKey: "13:28",
             arabicText: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
             translation: "Verily, in the remembrance of Allah do hearts find rest.",
-            tafsirSnippet:
-              "Ketenangan sejati hanya ditemukan dalam mengingat Allah. Dzikir adalah obat bagi hati yang gelisah dan jiwa yang lelah.",
+            tafsirSnippet: "Ketenangan hati tumbuh saat kita mengingat Allah dengan sadar.",
           },
         ],
       };
@@ -145,6 +177,7 @@ export default function QalbScreen() {
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 120 }}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       {/* Holographic blobs */}
@@ -285,6 +318,12 @@ export default function QalbScreen() {
         {error ? (
           <View style={[glass(16), { padding: 16, backgroundColor: "rgba(254,202,202,0.4)" }]}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#991b1b" }}>{error}</Text>
+          </View>
+        ) : null}
+
+        {notice ? (
+          <View style={[glass(16), { padding: 16, backgroundColor: "rgba(187,247,208,0.45)" }]}> 
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#166534" }}>{notice}</Text>
           </View>
         ) : null}
 

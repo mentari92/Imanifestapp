@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Qalb - Soul Reflection Result</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400;1,600&amp;family=Noto+Serif:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-dim": "#770326",
+                    "surface-dim": "#d6dae2",
+                    "primary-fixed-dim": "#d7d1e9",
+                    "inverse-primary": "#e5dff8",
+                    "tertiary": "#206c3a",
+                    "on-primary": "#fcf7ff",
+                    "surface-container-low": "#f2f3f8",
+                    "outline": "#777b81",
+                    "background": "#f9f9fd",
+                    "on-primary-fixed-variant": "#5c596d",
+                    "surface-variant": "#dfe2ea",
+                    "on-error": "#fff7f7",
+                    "surface-container": "#eceef3",
+                    "tertiary-container": "#a9f7b7",
+                    "on-error-container": "#68001f",
+                    "primary": "#605d71",
+                    "on-tertiary-fixed": "#004c22",
+                    "on-primary-container": "#524f63",
+                    "surface-container-highest": "#dfe2ea",
+                    "on-tertiary-fixed-variant": "#1d6b39",
+                    "on-secondary": "#fff7f8",
+                    "on-primary-fixed": "#403d50",
+                    "primary-fixed": "#e5dff8",
+                    "inverse-on-surface": "#9c9da0",
+                    "secondary-fixed": "#ffe4f2",
+                    "tertiary-fixed": "#a9f7b7",
+                    "secondary": "#6d5965",
+                    "surface": "#f9f9fd",
+                    "error": "#ac3149",
+                    "tertiary-fixed-dim": "#9be9aa",
+                    "surface-bright": "#f9f9fd",
+                    "tertiary-dim": "#0e6030",
+                    "primary-dim": "#545164",
+                    "on-background": "#2f3338",
+                    "outline-variant": "#aeb2b9",
+                    "on-tertiary": "#e8ffe8",
+                    "error-container": "#f76a80",
+                    "on-surface-variant": "#5b5f65",
+                    "on-secondary-fixed": "#513f4a",
+                    "on-surface": "#2f3338",
+                    "secondary-container": "#ffe4f2",
+                    "surface-container-high": "#e6e8ee",
+                    "on-tertiary-container": "#0e6030",
+                    "primary-container": "#e5dff8",
+                    "on-secondary-fixed-variant": "#6f5b67",
+                    "on-secondary-container": "#65515d",
+                    "surface-tint": "#605d71",
+                    "secondary-dim": "#614e59",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#f0d6e4",
+                    "inverse-surface": "#0c0e11",
+                    "sage": {
+                        "DEFAULT": "#166534",
+                        "light": "#a3b8aa",
+                        "dark": "#5a7061"
+                    }
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "2xl": "1rem",
+                    "3xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Newsreader"],
+                    "body": ["Noto Serif"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .holographic-blob {
+            filter: blur(100px);
+            opacity: 0.35;
+            z-index: -1;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .arabic-text {
+            font-family: "Noto Serif", serif;
+            direction: rtl;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container min-h-screen overflow-x-hidden pb-40">
+<!-- Background Holographic Elements -->
+<div class="fixed inset-0 overflow-hidden pointer-events-none">
+<div class="holographic-blob absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-primary-container/40 rounded-full"></div>
+<div class="holographic-blob absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-tertiary-container/30 rounded-full"></div>
+<div class="holographic-blob absolute top-[30%] right-[-5%] w-[40%] h-[40%] bg-secondary-container/30 rounded-full"></div>
+</div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-white/40 backdrop-blur-xl border-b border-white/20">
+<div class="flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center hover:bg-white/20 rounded-full transition-all">
+<span class="material-symbols-outlined text-slate-800">arrow_back</span>
+</button>
+<span class="text-2xl font-headline italic font-semibold text-slate-800">Your Qalb Answer</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center hover:bg-white/20 rounded-full transition-all">
+<span class="material-symbols-outlined text-slate-800">share</span>
+</button>
+</div>
+</header>
+<main class="relative pt-28 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Reflection Summary Card -->
+<section class="glass-panel rounded-3xl p-6 space-y-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary fill-icon">mic</span>
+</div>
+<div>
+<h3 class="font-label text-xs uppercase tracking-widest text-on-surface-variant font-bold">Reflection Theme</h3>
+<p class="font-headline italic text-xl">Anxiety about Career Transitions</p>
+</div>
+</div>
+<div class="h-px bg-outline-variant/20"></div>
+<p class="text-on-surface-variant text-sm italic leading-relaxed">
+                "I feel lost after the company reorganization. I've been working so hard, and now everything feels uncertain. I'm worried about my family's future and whether my skills are still relevant..."
+            </p>
+</section>
+<!-- Divine Response Section -->
+<section class="space-y-4">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-tertiary">auto_awesome</span>
+<h2 class="font-headline text-2xl italic text-tertiary-dim">Divine Response</h2>
+</div>
+<!-- Quranic Verse -->
+<div class="glass-panel rounded-3xl p-8 space-y-6 bg-tertiary-container/10">
+<div class="space-y-4 text-center">
+<p class="arabic-text text-3xl leading-[1.8] text-on-surface">فَإِنَّ مَعَ الْعُسْرِ يُسْرًا • إِنَّ مَعَ الْعُسْرِ يُسْرًا</p>
+<p class="font-body italic text-lg text-on-surface-variant">"For indeed, with hardship [will be] ease. Indeed, with hardship [will be] ease."</p>
+<p class="font-label text-xs uppercase tracking-widest text-outline">— Surah Ash-Sharh (94:5-6)</p>
+</div>
+<div class="h-px bg-outline-variant/20"></div>
+<!-- Prophetic Wisdom -->
+<div class="space-y-3">
+<h4 class="font-label text-xs font-bold uppercase text-tertiary tracking-widest">Prophetic Wisdom</h4>
+<p class="text-on-surface leading-relaxed italic">"How wonderful is the affair of the believer, for his affairs are all good... if something good happens to him, he is grateful and that is good for him. If something bad happens to him, he is patient and that is good for him."</p>
+<p class="font-label text-xs text-outline">— Sahih Muslim</p>
+</div>
+<div class="h-px bg-outline-variant/20"></div>
+<!-- Encouragement -->
+<div class="space-y-2">
+<h4 class="font-label text-xs font-bold uppercase text-secondary tracking-widest">A Gentle Reminder</h4>
+<p class="text-on-surface-variant leading-relaxed italic">
+                    Beloved soul, your worth is not defined by a title or a contract, but by the Light within you. This transition is not a closure, but a sacred redirection toward a path that better serves your growth. Rest your heart in the certainty that the One who sustains the universe has not forgotten you.
+                </p>
+</div>
+</div>
+</section>
+<!-- Spiritual Context (Tafsir) -->
+<section class="space-y-4">
+<h2 class="font-headline text-2xl italic text-on-surface">Spiritual Context (Tafsir)</h2>
+<div class="glass-panel rounded-3xl p-6 bg-white/30 space-y-3">
+<p class="text-on-surface-variant leading-relaxed">
+                    The repetition in Surah Ash-Sharh is a divine reassurance that ease doesn't just *follow* hardship, but it exists *within* it. Your current career transition is not a void, but a reshaping. The Prophet's words remind us that every state—whether of abundance or of seeking—is a means of drawing closer to the Source. This moment is an invitation to shift your reliance from your employer to the Provider (Ar-Razzaq).
+                </p>
+</div>
+</section>
+<!-- Logical & Practical Solution Section -->
+<section class="space-y-4">
+<h2 class="font-headline text-2xl italic text-on-surface">Logical Path</h2>
+<div class="glass-panel rounded-3xl p-6 border-l-4 border-[#166534] bg-white/40 space-y-4">
+<p class="text-on-surface font-medium">To navigate your transition logically while maintaining spiritual peace:</p>
+<ul class="space-y-4">
+<li class="flex gap-3">
+<span class="w-6 h-6 rounded-full bg-emerald-100 text-[#166534] flex items-center justify-center shrink-0 text-xs font-bold">1</span>
+<p class="text-sm text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Inventory of Blessings (Skills):</span> List your transferable skills as "tools" Allah has gifted you. This isn't just about a CV; it's recognizing your agency and the preparation you've already been given.</p>
+</li>
+<li class="flex gap-3">
+<span class="w-6 h-6 rounded-full bg-emerald-100 text-[#166534] flex items-center justify-center shrink-0 text-xs font-bold">2</span>
+<p class="text-sm text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">The 'Barakah' Routine:</span> Treat your job hunt as an act of worship (Ibadah). Set specific hours for applications, but anchor them between your prayers to maintain structure and calm.</p>
+</li>
+<li class="flex gap-3">
+<span class="w-6 h-6 rounded-full bg-emerald-100 text-[#166534] flex items-center justify-center shrink-0 text-xs font-bold">3</span>
+<p class="text-sm text-on-surface-variant leading-relaxed"><span class="font-bold text-on-surface">Calculated Tawakkul:</span> Review your financial safety net. If it's low, focus your 'Dua-to-Do' list on high-immediate-impact actions today, trusting that your effort is the key that unlocks the provision.</p>
+</li>
+</ul>
+</div>
+</section>
+<!-- Call to Action -->
+<div class="pt-8 pb-12">
+<button class="w-full py-6 px-8 text-white rounded-full font-label text-sm uppercase tracking-[0.2em] active:scale-95 transition-all flex items-center justify-center gap-3 bg-[#166534] shadow-[0_16px_32px_rgba(22,101,52,0.15)]">
+    Plan with Imanifest
+    <span class="material-symbols-outlined text-lg">auto_awesome</span>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-8 left-0 right-0 mx-auto w-[92%] z-50 flex justify-around items-center px-2 py-3 bg-white/70 backdrop-blur-2xl rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/40">
+<!-- Dashboard -->
+<a class="flex flex-col items-center justify-center text-slate-400 p-3 hover:text-emerald-600 transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+</a>
+<!-- Qalb (Active) -->
+<a class="flex items-center justify-center bg-emerald-700/10 text-emerald-900 rounded-full p-3 transition-all duration-500" href="#">
+<span class="material-symbols-outlined text-2xl fill-icon">favorite</span>
+</a>
+<!-- Imanifest -->
+<a class="flex flex-col items-center justify-center text-slate-400 p-3 hover:text-emerald-600 transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">sync</span>
+</a>
+<!-- Dua-to-Do -->
+<a class="flex flex-col items-center justify-center text-slate-400 p-3 hover:text-emerald-600 transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">checklist</span>
+</a>
+<!-- Tafakkur Hub -->
+<a class="flex flex-col items-center justify-center text-slate-400 p-3 hover:text-emerald-600 transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">self_improvement</span>
+</a>
+</nav>
+</body></html>

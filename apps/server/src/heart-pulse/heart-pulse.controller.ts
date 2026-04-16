@@ -70,7 +70,7 @@ export class HeartPulseController {
   async reflectVoice(
     @Request() req: { user: { userId: string } },
     @Body("transcriptText") transcriptText: string,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file?: any,
   ) {
     if (!transcriptText?.trim()) {
       throw new BadRequestException("transcriptText is required");

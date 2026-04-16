@@ -40,6 +40,7 @@ const DHIKR_LIST = [
 ];
 
 interface Surah { number: number; name: string; englishName: string; versesCount: number; }
+interface ReadReflectVerse { verseKey: string; arabicText: string; translation: string; tafsirSnippet: string; }
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -67,9 +68,11 @@ export default function TafakkurHubScreen() {
   const [loadingSurahs, setLoadingSurahs] = useState(true);
   const [activeReciter, setActiveReciter] = useState(0);
   const [activeSurah, setActiveSurah] = useState<Surah | null>(null);
+  const [readReflect, setReadReflect] = useState<ReadReflectVerse | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -86,8 +89,8 @@ export default function TafakkurHubScreen() {
       setLoadingSurahs(true);
       try {
         const [recitersRes, surahsRes] = await Promise.all([
-          api.get("/sakinah/reciters"),
-          api.get("/sakinah/surahs"),
+          api.get("/sakinah/reciters", { timeout: 15000 }),
+          api.get("/sakinah/surahs", { timeout: 15000 }),
         ]);
 
         const mappedReciters: Reciter[] = (recitersRes.data || []).map((r: any, i: number) => {
@@ -129,6 +132,7 @@ export default function TafakkurHubScreen() {
           englishName: `Surah ${i + 1}`,
           versesCount: 0,
         })));
+        setNotice("Gagal memuat data Quran dari backend, memakai fallback list.");
       } finally {
         setLoadingSurahs(false);
       }
@@ -164,6 +168,7 @@ export default function TafakkurHubScreen() {
           reciterId: reciter.id,
           surahNumber: surah.number,
         },
+        timeout: 15000,
       });
       url = res.data?.url ?? null;
     } catch {
@@ -174,6 +179,7 @@ export default function TafakkurHubScreen() {
     if (!url) {
       const identifier = RECITER_CDN_MAP[reciter.id] || "ar.alafasy";
       url = `https://cdn.islamic.network/quran/audio/128/${identifier}/${surah.number}.mp3`;
+      setNotice("Menggunakan fallback audio CDN.");
     }
     const audio = new Audio(url);
     audioRef.current = audio;
@@ -234,6 +240,32 @@ export default function TafakkurHubScreen() {
     }
   };
 
+  useEffect(() => {
+    const loadReadReflect = async () => {
+      if (!activeSurah) {
+        setReadReflect(null);
+        return;
+      }
+
+      try {
+        const res = await api.get("/sakinah/read-reflect", {
+          params: { surahNumber: activeSurah.number },
+          timeout: 10000,
+        });
+        setReadReflect(res.data || null);
+      } catch {
+        setReadReflect({
+          verseKey: `${activeSurah.number}:1`,
+          arabicText: "",
+          translation: `Reflect on Surah ${activeSurah.englishName} and map one concrete lesson for today.`, 
+          tafsirSnippet: "Pause, breathe, then apply one ayah insight in your next action.",
+        });
+      }
+    };
+
+    loadReadReflect();
+  }, [activeSurah]);
+
   const filtered = surahs.filter((s) =>
     s.englishName.toLowerCase().includes(surahSearch.toLowerCase()) ||
     s.name.includes(surahSearch) ||
@@ -266,6 +298,12 @@ export default function TafakkurHubScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 28, maxWidth: 680, alignSelf: "center", width: "100%" }}>
+
+          {notice ? (
+            <View style={[glass(16), { padding: 12, backgroundColor: "rgba(254,243,199,0.6)" }]}> 
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#7c2d12" }}>{notice}</Text>
+            </View>
+          ) : null}
 
           {/* Hero */}
           <View style={{ gap: 4 }}>
@@ -385,18 +423,26 @@ export default function TafakkurHubScreen() {
             </View>
           ) : null}
 
-          {/* Featured verse */}
+          {/* Read & Reflect synced to selected surah */}
           <View style={[glass(24), { padding: 28, gap: 16, backgroundColor: "rgba(169,247,183,0.08)" }]}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#0e6030", fontWeight: "700", textAlign: "center" }}>
+              Read & Reflect {activeSurah ? `· ${activeSurah.englishName}` : ""}
+            </Text>
             <Text style={{ fontFamily: "Amiri", fontSize: 26, lineHeight: 50, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
-              فَبِأَيِّ آلَاءِ رَبِّكُمَا تُكَذِّبَانِ
+              {readReflect?.arabicText || "Pilih surah untuk mulai membaca dan tafakkur"}
             </Text>
             <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
             <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#2f3338", textAlign: "center", lineHeight: 26 }}>
-              "So which of the favors of your Lord would you deny?"
+              "{readReflect?.translation || "Pilih surah lalu baca perlahan, kemudian renungkan satu pelajaran yang bisa diamalkan hari ini."}"
             </Text>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
-              — Ar-Rahman (55:13)
+              — {readReflect?.verseKey || "Surah:Ayah"}
             </Text>
+            {readReflect?.tafsirSnippet ? (
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65", lineHeight: 20, textAlign: "center" }}>
+                {readReflect.tafsirSnippet}
+              </Text>
+            ) : null}
           </View>
 
           {/* Nature Sounds */}

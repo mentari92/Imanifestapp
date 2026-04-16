@@ -2,6 +2,7 @@ import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
 import { SakinahService } from "./sakinah.service";
 import { RedisService } from "../common/redis.service";
+import { QuranApiService } from "../common/quran-api.service";
 import axios from "axios";
 
 jest.mock("axios");
@@ -16,11 +17,16 @@ describe("SakinahService", () => {
     set: jest.fn().mockResolvedValue(undefined),
   };
 
+  const mockQuranApi = {
+    getVerseWithTranslation: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
         SakinahService,
         { provide: RedisService, useValue: mockRedis },
+        { provide: QuranApiService, useValue: mockQuranApi },
       ],
     }).compile();
 
@@ -142,10 +148,10 @@ describe("SakinahService", () => {
 
       const result = await service.getAudioUrl(7, 1);
 
-      expect(result.url).toBe("https://cdn.islamic.network/quran/audio/128/7/001.mp3");
+      expect(result.url).toBe("https://cdn.islamic.network/quran/audio/128/ar.alafasy/001.mp3");
       expect(redis.set).toHaveBeenCalledWith(
         "sakinah:audio:7:1",
-        JSON.stringify({ url: "https://cdn.islamic.network/quran/audio/128/7/001.mp3" }),
+        JSON.stringify({ url: "https://cdn.islamic.network/quran/audio/128/ar.alafasy/001.mp3" }),
         3600,
       );
     });
@@ -163,7 +169,7 @@ describe("SakinahService", () => {
 
       const result = await service.getAudioUrl(7, 1);
 
-      expect(result.url).toBe("https://cdn.islamic.network/quran/audio/128/7/001.mp3");
+      expect(result.url).toBe("https://cdn.islamic.network/quran/audio/128/ar.alafasy/001.mp3");
     });
 
     it("should accept valid surah boundary 1", async () => {
