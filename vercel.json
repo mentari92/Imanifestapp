@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd apps/mobile-web && npx expo export --platform web",
-  "outputDirectory": "apps/mobile-web/dist",
+  "buildCommand": "npx expo export --platform web",
+  "outputDirectory": "dist",
   "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
   "framework": null,
   "rewrites": [
