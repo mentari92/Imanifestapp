@@ -21,48 +21,25 @@ const glass = (radius = 24) => ({
     : {}),
 });
 
-// Verified reciter IDs from api.quran.com (recitation_id → slug for verses.quran.com)
+// Quran.com v4 chapter recitation IDs (verified)
+// GET https://api.quran.com/api/v4/chapter_recitations/{id}/{chapter}
 const RECITERS = [
-  {
-    id: 7,
-    slug: "mishary_rashid_alafasy",
-    name: "Mishary Rashid Alafasy",
-    origin: "Kuwait",
-    style: "Melodic & Emotive",
-    initials: "MA",
-    bg: "#7c3aed",
-  },
-  {
-    id: 1,
-    slug: "abdurrahmaan_as-sudais",
-    name: "Abdur-Rahman as-Sudais",
-    origin: "Makkah",
-    style: "Grand Mosque Imam",
-    initials: "AS",
-    bg: "#0e6030",
-  },
-  {
-    id: 6,
-    slug: "yasser_ad-dussary",
-    name: "Yasser Al-Dosari",
-    origin: "Saudi Arabia",
-    style: "Clear & Soothing",
-    initials: "YD",
-    bg: "#1d4ed8",
-  },
+  { id: 7,  name: "Mishary Rashid Alafasy", origin: "Kuwait",       style: "Melodic & Emotive",   initials: "MA", bg: "#7c3aed" },
+  { id: 1,  name: "Abdur-Rahman as-Sudais", origin: "Makkah",        style: "Grand Mosque Imam",    initials: "AS", bg: "#0e6030" },
+  { id: 10, name: "Yasser Al-Dosari",       origin: "Saudi Arabia",  style: "Clear & Soothing",    initials: "YD", bg: "#1d4ed8" },
 ];
 
 const SURAHS = [
-  { num: 55, name: "Ar-Rahman", desc: "The Most Gracious · 78 verses" },
-  { num: 67, name: "Al-Mulk", desc: "The Sovereignty · 30 verses" },
+  { num: 55, name: "Ar-Rahman",   desc: "The Most Gracious · 78 verses" },
+  { num: 67, name: "Al-Mulk",     desc: "The Sovereignty · 30 verses" },
   { num: 56, name: "Al-Waqi'ah", desc: "The Inevitable Event · 96 verses" },
-  { num: 36, name: "Ya-Sin", desc: "Heart of the Quran · 83 verses" },
+  { num: 36, name: "Ya-Sin",      desc: "Heart of the Quran · 83 verses" },
 ];
 
 const DHIKR_LIST = [
-  { arabic: "سُبْحَانَ ٱللَّٰهِ", transliteration: "Subhanallah", meaning: "Glory be to Allah" },
-  { arabic: "ٱلْحَمْدُ لِلَّٰهِ", transliteration: "Alhamdulillah", meaning: "All praise is to Allah" },
-  { arabic: "ٱللَّٰهُ أَكْبَرُ", transliteration: "Allahu Akbar", meaning: "Allah is the Greatest" },
+  { arabic: "سُبْحَانَ ٱللَّٰهِ",          transliteration: "Subhanallah",     meaning: "Glory be to Allah" },
+  { arabic: "ٱلْحَمْدُ لِلَّٰهِ",          transliteration: "Alhamdulillah",   meaning: "All praise is to Allah" },
+  { arabic: "ٱللَّٰهُ أَكْبَرُ",           transliteration: "Allahu Akbar",    meaning: "Allah is the Greatest" },
   { arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ", transliteration: "La ilaha illallah", meaning: "There is no god but Allah" },
 ];
 
@@ -70,6 +47,21 @@ function formatTime(s: number): string {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${String(sec).padStart(2, "0")}`;
+}
+
+// Fetch the audio file URL from Quran.com v4 API
+async function fetchAudioUrl(reciterId: number, surahNum: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://api.quran.com/api/v4/chapter_recitations/${reciterId}/${surahNum}`,
+      { headers: { Accept: "application/json" } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.audio_file?.audio_url ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export default function TafakkurHubScreen() {
@@ -88,26 +80,33 @@ export default function TafakkurHubScreen() {
 
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      audioRef.current?.pause();
+      audioRef.current = null;
       if (progressInterval.current) clearInterval(progressInterval.current);
     };
   }, []);
 
   const stopAudio = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
+    audioRef.current?.pause();
+    if (audioRef.current) audioRef.current.currentTime = 0;
     if (progressInterval.current) clearInterval(progressInterval.current);
     setIsPlaying(false);
     setProgress(0);
     setCurrentTime(0);
+    setDuration(0);
   };
 
-  const playAudio = async (reciterIdx: number, surahIdx: number) => {
+  const startProgressTracker = (audio: HTMLAudioElement) => {
+    if (progressInterval.current) clearInterval(progressInterval.current);
+    progressInterval.current = setInterval(() => {
+      if (audio.duration > 0) {
+        setCurrentTime(audio.currentTime);
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+    }, 500);
+  };
+
+  const loadAndPlay = async (reciterIdx: number, surahIdx: number) => {
     if (Platform.OS !== "web") return;
     stopAudio();
     setAudioError(null);
@@ -115,88 +114,82 @@ export default function TafakkurHubScreen() {
 
     const reciter = RECITERS[reciterIdx];
     const surah = SURAHS[surahIdx];
-    // Build the audio URL using the Quran CDN verse-by-verse URL (verse 1 of selected surah)
-    const surahPadded = String(surah.num).padStart(3, "0");
-    const audioUrl = `https://verses.quran.com/${reciter.slug}/${surahPadded}001.mp3`;
 
-    try {
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-
-      audio.oncanplaythrough = () => {
-        setIsLoading(false);
-        setDuration(audio.duration || 0);
-        audio.play().then(() => {
-          setIsPlaying(true);
-          progressInterval.current = setInterval(() => {
-            if (audio.duration > 0) {
-              setCurrentTime(audio.currentTime);
-              setProgress((audio.currentTime / audio.duration) * 100);
-            }
-          }, 500);
-        }).catch(() => {
-          setAudioError("Playback blocked. Tap play again.");
-          setIsLoading(false);
-        });
-      };
-
-      audio.onerror = () => {
-        setIsLoading(false);
-        setAudioError("Audio unavailable for this reciter. Try another.");
-        setIsPlaying(false);
-      };
-
-      audio.onended = () => {
-        setIsPlaying(false);
-        setProgress(0);
-        setCurrentTime(0);
-        if (progressInterval.current) clearInterval(progressInterval.current);
-      };
-
-      audio.load();
-    } catch {
+    // Fetch actual audio URL from Quran.com v4
+    const audioUrl = await fetchAudioUrl(reciter.id, surah.num);
+    if (!audioUrl) {
       setIsLoading(false);
-      setAudioError("Audio not supported in this browser.");
+      setAudioError(`Audio untuk ${reciter.name} tidak tersedia. Coba reciter lain.`);
+      return;
     }
+
+    const audio = new Audio(audioUrl);
+    audio.crossOrigin = "anonymous";
+    audioRef.current = audio;
+
+    audio.onloadedmetadata = () => {
+      setDuration(audio.duration || 0);
+    };
+
+    audio.oncanplay = () => {
+      setIsLoading(false);
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+          startProgressTracker(audio);
+        })
+        .catch(() => {
+          setIsLoading(false);
+          setAudioError("Tap tombol play untuk mulai.");
+        });
+    };
+
+    audio.onerror = () => {
+      setIsLoading(false);
+      setAudioError("Audio tidak dapat diputar. Coba reciter lain.");
+      setIsPlaying(false);
+    };
+
+    audio.onended = () => {
+      setIsPlaying(false);
+      setProgress(100);
+      if (progressInterval.current) clearInterval(progressInterval.current);
+    };
+
+    audio.load();
   };
 
   const togglePlay = () => {
+    if (!audioRef.current || !audioRef.current.src) {
+      loadAndPlay(activeReciter, activeSurah);
+      return;
+    }
     if (isPlaying) {
-      audioRef.current?.pause();
+      audioRef.current.pause();
       setIsPlaying(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
-    } else if (audioRef.current && audioRef.current.src) {
+    } else {
       audioRef.current.play().then(() => {
         setIsPlaying(true);
-        progressInterval.current = setInterval(() => {
-          if (audioRef.current && audioRef.current.duration > 0) {
-            setCurrentTime(audioRef.current.currentTime);
-            setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
-          }
-        }, 500);
+        startProgressTracker(audioRef.current!);
       });
-    } else {
-      playAudio(activeReciter, activeSurah);
     }
   };
 
   const selectReciter = (idx: number) => {
-    if (idx === activeReciter && (isPlaying || isLoading)) {
-      togglePlay();
-      return;
-    }
     setActiveReciter(idx);
-    playAudio(idx, activeSurah);
+    loadAndPlay(idx, activeSurah);
   };
 
   const selectSurah = (idx: number) => {
     setActiveSurah(idx);
-    if (isPlaying || isLoading) {
-      playAudio(activeReciter, idx);
+    if (isPlaying || isLoading || audioRef.current?.src) {
+      loadAndPlay(activeReciter, idx);
     }
   };
 
   const dhikr = DHIKR_LIST[dhikrIndex];
+  const showPlayer = isPlaying || isLoading || progress > 0 || !!audioError;
 
   return (
     <View style={{ flex: 1 }}>
@@ -270,10 +263,10 @@ export default function TafakkurHubScreen() {
             </Text>
           </View>
 
-          {/* Surah Selection */}
+          {/* Surah Selector */}
           <View style={{ gap: 12 }}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
-              Choose Surah
+              Pilih Surah
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
               {SURAHS.map((s, i) => (
@@ -282,14 +275,14 @@ export default function TafakkurHubScreen() {
                   onPress={() => selectSurah(i)}
                   style={{
                     paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16,
-                    backgroundColor: activeSurah === i ? "#166534" : "rgba(255,255,255,0.6)",
+                    backgroundColor: activeSurah === i ? "#166534" : "rgba(255,255,255,0.65)",
                     borderWidth: 1, borderColor: activeSurah === i ? "#166534" : "rgba(174,178,185,0.3)",
                   }}
                 >
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: activeSurah === i ? "#fff" : "#2f3338" }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: activeSurah === i ? "#fff" : "#2f3338" }}>
                     {s.name}
                   </Text>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: activeSurah === i ? "rgba(255,255,255,0.7)" : "#5b5f65", marginTop: 2 }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: activeSurah === i ? "rgba(255,255,255,0.75)" : "#5b5f65", marginTop: 2 }}>
                     {s.desc}
                   </Text>
                 </TouchableOpacity>
@@ -297,10 +290,10 @@ export default function TafakkurHubScreen() {
             </View>
           </View>
 
-          {/* Reciters */}
+          {/* Reciter Cards */}
           <View style={{ gap: 12 }}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
-              Choose Reciter · Tap to Play
+              Pilih Reciter — Tap untuk Putar
             </Text>
             {RECITERS.map((r, i) => (
               <TouchableOpacity
@@ -312,38 +305,44 @@ export default function TafakkurHubScreen() {
                   {
                     flexDirection: "row", alignItems: "center", gap: 16, padding: 18,
                     ...(activeReciter === i
-                      ? { backgroundColor: "rgba(169,247,183,0.15)", borderColor: "rgba(22,101,52,0.3)" }
+                      ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" }
                       : {}),
                   },
                 ]}
               >
-                {/* Avatar with initials */}
+                {/* Initials avatar */}
                 <View
                   style={{
                     width: 56, height: 56, borderRadius: 28,
                     backgroundColor: r.bg, alignItems: "center", justifyContent: "center",
-                    shadowColor: r.bg, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+                    shadowColor: r.bg, shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
                   }}
                 >
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "700", color: "#fff" }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "800", color: "#fff" }}>
                     {r.initials}
                   </Text>
                 </View>
+
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 14, fontWeight: "700", color: "#2f3338" }}>{r.name}</Text>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 14, fontWeight: "700", color: "#2f3338" }}>
+                    {r.name}
+                  </Text>
                   <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2 }}>
                     {r.origin} · {r.style}
                   </Text>
                 </View>
-                <View style={{
-                  width: 40, height: 40, borderRadius: 20,
-                  backgroundColor: activeReciter === i && (isPlaying || isLoading) ? "#166534" : "rgba(229,223,248,0.5)",
-                  alignItems: "center", justifyContent: "center",
-                }}>
+
+                <View
+                  style={{
+                    width: 44, height: 44, borderRadius: 22,
+                    backgroundColor: activeReciter === i && (isPlaying || isLoading) ? "#166534" : "rgba(229,223,248,0.6)",
+                    alignItems: "center", justifyContent: "center",
+                  }}
+                >
                   {isLoading && activeReciter === i ? (
                     <ActivityIndicator size="small" color="#166534" />
                   ) : (
-                    <Text style={{ fontSize: 18 }}>
+                    <Text style={{ fontSize: 18, color: activeReciter === i && isPlaying ? "#fff" : "#2f3338" }}>
                       {activeReciter === i && isPlaying ? "⏸" : "▶"}
                     </Text>
                   )}
@@ -353,16 +352,18 @@ export default function TafakkurHubScreen() {
           </View>
 
           {/* Audio Player */}
-          {(isPlaying || isLoading || progress > 0 || audioError) ? (
+          {showPlayer ? (
             <View style={[glass(24), { padding: 24, gap: 16 }]}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 }}>
-                <Text style={{ fontSize: 18 }}>🎵</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <Text style={{ fontSize: 20 }}>🎵</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: "#2f3338" }}>
                     {SURAHS[activeSurah].name} · {RECITERS[activeReciter].name}
                   </Text>
                   {audioError ? (
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#991b1b", marginTop: 2 }}>{audioError}</Text>
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#991b1b", marginTop: 2 }}>
+                      {audioError}
+                    </Text>
                   ) : (
                     <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2 }}>
                       {isLoading ? "Loading audio..." : `${formatTime(currentTime)} / ${formatTime(duration)}`}
@@ -370,10 +371,11 @@ export default function TafakkurHubScreen() {
                   )}
                 </View>
                 <TouchableOpacity
-                  onPress={isLoading ? undefined : togglePlay}
+                  onPress={togglePlay}
+                  disabled={isLoading}
                   style={{
-                    width: 48, height: 48, borderRadius: 24,
-                    backgroundColor: "#166534", alignItems: "center", justifyContent: "center",
+                    width: 48, height: 48, borderRadius: 24, backgroundColor: "#166534",
+                    alignItems: "center", justifyContent: "center",
                     shadowColor: "#166534", shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
                   }}
                 >
@@ -385,17 +387,16 @@ export default function TafakkurHubScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={stopAudio}
-                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(229,223,248,0.5)", alignItems: "center", justifyContent: "center" }}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Text style={{ fontSize: 16 }}>⏹</Text>
+                  <Text style={{ fontSize: 18 }}>⏹</Text>
                 </TouchableOpacity>
               </View>
-              {/* Progress bar */}
-              {!audioError && (
+              {!audioError ? (
                 <View style={{ height: 6, backgroundColor: "#eceef3", borderRadius: 3, overflow: "hidden" }}>
-                  <View style={{ width: `${progress}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
+                  <View style={{ width: `${Math.min(progress, 100)}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
                 </View>
-              )}
+              ) : null}
             </View>
           ) : null}
 
@@ -405,14 +406,15 @@ export default function TafakkurHubScreen() {
               Dhikr Counter
             </Text>
 
+            {/* Dhikr type selector */}
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
               {DHIKR_LIST.map((d, i) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => { setDhikrIndex(i); setDhikrCount(0); }}
                   style={{
-                    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 9999,
-                    backgroundColor: dhikrIndex === i ? "#166534" : "rgba(255,255,255,0.6)",
+                    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9999,
+                    backgroundColor: dhikrIndex === i ? "#166534" : "rgba(255,255,255,0.65)",
                     borderWidth: 1, borderColor: dhikrIndex === i ? "#166534" : "rgba(174,178,185,0.3)",
                   }}
                 >
@@ -423,24 +425,26 @@ export default function TafakkurHubScreen() {
               ))}
             </View>
 
+            {/* Big tap button */}
             <TouchableOpacity
               onPress={() => setDhikrCount((c) => c + 1)}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
               style={{
-                width: 140, height: 140, borderRadius: 70,
+                width: 148, height: 148, borderRadius: 74,
                 backgroundColor: "rgba(169,247,183,0.2)",
                 borderWidth: 2, borderColor: "rgba(22,101,52,0.2)",
                 alignItems: "center", justifyContent: "center", gap: 4,
               }}
             >
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 42, fontWeight: "700", color: "#0e6030" }}>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 44, fontWeight: "800", color: "#0e6030" }}>
                 {dhikrCount}
               </Text>
               <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65", textTransform: "uppercase", letterSpacing: 1 }}>
-                Tap to count
+                Tap
               </Text>
             </TouchableOpacity>
 
+            {/* Arabic text */}
             <View style={{ alignItems: "center", gap: 6 }}>
               <Text
                 style={{
@@ -458,6 +462,7 @@ export default function TafakkurHubScreen() {
               </Text>
             </View>
 
+            {/* Reset + milestone */}
             <View style={{ flexDirection: "row", gap: 12 }}>
               <TouchableOpacity
                 onPress={() => setDhikrCount(0)}
@@ -466,14 +471,14 @@ export default function TafakkurHubScreen() {
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "600", color: "#524f63" }}>Reset</Text>
               </TouchableOpacity>
               <View style={[glass(9999), { paddingHorizontal: 20, paddingVertical: 10 }]}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>
-                  {dhikrCount >= 33 ? `${Math.floor(dhikrCount / 33)}× 33 ✓` : `${33 - dhikrCount} to 33`}
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: dhikrCount >= 33 ? "#166534" : "#5b5f65" }}>
+                  {dhikrCount >= 33 ? `${Math.floor(dhikrCount / 33)}× 33 ✓` : `${33 - dhikrCount} lagi ke 33`}
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Featured Verse */}
+          {/* Featured verse */}
           <View style={[glass(24), { padding: 28, gap: 16, backgroundColor: "rgba(169,247,183,0.08)" }]}>
             <Text
               style={{

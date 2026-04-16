@@ -1,0 +1,41 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            cd /root/imanifestapp
+
+            echo "=== Pulling latest code ==="
+            git pull origin main
+
+            echo "=== Building web container (no cache) ==="
+            docker compose build --no-cache web
+
+            echo "=== Restarting web container ==="
+            docker compose up -d --force-recreate web
+
+            echo "=== Waiting for container to be ready ==="
+            sleep 5
+
+            echo "=== Reconnecting to n8n network with alias ==="
+            WEB_ID=$(docker compose ps -q web)
+            docker network connect --alias imanifest-web n8n_default "$WEB_ID" 2>/dev/null || true
+
+            echo "=== Deploy complete ==="
+            docker compose ps web
