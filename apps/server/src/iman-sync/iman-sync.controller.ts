@@ -14,6 +14,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ImanSyncService } from "./iman-sync.service";
 import { AnalyzeDto } from "./dto/analyze.dto";
 import { JwtAuthGuard } from "../auth/auth.guard";
+import { Public } from "../auth/public.decorator";
 import { RedisService } from "../common/redis.service";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png"];
@@ -59,9 +60,10 @@ export class ImanSyncController {
     }
   }
 
+  @Public()
   @Post("quick-search")
   async quickSearch(
-    @Request() req: { user: { userId: string } },
+    @Request() req: { user?: { userId: string } },
     @Body("text") text: string,
   ) {
     if (!text?.trim()) return { verses: [] };
@@ -69,13 +71,15 @@ export class ImanSyncController {
     return { verses };
   }
 
+  @Public()
   @Post("analyze")
   async analyze(
-    @Request() req: { user: { userId: string } },
+    @Request() req: { user?: { userId: string } },
     @Body() dto: AnalyzeDto,
   ) {
-    await this.checkRateLimit(req.user.userId, "text", TEXT_RATE_LIMIT);
-    return this.imanSyncService.analyze(req.user.userId, dto);
+    const userId = req.user?.userId ?? "demo-user-hackathon";
+    await this.checkRateLimit(userId, "text", TEXT_RATE_LIMIT);
+    return this.imanSyncService.analyze(userId, dto);
   }
 
   @Post("analyze-vision")
