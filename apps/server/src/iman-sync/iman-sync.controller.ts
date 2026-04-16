@@ -67,8 +67,7 @@ export class ImanSyncController {
     @Body("text") text: string,
   ) {
     if (!text?.trim()) return { verses: [] };
-    const verses = await this.imanSyncService.quickSearch(text);
-    return { verses };
+    return this.imanSyncService.quickSearch(text);
   }
 
   @Public()
@@ -82,6 +81,7 @@ export class ImanSyncController {
     return this.imanSyncService.analyze(userId, dto);
   }
 
+  @Public()
   @Post("analyze-vision")
   @UseInterceptors(
     FileInterceptor("image", {

@@ -10,6 +10,7 @@ export interface AnalyzeResult {
   manifestationId: string;
   verses: VerseResult[];
   aiSummary: string;
+  tasks: string[];
 }
 
 export interface AnalyzeVisionResult extends AnalyzeResult {
@@ -101,12 +102,13 @@ export class ImanSyncService {
   }): Promise<{ manifestationId: string; verses: VerseResult[]; aiSummary: string }> {
     const { userId, intentText, verses, imagePath } = params;
 
-    // Generate AI summary
-    this.logger.log("Generating AI summary...");
-    const aiSummary = await this.zhipu.generateSummary(
-      intentText,
-      verses.map((v) => ({ verseKey: v.verseKey, translation: v.translation })),
-    );
+    // Generate AI summary + actionable tasks in parallel
+    this.logger.log("Generating AI summary and tasks...");
+    const versesForAI = verses.map((v) => ({ verseKey: v.verseKey, translation: v.translation }));
+    const [aiSummary, tasks] = await Promise.all([
+      this.zhipu.generateSummary(intentText, versesForAI),
+      this.zhipu.generateTasks(intentText, versesForAI),
+    ]);
 
     // Try to save to DB, fallback to in-memory ID
     let manifestationId: string;
@@ -127,7 +129,7 @@ export class ImanSyncService {
       this.logger.warn(`DB save failed (demo mode): ${dbErr?.message}. Using in-memory ID: ${manifestationId}`);
     }
 
-    return { manifestationId, verses, aiSummary };
+    return { manifestationId, verses, aiSummary, tasks };
   }
 
   /**
