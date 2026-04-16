@@ -4,10 +4,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-
-const API_URL =
-  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_URL) ||
-  "https://api.imanifestapp.com";
+import { api } from "../../lib/api";
 
 const glass = (radius = 24) => ({
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -54,16 +51,9 @@ export default function NiyyahBoardScreen() {
     debounceRef.current = setTimeout(async () => {
       setHintsLoading(true);
       try {
-        const res = await fetch(`${API_URL}/iman-sync/quick-search`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: intention }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const verses: VerseHint[] = (data.verses || []).slice(0, 2);
-          setAiHints(verses);
-        }
+        const res = await api.post("/iman-sync/quick-search", { text: intention });
+        const verses: VerseHint[] = (res.data.verses || []).slice(0, 2);
+        setAiHints(verses);
       } catch {}
       setHintsLoading(false);
     }, 1400);
@@ -143,22 +133,17 @@ export default function NiyyahBoardScreen() {
           const form = new FormData();
           form.append("intentText", trimmed);
           form.append("image", imageFile);
-          const res = await fetch(`${API_URL}/iman-sync/analyze-vision`, {
-            method: "POST",
-            body: form,
+          const res = await api.post("/iman-sync/analyze-vision", form, {
+            headers: { "Content-Type": "multipart/form-data" },
           });
-          if (res.ok) data = await res.json();
+          if (res.data) data = res.data;
         } catch {}
       }
 
       // Fall back to text analysis
       if (!data) {
-        const res = await fetch(`${API_URL}/iman-sync/analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ intentText: trimmed }),
-        });
-        if (res.ok) data = await res.json();
+        const res = await api.post("/iman-sync/analyze", { intentText: trimmed });
+        if (res.data) data = res.data;
       }
 
       if (!data) throw new Error("API unreachable");
@@ -166,6 +151,7 @@ export default function NiyyahBoardScreen() {
       // Use sessionStorage to avoid URL length limits with large tasks/verses content
       if (typeof sessionStorage !== "undefined") {
         sessionStorage.setItem("manifest_result", JSON.stringify({
+          manifestationId: data.manifestationId || "",
           tasks: data.tasks || [],
           verses: data.verses || [],
           aiSummary: data.aiSummary || "",
@@ -174,7 +160,10 @@ export default function NiyyahBoardScreen() {
       }
       router.push({
         pathname: "/dua-todo",
-        params: { intentText: trimmed },
+        params: {
+          intentText: trimmed,
+          manifestationId: data.manifestationId || "",
+        },
       });
     } catch {
       // Offline fallback — show motivational tasks
@@ -187,6 +176,7 @@ export default function NiyyahBoardScreen() {
       ];
       if (typeof sessionStorage !== "undefined") {
         sessionStorage.setItem("manifest_result", JSON.stringify({
+          manifestationId: "",
           tasks: fallbackTasks,
           verses: [],
           aiSummary: "",
@@ -195,7 +185,7 @@ export default function NiyyahBoardScreen() {
       }
       router.push({
         pathname: "/dua-todo",
-        params: { intentText: trimmed },
+        params: { intentText: trimmed, manifestationId: "" },
       });
     } finally {
       setLoading(false);

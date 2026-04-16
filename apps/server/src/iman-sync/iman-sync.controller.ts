@@ -101,9 +101,9 @@ export class ImanSyncController {
     }),
   )
   async analyzeVision(
-    @Request() req: { user: { userId: string } },
+    @Request() req: { user?: { userId: string } },
     @Body("intentText") intentText: string,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file?: any,
   ) {
     if (!intentText?.trim()) {
       throw new BadRequestException("intentText is required");
@@ -115,13 +115,14 @@ export class ImanSyncController {
       throw new BadRequestException("Image file is required");
     }
 
-    await this.checkRateLimit(req.user.userId, "vision", VISION_RATE_LIMIT);
+    const userId = req.user?.userId ?? "demo-user-hackathon";
+    await this.checkRateLimit(userId, "vision", VISION_RATE_LIMIT);
 
     const imageBase64 = file.buffer.toString("base64");
     const imagePath = `vision:${Date.now()}`;
 
     return this.imanSyncService.analyzeVision(
-      req.user.userId,
+      userId,
       intentText.trim(),
       imageBase64,
       file.mimetype,

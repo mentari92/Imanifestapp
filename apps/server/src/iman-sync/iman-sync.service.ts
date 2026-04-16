@@ -99,7 +99,7 @@ export class ImanSyncService {
     intentText: string;
     verses: VerseResult[];
     imagePath?: string;
-  }): Promise<{ manifestationId: string; verses: VerseResult[]; aiSummary: string }> {
+  }): Promise<{ manifestationId: string; verses: VerseResult[]; aiSummary: string; tasks: string[] }> {
     const { userId, intentText, verses, imagePath } = params;
 
     // Generate AI summary + actionable tasks in parallel

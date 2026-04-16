@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Platform,
-  ActivityIndicator, TextInput, FlatList,
+  ActivityIndicator, TextInput,
 } from "react-native";
+import { api } from "../../lib/api";
 
 const glass = (radius = 24) => ({
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -14,10 +15,21 @@ const glass = (radius = 24) => ({
     : {}),
 });
 
-const RECITERS = [
-  { id: 7,  name: "Mishary Rashid Alafasy", origin: "Kuwait",       style: "Melodic & Emotive",  initials: "MA", bg: "#7c3aed" },
-  { id: 1,  name: "Abdur-Rahman as-Sudais", origin: "Makkah",       style: "Grand Mosque Imam",  initials: "AS", bg: "#0e6030" },
-  { id: 10, name: "Yasser Al-Dosari",       origin: "Saudi Arabia", style: "Clear & Soothing",   initials: "YD", bg: "#1d4ed8" },
+interface Reciter {
+  id: number;
+  name: string;
+  origin: string;
+  style: string;
+  initials: string;
+  bg: string;
+}
+
+const RECITER_COLORS = ["#7c3aed", "#0e6030", "#1d4ed8", "#92400e", "#334155"];
+
+const FALLBACK_RECITERS: Reciter[] = [
+  { id: 7, name: "Mishary Rashid Alafasy", origin: "Kuwait", style: "Murattal", initials: "MA", bg: "#7c3aed" },
+  { id: 1, name: "Abdul Basit", origin: "Egypt", style: "Murattal", initials: "AB", bg: "#0e6030" },
+  { id: 3, name: "Abdurrahmaan As-Sudais", origin: "Makkah", style: "Murattal", initials: "AS", bg: "#1d4ed8" },
 ];
 
 const DHIKR_LIST = [
@@ -34,19 +46,22 @@ function formatTime(s: number) {
   return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
-async function fetchAudioUrl(reciterId: number, surahNum: number): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `https://api.quran.com/api/v4/chapter_recitations/${reciterId}/${surahNum}`,
-      { headers: { Accept: "application/json" } }
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.audio_file?.audio_url ?? null;
-  } catch { return null; }
-}
+// Reciter ID → CDN identifier map (islamic.network fallback)
+const RECITER_CDN_MAP: Record<number, string> = {
+  7: "ar.alafasy",
+  1: "ar.abdulsamad",
+  3: "ar.sudais",
+  10: "ar.minshawi",
+};
+
+const NATURE_SOUNDS = [
+  { id: "rain",    label: "Rain of Sakinah",    emoji: "🌧️", url: "https://www.soundjay.com/nature/rain-07.mp3" },
+  { id: "river",   label: "Zamzam Flow",         emoji: "💧", url: "https://www.soundjay.com/nature/river-1.mp3" },
+  { id: "birds",   label: "Garden of Peace",     emoji: "🐦", url: "https://www.soundjay.com/nature/birds-1.mp3" },
+];
 
 export default function TafakkurHubScreen() {
+  const [reciters, setReciters] = useState<Reciter[]>(FALLBACK_RECITERS);
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [surahSearch, setSurahSearch] = useState("");
   const [loadingSurahs, setLoadingSurahs] = useState(true);
@@ -60,38 +75,66 @@ export default function TafakkurHubScreen() {
   const [currentTime, setCurrentTime] = useState(0);
   const [dhikrIndex, setDhikrIndex] = useState(0);
   const [dhikrCount, setDhikrCount] = useState(0);
+  const [activeNature, setActiveNature] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const natureRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<any>(null);
 
-  // Load all 114 surahs from Quran.com
+  // Load reciters + 114 surahs through backend proxy for stable runtime.
   useEffect(() => {
-    fetch("https://api.quran.com/api/v4/chapters?language=en")
-      .then((r) => r.json())
-      .then((data) => {
-        const list: Surah[] = (data.chapters || []).map((c: any) => ({
-          number: c.id,
-          name: c.name_arabic,
-          englishName: c.name_simple,
-          versesCount: c.verses_count,
-        }));
-        setSurahs(list);
-      })
-      .catch(() => {
-        // Fallback: first 10 surahs if API fails
-        setSurahs([
-          { number: 1, name: "الفاتحة", englishName: "Al-Fatihah", versesCount: 7 },
-          { number: 2, name: "البقرة", englishName: "Al-Baqarah", versesCount: 286 },
-          { number: 3, name: "آل عمران", englishName: "Ali 'Imran", versesCount: 200 },
-          { number: 36, name: "يس", englishName: "Ya-Sin", versesCount: 83 },
-          { number: 55, name: "الرحمن", englishName: "Ar-Rahman", versesCount: 78 },
-          { number: 56, name: "الواقعة", englishName: "Al-Waqi'ah", versesCount: 96 },
-          { number: 67, name: "الملك", englishName: "Al-Mulk", versesCount: 30 },
-          { number: 112, name: "الإخلاص", englishName: "Al-Ikhlas", versesCount: 4 },
-          { number: 113, name: "الفلق", englishName: "Al-Falaq", versesCount: 5 },
-          { number: 114, name: "الناس", englishName: "An-Nas", versesCount: 6 },
+    const load = async () => {
+      setLoadingSurahs(true);
+      try {
+        const [recitersRes, surahsRes] = await Promise.all([
+          api.get("/sakinah/reciters"),
+          api.get("/sakinah/surahs"),
         ]);
-      })
-      .finally(() => setLoadingSurahs(false));
+
+        const mappedReciters: Reciter[] = (recitersRes.data || []).map((r: any, i: number) => {
+          const name = String(r?.name || "Unknown Reciter");
+          const initials = name
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase() || "")
+            .join("") || "QR";
+
+          return {
+            id: Number(r?.id || i + 1),
+            name,
+            origin: String(r?.origin || "Quran.com"),
+            style: String(r?.style || "Murattal"),
+            initials,
+            bg: RECITER_COLORS[i % RECITER_COLORS.length],
+          };
+        });
+
+        const mappedSurahs: Surah[] = (surahsRes.data || []).map((s: any, idx: number) => ({
+          number: Number(s?.number || idx + 1),
+          name: String(s?.name || ""),
+          englishName: String(s?.englishName || `Surah ${idx + 1}`),
+          versesCount: Number(s?.versesCount || 0),
+        }));
+
+        if (mappedReciters.length > 0) {
+          setReciters(mappedReciters);
+          setActiveReciter((prev) => (prev < mappedReciters.length ? prev : 0));
+        }
+        setSurahs(mappedSurahs);
+      } catch {
+        setReciters(FALLBACK_RECITERS);
+        setSurahs(Array.from({ length: 114 }, (_, i) => ({
+          number: i + 1,
+          name: "",
+          englishName: `Surah ${i + 1}`,
+          versesCount: 0,
+        })));
+      } finally {
+        setLoadingSurahs(false);
+      }
+    };
+
+    load();
     return () => {
       audioRef.current?.pause();
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -107,14 +150,30 @@ export default function TafakkurHubScreen() {
 
   const loadAndPlay = async (reciterIdx: number, surah: Surah) => {
     if (Platform.OS !== "web") return;
+    const reciter = reciters[reciterIdx];
+    if (!reciter) return;
+
     stopAudio();
     setAudioError(null);
     setIsLoadingAudio(true);
-    const url = await fetchAudioUrl(RECITERS[reciterIdx].id, surah.number);
+
+    let url: string | null = null;
+    try {
+      const res = await api.get("/sakinah/audio", {
+        params: {
+          reciterId: reciter.id,
+          surahNumber: surah.number,
+        },
+      });
+      url = res.data?.url ?? null;
+    } catch {
+      url = null;
+    }
+
+    // CDN fallback — works even if VPS is unreachable
     if (!url) {
-      setIsLoadingAudio(false);
-      setAudioError(`Audio tidak tersedia. Coba reciter lain.`);
-      return;
+      const identifier = RECITER_CDN_MAP[reciter.id] || "ar.alafasy";
+      url = `https://cdn.islamic.network/quran/audio/128/${identifier}/${surah.number}.mp3`;
     }
     const audio = new Audio(url);
     audioRef.current = audio;
@@ -149,6 +208,29 @@ export default function TafakkurHubScreen() {
           if (a.duration > 0) { setCurrentTime(a.currentTime); setProgress((a.currentTime / a.duration) * 100); }
         }, 500);
       });
+    }
+  };
+
+  const toggleNature = (soundId: string) => {
+    if (Platform.OS !== "web") return;
+    const sound = NATURE_SOUNDS.find((n) => n.id === soundId);
+    if (!sound) return;
+
+    if (activeNature === soundId) {
+      // Stop
+      natureRef.current?.pause();
+      if (natureRef.current) natureRef.current.src = "";
+      natureRef.current = null;
+      setActiveNature(null);
+    } else {
+      // Stop previous
+      if (natureRef.current) { natureRef.current.pause(); natureRef.current.src = ""; }
+      const audio = new Audio(sound.url);
+      audio.loop = true;
+      audio.volume = 0.35;
+      audio.play().catch(() => {});
+      natureRef.current = audio;
+      setActiveNature(soundId);
     }
   };
 
@@ -196,7 +278,7 @@ export default function TafakkurHubScreen() {
           {/* Reciter Cards */}
           <View style={{ gap: 12 }}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>Pilih Reciter</Text>
-            {RECITERS.map((r, i) => (
+            {reciters.map((r, i) => (
               <TouchableOpacity key={i} onPress={() => { setActiveReciter(i); if (activeSurah) loadAndPlay(i, activeSurah); }} activeOpacity={0.85}
                 style={[glass(20), { flexDirection: "row", alignItems: "center", gap: 16, padding: 18, ...(activeReciter === i ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" } : {}) }]}>
                 <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: r.bg, alignItems: "center", justifyContent: "center" }}>
@@ -281,7 +363,7 @@ export default function TafakkurHubScreen() {
                 <Text style={{ fontSize: 20 }}>🎵</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: "#2f3338" }}>
-                    {activeSurah.englishName} · {RECITERS[activeReciter].name}
+                    {activeSurah.englishName} · {reciters[activeReciter]?.name || "Unknown Reciter"}
                   </Text>
                   <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: audioError ? "#991b1b" : "#5b5f65", marginTop: 2 }}>
                     {isLoadingAudio ? "Loading audio..." : audioError ? audioError : `${formatTime(currentTime)} / ${formatTime(duration)}`}
@@ -315,6 +397,40 @@ export default function TafakkurHubScreen() {
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
               — Ar-Rahman (55:13)
             </Text>
+          </View>
+
+          {/* Nature Sounds */}
+          <View style={{ gap: 12 }}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+              Ambient Sounds
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+              {NATURE_SOUNDS.map((n) => (
+                <TouchableOpacity
+                  key={n.id}
+                  onPress={() => toggleNature(n.id)}
+                  activeOpacity={0.85}
+                  style={[
+                    glass(16),
+                    {
+                      flexDirection: "row", alignItems: "center", gap: 8,
+                      paddingHorizontal: 16, paddingVertical: 12, flex: 1, minWidth: 100,
+                      ...(activeNature === n.id ? { backgroundColor: "rgba(169,247,183,0.25)", borderColor: "rgba(22,101,52,0.3)" } : {}),
+                    },
+                  ]}
+                >
+                  <Text style={{ fontSize: 18 }}>{n.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: activeNature === n.id ? "#0e6030" : "#2f3338" }}>
+                      {n.label}
+                    </Text>
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65" }}>
+                      {activeNature === n.id ? "Playing ◼" : "Tap to play"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* Dhikr Counter — di bawah */}

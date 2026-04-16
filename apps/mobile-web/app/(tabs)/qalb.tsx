@@ -9,10 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-
-const API_URL =
-  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_URL) ||
-  "https://api.imanifestapp.com";
+import { api } from "../../lib/api";
 
 const glass = (radius = 28) => ({
   backgroundColor: "rgba(255,255,255,0.6)",
@@ -90,13 +87,8 @@ export default function QalbScreen() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/iman-sync/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ intentText: trimmed }),
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json();
+      const res = await api.post("/iman-sync/analyze", { intentText: trimmed });
+      const data = res.data;
       // Use sessionStorage to avoid URL length limits with large Arabic/tafsir content
       if (typeof sessionStorage !== "undefined") {
         sessionStorage.setItem("qalb_result", JSON.stringify(data));

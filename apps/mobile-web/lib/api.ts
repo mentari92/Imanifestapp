@@ -2,11 +2,32 @@ import { Platform } from "react-native";
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
+function resolveApiBaseUrl(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    const { hostname, protocol } = window.location;
+
+    // Production web domain always uses dedicated API subdomain.
+    if (hostname.endsWith("imanifestapp.com")) {
+      return "https://api.imanifestapp.com";
+    }
+
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:3001";
+    }
+
+    return `${protocol}//${hostname}:3001`;
+  }
+
+  return "http://localhost:3001";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 120000,
+  timeout: 12000, // 12s — fast fail so UI fallbacks trigger quickly
   headers: {
     "Content-Type": "application/json",
   },

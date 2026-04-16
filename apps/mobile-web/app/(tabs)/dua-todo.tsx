@@ -4,10 +4,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-
-const API_URL =
-  (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_URL) ||
-  "https://api.imanifestapp.com";
+import { api } from "../../lib/api";
 
 const glass = (radius = 24) => ({
   backgroundColor: "rgba(255,255,255,0.65)",
@@ -20,10 +17,24 @@ const glass = (radius = 24) => ({
 });
 
 interface Task {
-  id: number;
+  id: string | number;
   label: string;
   done: boolean;
   time?: string;
+}
+
+function mapTaskItem(item: any, index: number): Task {
+  if (typeof item === "string") {
+    return { id: `task-${index + 1}`, label: item, done: false };
+  }
+
+  const done = Boolean(item?.isCompleted ?? item?.done);
+  return {
+    id: item?.id ?? `task-${index + 1}`,
+    label: item?.description ?? item?.label ?? "",
+    done,
+    time: done ? completedAt() : undefined,
+  };
 }
 
 function completedAt(): string {
@@ -44,12 +55,14 @@ const STARTER_TASKS: Task[] = [
 
 export default function DuaTodoScreen() {
   const router = useRouter();
-  const { intentText, tasksJson } = useLocalSearchParams<{
+  const { intentText, tasksJson, manifestationId } = useLocalSearchParams<{
     intentText: string;
     tasksJson: string;
+    manifestationId: string;
   }>();
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [isGeneratingFromAi, setIsGeneratingFromAi] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [aiSuggestLoading, setAiSuggestLoading] = useState(false);
@@ -58,40 +71,77 @@ export default function DuaTodoScreen() {
   const [resolvedIntentText, setResolvedIntentText] = useState<string>("");
   const debounceRef = useRef<any>(null);
 
-  // Load tasks — prefer sessionStorage (avoids URL length limits), fallback to URL params
+  // Load tasks from backend generation flow first, then local/session fallback.
   useEffect(() => {
-    let loaded = false;
-    try {
-      if (typeof sessionStorage !== "undefined") {
-        const stored = sessionStorage.getItem("manifest_result");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed.tasks) && parsed.tasks.length > 0) {
-            setTasks(parsed.tasks.map((label: string, i: number) => ({ id: i + 1, label, done: false })));
+    let isCancelled = false;
+
+    const load = async () => {
+      let loaded = false;
+      let resolvedManifestationId = manifestationId || "";
+
+      try {
+        if (typeof sessionStorage !== "undefined") {
+          const stored = sessionStorage.getItem("manifest_result");
+          if (stored) {
+            const parsed = JSON.parse(stored);
+
+            if (!resolvedManifestationId && typeof parsed.manifestationId === "string") {
+              resolvedManifestationId = parsed.manifestationId;
+            }
+
             setResolvedAiSummary(parsed.aiSummary || "");
             setResolvedIntentText(parsed.intentText || intentText || "");
-            loaded = true;
+
+            if (Array.isArray(parsed.tasks) && parsed.tasks.length > 0) {
+              setTasks(parsed.tasks.map((item: any, i: number) => mapTaskItem(item, i)));
+              loaded = true;
+            }
           }
         }
-      }
-    } catch {}
-
-    if (!loaded && tasksJson) {
-      try {
-        const parsed: string[] = JSON.parse(tasksJson);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setTasks(parsed.map((label, i) => ({ id: i + 1, label, done: false })));
-          setResolvedIntentText(intentText || "");
-          loaded = true;
-        }
       } catch {}
-    }
 
-    if (!loaded) {
-      setResolvedIntentText(intentText || "");
-      setTasks(STARTER_TASKS);
-    }
-  }, []);
+      if (resolvedManifestationId) {
+        setIsGeneratingFromAi(true);
+        try {
+          const res = await api.post("/dua-to-do/generate", {
+            manifestationId: resolvedManifestationId,
+          });
+          const generatedTasks = Array.isArray(res.data?.tasks)
+            ? res.data.tasks.map((item: any, i: number) => mapTaskItem(item, i))
+            : [];
+
+          if (!isCancelled && generatedTasks.length > 0) {
+            setTasks(generatedTasks);
+            loaded = true;
+          }
+        } catch {}
+        setIsGeneratingFromAi(false);
+      }
+
+      if (!loaded && tasksJson) {
+        try {
+          const parsed: any[] = JSON.parse(tasksJson);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            if (!isCancelled) {
+              setTasks(parsed.map((item, i) => mapTaskItem(item, i)));
+              setResolvedIntentText(intentText || "");
+            }
+            loaded = true;
+          }
+        } catch {}
+      }
+
+      if (!loaded && !isCancelled) {
+        setResolvedIntentText(intentText || "");
+        setTasks(STARTER_TASKS);
+      }
+    };
+
+    load();
+    return () => {
+      isCancelled = true;
+    };
+  }, [intentText, manifestationId, tasksJson]);
 
   // AI suggestions as user types new task
   useEffect(() => {
@@ -106,16 +156,9 @@ export default function DuaTodoScreen() {
         const searchText = intentText
           ? `${intentText} — ${newLabel}`
           : newLabel;
-        const res = await fetch(`${API_URL}/iman-sync/quick-search`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: searchText }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const verses = (data.verses || []).slice(0, 2);
-          setAiSuggestions(verses.map((v: any) => `"${v.translation}" — ${v.verseKey}`));
-        }
+        const res = await api.post("/iman-sync/quick-search", { text: searchText });
+        const verses = (res.data.verses || []).slice(0, 2);
+        setAiSuggestions(verses.map((v: any) => `"${v.translation}" — ${v.verseKey}`));
       } catch {}
       setAiSuggestLoading(false);
     }, 1200);
@@ -125,15 +168,39 @@ export default function DuaTodoScreen() {
   const doneCount = tasks.filter((t) => t.done).length;
   const pct = tasks.length > 0 ? Math.round((doneCount / tasks.length) * 100) : 0;
 
-  const toggle = (id: number) => {
+  const toggle = async (id: string | number) => {
+    let previousDone = false;
+    let previousTime: string | undefined;
+    let nextDone = false;
+
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, done: !t.done, time: !t.done ? completedAt() : undefined } : t
-      )
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        previousDone = t.done;
+        previousTime = t.time;
+        nextDone = !t.done;
+        return {
+          ...t,
+          done: nextDone,
+          time: nextDone ? completedAt() : undefined,
+        };
+      })
     );
+
+    try {
+      await api.patch(`/dua-to-do/tasks/${id}`, { isCompleted: nextDone });
+    } catch {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? { ...t, done: previousDone, time: previousDone ? previousTime : undefined }
+            : t
+        )
+      );
+    }
   };
 
-  const remove = (id: number) => {
+  const remove = (id: string | number) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -142,14 +209,14 @@ export default function DuaTodoScreen() {
     if (!label) return;
     setTasks((prev) => [
       ...prev,
-      { id: Date.now(), label, done: false },
+      { id: `custom-${Date.now()}`, label, done: false },
     ]);
     setNewLabel("");
     setAiSuggestions([]);
     setShowAdd(false);
   };
 
-  const isFromImanifest = !!tasksJson;
+  const isFromImanifest = !!resolvedIntentText || !!manifestationId;
 
   return (
     <ScrollView
@@ -198,6 +265,15 @@ export default function DuaTodoScreen() {
           <Text style={{ fontFamily: "Noto Serif", fontSize: 13, color: "#5b5f65", marginBottom: 24, lineHeight: 20 }}>
             Go to Imanifest tab to set your intention and get personalized AI-guided steps.
           </Text>
+        )}
+
+        {isGeneratingFromAi && (
+          <View style={[glass(16), { padding: 14, flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 }]}> 
+            <ActivityIndicator size="small" color="#166534" />
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>
+              Generating AI-guided Dua-to-Do steps...
+            </Text>
+          </View>
         )}
 
         {/* AI Summary */}

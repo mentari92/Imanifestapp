@@ -185,21 +185,41 @@ export default function QalbResultScreen() {
           </View>
         ) : null}
 
-        {/* CTA */}
+        {/* Primary CTA — Plan with Imanifest (per project brief) */}
+        <TouchableOpacity
+          onPress={() => router.push("/imanifest" as any)}
+          activeOpacity={0.85}
+          style={{
+            backgroundColor: "#206c3a", paddingVertical: 20, paddingHorizontal: 32,
+            borderRadius: 9999, flexDirection: "row", alignItems: "center", justifyContent: "center",
+            gap: 10, marginTop: 8,
+            shadowColor: "#166534", shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+          }}
+        >
+          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, color: "#e8ffe8" }}>
+            Plan with Imanifest
+          </Text>
+          <Text style={{ fontSize: 18 }}>✨</Text>
+        </TouchableOpacity>
+
+        {/* Secondary CTA */}
         <TouchableOpacity
           onPress={() => router.back()}
           activeOpacity={0.85}
-          style={{
-            backgroundColor: "#166534", paddingVertical: 20, paddingHorizontal: 32,
-            borderRadius: 9999, flexDirection: "row", alignItems: "center", justifyContent: "center",
-            gap: 10, marginTop: 8,
-            shadowColor: "#166534", shadowOpacity: 0.15, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
-          }}
+          style={[
+            {
+              paddingVertical: 16, paddingHorizontal: 32,
+              borderRadius: 9999, flexDirection: "row", alignItems: "center", justifyContent: "center",
+              gap: 10, marginTop: 12,
+              backgroundColor: "rgba(255,255,255,0.5)",
+              borderWidth: 1, borderColor: "rgba(174,178,185,0.3)",
+            },
+            Platform.OS === "web" ? ({ backdropFilter: "blur(12px)" } as any) : {},
+          ]}
         >
-          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: "#fff" }}>
-            Share Another Reflection
+          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "600", color: "#5b5f65", letterSpacing: 1 }}>
+            Share Another Reflection 🌸
           </Text>
-          <Text style={{ fontSize: 18 }}>🌸</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
