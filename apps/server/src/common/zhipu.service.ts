@@ -320,7 +320,7 @@ score between 0 and 1.`;
     const fallbackResponse = await axios.post(
       this.openRouterUrl,
       {
-        model: "google/gemini-2.5-flash-preview",
+        model: "google/gemini-2.0-flash-001",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -399,7 +399,7 @@ Return ONLY a valid JSON array of English keywords.`;
     const fallbackResponse = await axios.post(
       this.openRouterUrl,
       {
-        model: "google/gemini-2.5-flash-preview",
+        model: "google/gemini-2.0-flash-001",
         messages: [
           { role: "system", content: systemPrompt },
           {
