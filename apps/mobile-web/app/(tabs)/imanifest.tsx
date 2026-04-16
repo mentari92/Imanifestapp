@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Platform,
-  ActivityIndicator,
+  ActivityIndicator, Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { api } from "../../lib/api";
@@ -30,6 +30,7 @@ export default function NiyyahBoardScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [aiHints, setAiHints] = useState<VerseHint[]>([]);
   const [hintsLoading, setHintsLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -123,6 +124,7 @@ export default function NiyyahBoardScreen() {
       return;
     }
     setError(null);
+    setNotice(null);
     setLoading(true);
     try {
       let data: any = null;
@@ -137,7 +139,9 @@ export default function NiyyahBoardScreen() {
             headers: { "Content-Type": "multipart/form-data" },
           });
           if (res.data) data = res.data;
-        } catch {}
+        } catch {
+          setNotice("Analisis gambar gagal, lanjut pakai analisis teks.");
+        }
       }
 
       // Fall back to text analysis
@@ -187,6 +191,7 @@ export default function NiyyahBoardScreen() {
         pathname: "/dua-todo",
         params: { intentText: trimmed, manifestationId: "" },
       });
+      setNotice("AI sedang lambat, memakai fallback tasks sementara.");
     } finally {
       setLoading(false);
     }
@@ -196,6 +201,7 @@ export default function NiyyahBoardScreen() {
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 120 }}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       {/* Blobs */}
@@ -245,11 +251,10 @@ export default function NiyyahBoardScreen() {
               backgroundColor: imagePreview ? "transparent" : "rgba(226,221,248,0.4)",
             }]}
           >
-            {imagePreview && Platform.OS === "web" ? (
-              <img
-                src={imagePreview}
-                style={{ width: "100%", height: "100%", objectFit: "cover" } as any}
-                alt="inspiration"
+            {imagePreview ? (
+              <Image
+                source={{ uri: imagePreview }}
+                style={{ width: "100%", height: "100%", resizeMode: "cover" } as any}
               />
             ) : (
               <>
@@ -391,6 +396,12 @@ export default function NiyyahBoardScreen() {
         {error ? (
           <View style={[glass(16), { padding: 16, backgroundColor: "rgba(254,202,202,0.4)" }]}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#991b1b" }}>{error}</Text>
+          </View>
+        ) : null}
+
+        {notice ? (
+          <View style={[glass(16), { padding: 16, backgroundColor: "rgba(187,247,208,0.45)" }]}> 
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#166534" }}>{notice}</Text>
           </View>
         ) : null}
 

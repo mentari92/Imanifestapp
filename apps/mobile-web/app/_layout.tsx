@@ -87,6 +87,7 @@ export default function RootLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="qalb-result" options={{ headerShown: false }} />
           <Stack.Screen
             name="auth"
             options={{ title: "Sign In", presentation: "modal" }}
