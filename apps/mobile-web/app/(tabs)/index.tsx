@@ -1,5 +1,7 @@
+import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { useRouter } from "expo-router";
+import { Heart, RefreshCw, ListChecks, Headphones } from "lucide-react-native";
 
 const glass = {
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -30,14 +32,15 @@ const holoCard = {
 };
 
 interface QuickCardProps {
-  emoji: string;
+  icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
+  iconColor: string;
   title: string;
   desc: string;
   bg: string;
   onPress: () => void;
 }
 
-function QuickCard({ emoji, title, desc, bg, onPress }: QuickCardProps) {
+function QuickCard({ icon: Icon, iconColor, title, desc, bg, onPress }: QuickCardProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -55,8 +58,8 @@ function QuickCard({ emoji, title, desc, bg, onPress }: QuickCardProps) {
     >
       <View
         style={{
-          width: 48,
-          height: 48,
+          width: 52,
+          height: 52,
           borderRadius: 16,
           backgroundColor: bg,
           alignItems: "center",
@@ -64,7 +67,7 @@ function QuickCard({ emoji, title, desc, bg, onPress }: QuickCardProps) {
           marginBottom: 4,
         }}
       >
-        <Text style={{ fontSize: 22 }}>{emoji}</Text>
+        <Icon size={24} color={iconColor} strokeWidth={1.8} />
       </View>
       <Text
         style={{
@@ -268,28 +271,32 @@ export default function DashboardScreen() {
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", margin: -6 }}>
             <QuickCard
-              emoji="❤️"
+              icon={Heart}
+              iconColor="#be185d"
               title="Qalb"
               desc="Check-in with your spirit"
               bg="#fce7f3"
               onPress={() => router.push("/qalb")}
             />
             <QuickCard
-              emoji="✨"
+              icon={RefreshCw}
+              iconColor="#1d4ed8"
               title="Imanifest"
               desc="Set your daily intention"
               bg="#dbeafe"
               onPress={() => router.push("/imanifest")}
             />
             <QuickCard
-              emoji="☑️"
+              icon={ListChecks}
+              iconColor="#b45309"
               title="Dua-to-Do"
               desc="Act on your manifestations"
               bg="#fef3c7"
               onPress={() => router.push("/dua-todo")}
             />
             <QuickCard
-              emoji="🧘"
+              icon={Headphones}
+              iconColor="#065f46"
               title="Tafakkur Hub"
               desc="Find tranquility in Quran"
               bg="#d1fae5"
