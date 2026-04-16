@@ -244,7 +244,7 @@ Do not include any explanation or extra text.`;
       const fallbackResponse = await axios.post(
         this.openRouterUrl,
         {
-          model: "google/gemini-2.5-flash-preview",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userMessage },
@@ -320,7 +320,7 @@ Do not include any explanation or extra text.`;
       const fallbackResponse = await axios.post(
         this.openRouterUrl,
         {
-          model: "google/gemini-2.5-flash-preview",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
             {
