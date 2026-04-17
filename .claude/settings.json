@@ -13,7 +13,14 @@
       "Bash(git -C /Users/mentarirahman/Documents/Imanifestapp remote -v)",
       "Bash(rtk grep *)",
       "Bash(ssh root@207.180.242.151 'cd /root/imanifestapp && grep -E \"ZHIPU_API_KEY|OPENROUTER_API_KEY\" .env 2>/dev/null || grep -E \"ZHIPU_API_KEY|OPENROUTER_API_KEY\" .env.production 2>/dev/null || echo \"ENV FILE NOT FOUND\"')",
-      "Bash(ssh root@207.180.242.151 \"cd /root/Imanifestapp && git pull && docker compose build web && docker compose up -d web\")"
+      "Bash(ssh root@207.180.242.151 \"cd /root/Imanifestapp && git pull && docker compose build web && docker compose up -d web\")",
+      "Bash(xargs cat *)",
+      "WebFetch(domain:mcp.quran.ai)",
+      "WebSearch",
+      "WebFetch(domain:www.mcpcurator.com)",
+      "WebFetch(domain:skywork.ai)",
+      "Bash(git -C /Users/mentarirahman/Documents/Imanifestapp add apps/server/src/common/zhipu.service.ts .claude/settings.json)",
+      "Bash(git -C /Users/mentarirahman/Documents/Imanifestapp commit -m ' *)"
     ]
   }
 }

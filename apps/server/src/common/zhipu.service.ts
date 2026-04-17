@@ -289,7 +289,9 @@ score between 0 and 1.`;
 
     const models = [
       "google/gemini-3-flash-preview",
+      "google/gemini-2.5-flash-preview:thinking",
       "deepseek/deepseek-chat-v3-0324",
+      "deepseek/deepseek-chat",
     ];
 
     for (const model of models) {
