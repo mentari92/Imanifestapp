@@ -160,7 +160,7 @@ export default function NiyyahBoardScreen() {
           });
           if (res.data) data = res.data;
         } catch {
-          setNotice("Analisis gambar gagal, lanjut pakai analisis teks.");
+          setNotice("Photo analysis failed, continuing with text analysis.");
         }
       }
 

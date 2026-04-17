@@ -57,7 +57,7 @@ export default function QalbScreen() {
         return;
       }
       const recognition = new SR();
-      recognition.lang = "id-ID";
+      recognition.lang = navigator.language || "en-US";
       recognition.continuous = false;
       recognition.interimResults = false;
       recognitionRef.current = recognition;
@@ -117,7 +117,7 @@ export default function QalbScreen() {
           ]
             .filter(Boolean)
             .join("\n\n")
-        : "Allah mengetahui isi hatimu. Tetap berikhtiar, perbanyak doa, dan jaga hati dengan dzikir.";
+        : "Allah hears every sincere heart. Keep striving with ikhtiar, deepen your dua, and guard your heart with dhikr.";
 
       const payload = {
         manifestationId: "qalb-response",
@@ -145,20 +145,20 @@ export default function QalbScreen() {
       const fallback = {
         manifestationId: "demo",
         aiSummary:
-          "Allah SWT mendengar setiap doa dari hati yang tulus. Dalam setiap kesulitan terdapat kemudahan (QS 94:5-6). " +
-          "Ambil satu langkah kecil hari ini, lalu lanjutkan dengan ikhtiar yang konsisten.",
+          "Allah SWT hears every sincere dua. With every hardship comes ease (QS 94:5-6). " +
+          "Take one small step today, then continue with consistent ikhtiar.",
         verses: [
           {
             verseKey: "94:5",
             arabicText: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
             translation: "For indeed, with hardship will be ease.",
-            tafsirSnippet: "Allah menjanjikan bahwa bersama setiap kesulitan ada kemudahan.",
+            tafsirSnippet: "Allah promises that alongside every difficulty there is ease.",
           },
           {
             verseKey: "13:28",
             arabicText: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
             translation: "Verily, in the remembrance of Allah do hearts find rest.",
-            tafsirSnippet: "Ketenangan hati tumbuh saat kita mengingat Allah dengan sadar.",
+            tafsirSnippet: "Peace of heart grows when we consciously remember Allah.",
           },
         ],
       };

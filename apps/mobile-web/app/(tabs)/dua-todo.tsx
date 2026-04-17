@@ -48,6 +48,29 @@ function completedAt(): string {
 
 function buildStarterTasks(intent: string): Task[] {
   const source = intent.toLowerCase();
+  const isEnglish = /[a-zA-Z]/.test(intent) && !/shalat|saya|aku|mau|ingin|dan |yang |untuk/.test(source);
+
+  if (isEnglish) {
+    return [
+      { id: 1, label: "Perform all 5 daily prayers on time and track your consistency", done: false },
+      {
+        id: 2,
+        label: /work|job|career|resume/.test(source)
+          ? "Update your CV and send at least 2 job applications today"
+          : "Complete your top priority task with 45 minutes of focused effort",
+        done: false,
+      },
+      {
+        id: 3,
+        label: /debt|money|finance|salary/.test(source)
+          ? "Create a 7-day financial plan and commit to a spending limit"
+          : "Write 3 specific things you are grateful for and 1 self-reflection today",
+        done: false,
+      },
+      { id: 4, label: "Read and reflect on 1 relevant Quranic verse", done: false },
+      { id: 5, label: "Close the day with a specific dua and review your progress", done: false },
+    ];
+  }
 
   return [
     { id: 1, label: "Shalat 5 waktu tepat waktu dan catat konsistensinya", done: false },
@@ -135,7 +158,7 @@ export default function DuaTodoScreen() {
           }
         } catch {
           if (!isCancelled) {
-            setNotice("Gagal ambil task AI. Menampilkan fallback tasks.");
+            setNotice("Could not load AI tasks. Showing fallback steps.");
           }
         }
         setIsGeneratingFromAi(false);
@@ -189,8 +212,8 @@ export default function DuaTodoScreen() {
         setAiSuggestions(verses.map((v: any) => `"${v.translation}" — ${v.verseKey}`));
       } catch {
         setAiSuggestions([
-          "Mulai dari langkah kecil yang konsisten, jangan menunggu motivasi sempurna.",
-          "Pilih 1 amalan spiritual + 1 ikhtiar duniawi yang bisa dieksekusi hari ini.",
+          "Start with small consistent steps — don't wait for perfect motivation.",
+          "Pick 1 spiritual practice + 1 worldly ikhtiar you can execute today.",
         ]);
       }
       setAiSuggestLoading(false);
@@ -223,7 +246,7 @@ export default function DuaTodoScreen() {
     try {
       await api.patch(`/dua-to-do/tasks/${id}`, { isCompleted: nextDone });
     } catch {
-      setNotice("Status task gagal disimpan ke server. Perubahan dibatalkan.");
+      setNotice("Could not save task status to server. Change reverted.");
       setTasks((prev) =>
         prev.map((t) =>
           t.id === id
