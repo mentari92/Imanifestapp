@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Heart } from "lucide-react-native";
 import {
   View,
   Text,
@@ -215,8 +216,8 @@ export default function QalbScreen() {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5dff8", alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 18 }}>🌸</Text>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#fce7f3", alignItems: "center", justifyContent: "center" }}>
+            <Heart size={20} color="#be185d" strokeWidth={1.8} />
           </View>
           <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>
             Qalb

@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { ListChecks } from "lucide-react-native";
 import { api } from "../../lib/api";
 
 const glass = (radius = 24) => ({
@@ -268,7 +269,7 @@ export default function DuaTodoScreen() {
       <View style={{ paddingHorizontal: 24, paddingVertical: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(255,255,255,0.6)", ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)" } as any) : {}) }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#fef3c7", alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 18 }}>☑️</Text>
+            <ListChecks size={20} color="#b45309" strokeWidth={1.8} />
           </View>
           <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>
             Dua-to-Do

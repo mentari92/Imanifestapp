@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Platform,
   ActivityIndicator, TextInput, Image,
 } from "react-native";
+import { Headphones } from "lucide-react-native";
 import { api } from "../../lib/api";
 
 const glass = (radius = 24) => ({
@@ -67,7 +68,15 @@ const SOUND_FILES: Record<string, string> = {
 };
 
 const RECITER_CDN_MAP: Record<number, string> = {
-  7: "ar.alafasy", 1: "ar.abdulsamad", 3: "ar.sudais", 10: "ar.minshawi",
+  7: "ar.alafasy",
+  1: "ar.abdulsamad",
+  2: "ar.abdulsamad",
+  3: "ar.sudais",
+  4: "ar.shuraym",
+  5: "ar.ibrahimakhdar",
+  6: "ar.mahermuaiqly",
+  9: "ar.minshawi",
+  10: "ar.shuraym",
 };
 
 function formatTime(s: number) {
@@ -118,12 +127,12 @@ export default function TafakkurHubScreen() {
         const rData = await rRes.json();
         const sData = await sRes.json();
 
-        const TOP_IDS = [7, 1, 3, 10, 9];
+        const TOP_IDS = [7, 3, 6, 1, 2, 4, 9, 5, 10, 8];
         const allRecitations: any[] = rData.recitations || [];
         const topRecitations = TOP_IDS
           .map((id) => allRecitations.find((r: any) => r.id === id))
           .filter(Boolean)
-          .slice(0, 5);
+          .slice(0, 10);
 
         const mapped: Reciter[] = topRecitations.map((r: any, i: number) => {
           const name = String(r.reciter_name || "Unknown");
@@ -312,7 +321,7 @@ export default function TafakkurHubScreen() {
         {/* Header */}
         <View style={{ paddingHorizontal: 24, paddingVertical: 16, flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.4)", ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.2)" } as any) : {}) }}>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ fontSize: 18 }}>🧘</Text>
+            <Headphones size={20} color="#065f46" strokeWidth={1.8} />
           </View>
           <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e", marginLeft: 12 }}>Tafakkur Hub</Text>
         </View>
@@ -408,7 +417,7 @@ export default function TafakkurHubScreen() {
                         <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: "#2f3338" }}>{s.englishName}</Text>
                         {s.versesCount > 0 && <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65" }}>{s.versesCount} verses</Text>}
                       </View>
-                      {s.name ? <Text style={{ fontFamily: "Amiri", fontSize: 18, color: "#524f63" }}>{s.name}</Text> : null}
+                      {s.name ? <Text style={{ fontFamily: "Amiri-Regular", fontSize: 18, color: "#524f63" }}>{s.name}</Text> : null}
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -453,7 +462,7 @@ export default function TafakkurHubScreen() {
             </Text>
             {currentVerse ? (
               <>
-                <Text style={{ fontFamily: "Amiri", fontSize: 28, lineHeight: 54, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
+                <Text style={{ fontFamily: "Amiri-Regular", fontSize: 28, lineHeight: 54, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
                   {currentVerse.arabic}
                 </Text>
                 <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
@@ -467,7 +476,7 @@ export default function TafakkurHubScreen() {
               </>
             ) : (
               <>
-                <Text style={{ fontFamily: "Amiri", fontSize: 26, lineHeight: 50, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
+                <Text style={{ fontFamily: "Amiri-Regular", fontSize: 26, lineHeight: 50, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
                   فَبِأَيِّ آلَاءِ رَبِّكُمَا تُكَذِّبَانِ
                 </Text>
                 <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
@@ -531,7 +540,7 @@ export default function TafakkurHubScreen() {
               <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65", textTransform: "uppercase", letterSpacing: 1 }}>Tap</Text>
             </TouchableOpacity>
             <View style={{ alignItems: "center", gap: 6 }}>
-              <Text style={{ fontFamily: "Amiri", fontSize: 28, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
+              <Text style={{ fontFamily: "Amiri-Regular", fontSize: 28, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
                 {dhikr.arabic}
               </Text>
               <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#524f63" }}>{dhikr.transliteration}</Text>

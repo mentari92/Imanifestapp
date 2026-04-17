@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Image,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Sparkles } from "lucide-react-native";
 import { api } from "../../lib/api";
 
 const glass = (radius = 24) => ({
@@ -240,8 +241,8 @@ export default function NiyyahBoardScreen() {
       {/* Header */}
       <View style={{ paddingHorizontal: 24, paddingVertical: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(255,255,255,0.4)", ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.2)" } as any) : {}) }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#e5dff8", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.4)" }}>
-            <Text style={{ fontSize: 18 }}>🌟</Text>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#dbeafe", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.4)" }}>
+            <Sparkles size={20} color="#1d4ed8" strokeWidth={1.8} />
           </View>
           <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>Imanifest</Text>
         </View>
