@@ -195,7 +195,18 @@ export default function NiyyahBoardScreen() {
       });
     } catch {
       const lower = trimmed.toLowerCase();
-      const fallbackTasks = [
+      const isEnglish = /[a-zA-Z]/.test(trimmed) && !/shalat|saya|aku|mau|ingin|dan|yang|untuk/.test(lower);
+      const fallbackTasks = isEnglish ? [
+        "Perform all 5 daily prayers on time and track your consistency",
+        /work|job|career|resume/.test(lower)
+          ? "Update your CV and send at least 2 job applications today"
+          : "Complete your top priority task with 45 minutes of focused effort",
+        /debt|money|finance|salary/.test(lower)
+          ? "Create a 7-day financial plan and commit to a spending limit"
+          : "Write 3 specific things you are grateful for today",
+        "Read and reflect on 1 Quranic verse that strengthens your intention",
+        "Close the day with a specific dua for your intention and review your progress",
+      ] : [
         "Shalat 5 waktu tepat waktu dan catat progres harian",
         /kerja|karier|lamaran|cv/.test(lower)
           ? "Perbarui CV dan kirim minimal 2 lamaran hari ini"
@@ -211,7 +222,9 @@ export default function NiyyahBoardScreen() {
           manifestationId: "",
           tasks: fallbackTasks,
           verses: [],
-          aiSummary: "AI utama sedang sibuk. Ini rencana ikhtiar terarah agar langkahmu tetap berjalan.",
+          aiSummary: isEnglish
+            ? "AI is temporarily busy. Here is a guided ikhtiar plan to keep you moving forward."
+            : "AI sedang sibuk. Ini rencana ikhtiar terarah agar langkahmu tetap berjalan.",
           intentText: trimmed,
         }));
       }
@@ -219,7 +232,7 @@ export default function NiyyahBoardScreen() {
         pathname: "/dua-todo",
         params: { intentText: trimmed, manifestationId: "" },
       });
-      setNotice("AI sedang sibuk, memakai fallback plan yang tetap relevan.");
+      setNotice(isEnglish ? "AI is busy, using a relevant fallback plan." : "AI sedang sibuk, memakai fallback plan yang tetap relevan.");
     } finally {
       setLoading(false);
     }

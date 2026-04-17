@@ -283,17 +283,22 @@ score between 0 and 1.`;
     systemPrompt: string,
     userMessage: string,
   ): Promise<string> {
-    if (!this.zhipuApiKey && !this.openRouterApiKey) {
+    if (!this.openRouterApiKey) {
       throw new Error("No AI provider configured");
     }
 
-    // OpenRouter (Gemini 3.0 Flash) — PRIMARY
-    if (this.openRouterApiKey) {
+    const models = [
+      "google/gemini-3-flash-preview",
+      "google/gemini-flash-1.5",
+      "meta-llama/llama-3.1-8b-instruct:free",
+    ];
+
+    for (const model of models) {
       try {
         const response = await axios.post(
           this.openRouterUrl,
           {
-            model: "google/gemini-3-flash-preview",
+            model,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userMessage },
@@ -311,38 +316,16 @@ score between 0 and 1.`;
           },
         );
         const content = response.data?.choices?.[0]?.message?.content || "";
-        if (content) return content;
+        if (content) {
+          if (model !== models[0]) this.logger.warn(`Used fallback model: ${model}`);
+          return content;
+        }
       } catch (error: any) {
-        this.logger.warn(`OpenRouter error: ${error.response?.data?.error?.message || error.message}`);
+        this.logger.warn(`OpenRouter [${model}] error: ${error.response?.data?.error?.message || error.message}`);
       }
     }
 
-    // Zhipu GLM — fallback
-    if (this.zhipuApiKey) {
-      const response = await axios.post(
-        `${this.baseUrl}/chat/completions`,
-        {
-          model: "glm-4-flash-250414",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-          temperature: 0.2,
-          max_tokens: 1200,
-        },
-        {
-          headers: {
-            ...ZhipuService.GLM_BASE_HEADERS,
-            Authorization: `Bearer ${this.zhipuApiKey}`,
-          },
-          timeout: 12000,
-        },
-      );
-      const content = response.data?.choices?.[0]?.message?.content || "";
-      if (content) return content;
-    }
-
-    throw new Error("All AI providers unavailable");
+    throw new Error("All OpenRouter models unavailable");
   }
 
   private async callGLM5Vision(
@@ -350,7 +333,7 @@ score between 0 and 1.`;
     imageBase64: string,
     mimeType: string,
   ): Promise<string> {
-    if (!this.zhipuApiKey && !this.openRouterApiKey) {
+    if (!this.openRouterApiKey) {
       throw new Error("No AI provider configured");
     }
 
@@ -358,12 +341,14 @@ score between 0 and 1.`;
 Extract the 3 most relevant Islamic spiritual themes from the user's intention and image.
 Return ONLY a valid JSON array of English keywords.`;
 
-    if (this.zhipuApiKey) {
+    const models = ["google/gemini-3-flash-preview", "google/gemini-flash-1.5"];
+
+    for (const model of models) {
       try {
         const response = await axios.post(
-          `${this.baseUrl}/chat/completions`,
+          this.openRouterUrl,
           {
-            model: "glm-4v-flash",
+            model,
             messages: [
               { role: "system", content: systemPrompt },
               {
@@ -377,59 +362,25 @@ Return ONLY a valid JSON array of English keywords.`;
                 ],
               },
             ],
-            temperature: 0.3,
-            max_tokens: 1200,
           },
           {
             headers: {
-              ...ZhipuService.GLM_BASE_HEADERS,
-              Authorization: `Bearer ${this.zhipuApiKey}`,
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${this.openRouterApiKey}`,
+              "HTTP-Referer": "https://imanifestapp.com",
+              "X-Title": "IManifestApp",
             },
             timeout: 14000,
           },
         );
-
         const content = response.data?.choices?.[0]?.message?.content || "";
         if (content) return content;
-      } catch (error) {
-        this.logger.warn("Zhipu vision failed, trying OpenRouter fallback");
+      } catch (error: any) {
+        this.logger.warn(`OpenRouter vision [${model}] error: ${error.response?.data?.error?.message || error.message}`);
       }
     }
 
-    if (!this.openRouterApiKey) {
-      throw new Error("All AI providers unavailable for vision");
-    }
-
-    const fallbackResponse = await axios.post(
-      this.openRouterUrl,
-      {
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: userMessage },
-              {
-                type: "image_url",
-                image_url: { url: `data:${mimeType};base64,${imageBase64}` },
-              },
-            ],
-          },
-        ],
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.openRouterApiKey}`,
-          "HTTP-Referer": "https://imanifestapp.com",
-          "X-Title": "IManifestApp",
-        },
-        timeout: 12000,
-      },
-    );
-
-    return fallbackResponse.data?.choices?.[0]?.message?.content || "";
+    throw new Error("All OpenRouter vision models unavailable");
   }
 
   private parseJSONResponse<T>(text: string): T | null {

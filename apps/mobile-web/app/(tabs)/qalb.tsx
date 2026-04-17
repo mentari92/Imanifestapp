@@ -130,7 +130,7 @@ export default function QalbScreen() {
       }
 
       if (reflectRes.status !== "fulfilled") {
-        setNotice("AI utama sedang sibuk, menampilkan guidance fallback yang tetap relevan.");
+        setNotice("AI is temporarily busy, showing a relevant fallback guidance.");
       }
 
       router.push({
@@ -141,7 +141,7 @@ export default function QalbScreen() {
         },
       });
     } catch {
-      setNotice("AI sedang sibuk, menampilkan guidance fallback.");
+      setNotice("AI is busy, showing fallback guidance.");
       const fallback = {
         manifestationId: "demo",
         aiSummary:
