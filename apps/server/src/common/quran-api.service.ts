@@ -1,6 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import axios from "axios";
 import { RedisService } from "./redis.service";
+import { QuranMcpService } from "./quran-mcp.service";
 
 interface QuranSearchResult {
   verse_key: string;
@@ -44,7 +45,10 @@ export class QuranApiService {
     process.env.QURAN_API_BASE_URL || "https://api.quran.com/api/v4";
   private readonly apiKey = process.env.QURAN_FOUNDATION_API_KEY || "";
 
-  constructor(private readonly redis: RedisService) {}
+  constructor(
+    private readonly redis: RedisService,
+    @Optional() private readonly mcpService?: QuranMcpService,
+  ) {}
 
   async searchVerses(
     query: string,
@@ -121,7 +125,24 @@ export class QuranApiService {
 
       return verseResults;
     } catch (error) {
-      this.logger.error("Failed to search verses", error);
+      this.logger.error("Direct Quran API failed, trying MCP fallback", error);
+
+      // Secondary fallback: Quran MCP server
+      if (this.mcpService) {
+        try {
+          const mcpResults = await this.mcpService.searchVerses(query, size);
+          if (mcpResults && mcpResults.length > 0) {
+            this.logger.log(`MCP fallback returned ${mcpResults.length} verses for: ${query}`);
+            try {
+              await this.redis.set(cacheKey, JSON.stringify(mcpResults), 1800);
+            } catch { /* non-critical */ }
+            return mcpResults;
+          }
+        } catch (mcpError) {
+          this.logger.warn("MCP fallback also failed", mcpError);
+        }
+      }
+
       return this.getFallbackVerses(query, size);
     }
   }
