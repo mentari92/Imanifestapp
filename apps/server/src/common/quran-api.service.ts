@@ -72,7 +72,7 @@ export class QuranApiService {
           q: query,
           size,
           language: "en",
-          translations: 131,
+          translations: "85,131",
         },
         headers: this.getHeaders(),
         timeout: 8000,
@@ -84,15 +84,19 @@ export class QuranApiService {
       }
 
       const baseVerses = results.slice(0, size).map((result) => {
-        const translation =
+        const rawTranslation =
+          result.translations?.find((t) => t.resource_id === 85)?.text ||
           result.translations?.find((t) => t.resource_id === 131)?.text ||
           result.translations?.[0]?.text ||
-          "Translation unavailable";
+          "";
+        const translation = rawTranslation
+          ? this.decodeHtmlEntities(this.stripHtmlTags(rawTranslation))
+          : "Translation unavailable";
 
         return {
           verseKey: result.verse_key,
           arabicText: result.text_uthmani || result.text || "",
-          translation: this.decodeHtmlEntities(this.stripHtmlTags(translation)),
+          translation,
           tafsirSnippet: "",
         };
       });
@@ -124,22 +128,23 @@ export class QuranApiService {
 
   async getTafsir(verseKey: string): Promise<string> {
     try {
+      // Tafsir ID 169 = Tafsir Ibn Kathir (English) on Quran Foundation API
       const response = await axios.get<TafsirResponse>(
-        `${this.baseUrl}/tafsirs/en-tafisr-ibn-kathir/by_ayah/${verseKey}`,
+        `${this.baseUrl}/tafsirs/169/by_ayah/${verseKey}`,
         {
           headers: this.getHeaders(),
           timeout: 6000,
         },
       );
 
-      const tafsirText =
-        response.data?.tafsir?.text || "Tafsir unavailable";
+      const tafsirText = response.data?.tafsir?.text || "";
+      if (!tafsirText) return "";
       const cleaned = this.decodeHtmlEntities(this.stripHtmlTags(tafsirText));
       return cleaned.length > 300
         ? cleaned.substring(0, 300) + "..."
         : cleaned;
     } catch {
-      return "Ringkasan tafsir belum tersedia untuk ayat ini saat ini.";
+      return "";
     }
   }
 
@@ -217,49 +222,195 @@ export class QuranApiService {
   private getFallbackVerses(query: string, size: number): VerseResult[] {
     const q = query.toLowerCase();
 
-    const patienceVerses: VerseResult[] = [
+    // Topic-aware verse bank
+    const topicMap: Array<{ test: RegExp; verses: VerseResult[] }> = [
+      {
+        test: /travel|safar|journey|perjalanan|musafir/,
+        verses: [
+          {
+            verseKey: "2:286",
+            arabicText: "\u0644\u0627 \u064a\u064f\u0643\u064e\u0644\u0651\u0650\u0641\u064f \u0627\u0644\u0644\u0651\u0647\u064f \u0646\u064e\u0641\u0652\u0633\u064b\u0627 \u0625\u0650\u0644\u0651\u0627 \u0648\u064f\u0633\u0652\u0639\u064e\u0647\u064e\u0627",
+            translation: "Allah does not burden a soul beyond what it can bear.",
+            tafsirSnippet: "Every journey and hardship is within what Allah has decreed you can handle.",
+          },
+          {
+            verseKey: "67:15",
+            arabicText: "\u0647\u064f\u0648\u064e \u0627\u0644\u0651\u064e\u0630\u0650\u064a \u062c\u064e\u0639\u064e\u0644\u064e \u0644\u064e\u0643\u064f\u0645\u064f \u0627\u0644\u0652\u0623\u064e\u0631\u0652\u0636\u064e \u0630\u064e\u0644\u064f\u0648\u0644\u064b\u0627",
+            translation: "It is He who made the earth tame for you — so walk among its slopes and eat of His provision.",
+            tafsirSnippet: "Allah made travel and the earth accessible as a mercy and means of provision.",
+          },
+          {
+            verseKey: "6:59",
+            arabicText: "\u0648\u064e\u064a\u064e\u0639\u0652\u0644\u064e\u0645\u064f \u0645\u064e\u0627 \u0641\u0650\u064a \u0627\u0644\u0652\u0628\u064e\u0631\u0651\u0650 \u0648\u064e\u0627\u0644\u0652\u0628\u064e\u062d\u0652\u0631\u0650",
+            translation: "And He knows what is in the land and sea.",
+            tafsirSnippet: "No path on land or sea is unknown to Allah — trust in His knowledge during your travels.",
+          },
+        ],
+      },
+      {
+        test: /wealth|money|rich|rezeki|kaya|harta|finance|keuangan|income|pendapatan|bisnis|business/,
+        verses: [
+          {
+            verseKey: "65:3",
+            arabicText: "\u0648\u064e\u0645\u064e\u0646 \u064a\u064e\u062a\u064e\u0648\u064e\u0643\u0651\u064e\u0644\u0652 \u0639\u064e\u0644\u064e\u0649 \u0627\u0644\u0644\u0651\u0647\u0650 \u0641\u064e\u0647\u064f\u0648\u064e \u062d\u064e\u0633\u0652\u0628\u064f\u0647\u064f",
+            translation: "And whoever relies upon Allah — then He is sufficient for him.",
+            tafsirSnippet: "Tawakkul in seeking provision means making full effort while trusting Allah for the outcome.",
+          },
+          {
+            verseKey: "14:7",
+            arabicText: "\u0644\u064e\u0626\u0650\u0646 \u0634\u064e\u0643\u064e\u0631\u0652\u062a\u064f\u0645\u0652 \u0644\u064e\u0623\u064e\u0632\u0650\u064a\u062f\u064e\u0646\u0651\u064e\u0643\u064f\u0645\u0652",
+            translation: "If you are grateful, I will surely increase you in favor.",
+            tafsirSnippet: "Gratitude for existing provision is the key that unlocks greater barakah and increase.",
+          },
+          {
+            verseKey: "11:6",
+            arabicText: "\u0648\u064e\u0645\u064e\u0627 \u0645\u0650\u0646 \u062f\u064e\u0622\u0628\u0651\u064e\u0629\u064d \u0641\u0650\u064a \u0627\u0644\u0652\u0623\u064e\u0631\u0652\u0636\u0650 \u0625\u0650\u0644\u0651\u064e\u0627 \u0639\u064e\u0644\u064e\u0649 \u0627\u0644\u0644\u0651\u0647\u0650 \u0631\u0650\u0632\u0652\u0642\u064f\u0647\u064e\u0627",
+            translation: "There is no creature on earth but that its provision rests with Allah.",
+            tafsirSnippet: "Every living being's sustenance is guaranteed by Allah — work hard and trust the Provider.",
+          },
+        ],
+      },
+      {
+        test: /career|job|work|kerja|karier|pekerjaan|employment|profession|interview|lamaran/,
+        verses: [
+          {
+            verseKey: "94:5",
+            arabicText: "\u0641\u064e\u0625\u0650\u0646\u0651\u064e \u0645\u064e\u0639\u064e \u0627\u0644\u0652\u0639\u064f\u0633\u0652\u0631\u0650 \u064a\u064f\u0633\u0652\u0631\u064b\u0627",
+            translation: "Indeed, with hardship comes ease.",
+            tafsirSnippet: "Career struggles are temporary — Allah has promised relief alongside every difficulty.",
+          },
+          {
+            verseKey: "53:39",
+            arabicText: "\u0648\u064e\u0623\u064e\u0646 \u0644\u064e\u064a\u0652\u0633\u064e \u0644\u0650\u0644\u0652\u0625\u0650\u0646\u0633\u064e\u0627\u0646\u0650 \u0625\u0650\u0644\u0651\u064e\u0627 \u0645\u064e\u0627 \u0633\u064e\u0639\u064e\u0649",
+            translation: "And that there is not for man except that for which he strives.",
+            tafsirSnippet: "Your efforts are not wasted — every striving counts and is recorded by Allah.",
+          },
+          {
+            verseKey: "65:3",
+            arabicText: "\u0648\u064e\u0645\u064e\u0646 \u064a\u064e\u062a\u064e\u0648\u064e\u0643\u0651\u064e\u0644\u0652 \u0639\u064e\u0644\u064e\u0649 \u0627\u0644\u0644\u0651\u0647\u0650 \u0641\u064e\u0647\u064f\u0648\u064e \u062d\u064e\u0633\u0652\u0628\u064f\u0647\u064f",
+            translation: "And whoever relies upon Allah — then He is sufficient for him.",
+            tafsirSnippet: "After your best effort in seeking work, place your trust fully in Allah.",
+          },
+        ],
+      },
+      {
+        test: /family|keluarga|marriage|nikah|spouse|husband|wife|child|anak|parent|ortu|silaturahmi/,
+        verses: [
+          {
+            verseKey: "30:21",
+            arabicText: "\u0648\u064e\u0645\u0650\u0646\u0652 \u0622\u064a\u064e\u0627\u062a\u0650\u0647\u0650 \u0623\u064e\u0646\u0652 \u062e\u064e\u0644\u064e\u0642\u064e \u0644\u064e\u0643\u064f\u0645 \u0645\u0651\u0650\u0646\u0652 \u0623\u064e\u0646\u0641\u064f\u0633\u0650\u0643\u064f\u0645\u0652 \u0623\u064e\u0632\u0652\u0648\u064e\u0627\u062c\u064b\u0627",
+            translation: "And of His signs is that He created for you from yourselves mates that you may find tranquility in them.",
+            tafsirSnippet: "Marriage is a sign of Allah's mercy — a source of sakinah, love, and compassion.",
+          },
+          {
+            verseKey: "17:23",
+            arabicText: "\u0648\u064e\u0642\u064e\u0636\u064e\u0649 \u0631\u064e\u0628\u0651\u064f\u0643\u064e \u0623\u064e\u0644\u0651\u064e\u0627 \u062a\u064e\u0639\u0652\u0628\u064f\u062f\u064f\u0648\u0627 \u0625\u0650\u0644\u0651\u064e\u0627 \u0625\u0650\u064a\u0651\u064e\u0627\u0647\u064f",
+            translation: "Your Lord has decreed that you worship none but Him, and that you be good to parents.",
+            tafsirSnippet: "Kindness to parents is linked directly to worship of Allah — it opens blessings in life.",
+          },
+          {
+            verseKey: "4:1",
+            arabicText: "\u0627\u062a\u0651\u064e\u0642\u064f\u0648\u0627 \u0631\u064e\u0628\u0651\u064e\u0643\u064f\u0645\u064f \u0627\u0644\u0651\u064e\u0630\u0650\u064a \u062e\u064e\u0644\u064e\u0642\u064e\u0643\u064f\u0645 \u0645\u0651\u0650\u0646 \u0646\u0651\u064e\u0641\u0652\u0633\u064d \u0648\u064e\u0627\u062d\u0650\u062f\u064e\u0629\u064d",
+            translation: "Fear your Lord, who created you from one soul and created from it its mate.",
+            tafsirSnippet: "All of humanity shares one origin — family bonds are sacred and to be nurtured.",
+          },
+        ],
+      },
+      {
+        test: /health|sakit|sick|ill|disease|penyakit|recover|sembuh|hospital|dokter|doctor/,
+        verses: [
+          {
+            verseKey: "26:80",
+            arabicText: "\u0648\u064e\u0625\u0650\u0630\u064e\u0627 \u0645\u064e\u0631\u0650\u0636\u0652\u062a\u064f \u0641\u064e\u0647\u064f\u0648\u064e \u064a\u064e\u0634\u0652\u0641\u0650\u064a\u0646\u0650",
+            translation: "And when I am ill, it is He who cures me.",
+            tafsirSnippet: "Only Allah truly heals — doctors are means, but the cure comes from Allah alone.",
+          },
+          {
+            verseKey: "2:286",
+            arabicText: "\u0644\u0627 \u064a\u064f\u0643\u064e\u0644\u0651\u0650\u0641\u064f \u0627\u0644\u0644\u0651\u0647\u064f \u0646\u064e\u0641\u0652\u0633\u064b\u0627 \u0625\u0650\u0644\u0651\u0627 \u0648\u064f\u0633\u0652\u0639\u064e\u0647\u064e\u0627",
+            translation: "Allah does not burden a soul beyond what it can bear.",
+            tafsirSnippet: "Even illness is within what you can bear, and every hardship brings expiation of sins.",
+          },
+          {
+            verseKey: "94:5",
+            arabicText: "\u0641\u064e\u0625\u0650\u0646\u0651\u064e \u0645\u064e\u0639\u064e \u0627\u0644\u0652\u0639\u064f\u0633\u0652\u0631\u0650 \u064a\u064f\u0633\u0652\u0631\u064b\u0627",
+            translation: "Indeed, with hardship comes ease.",
+            tafsirSnippet: "Recovery and relief are promised alongside every illness and difficulty.",
+          },
+        ],
+      },
+      {
+        test: /syukur|grateful|nikmat|gratitude|thankful|blessings|blessing|alhamdulillah/,
+        verses: [
+          {
+            verseKey: "14:7",
+            arabicText: "\u0644\u064e\u0626\u0650\u0646 \u0634\u064e\u0643\u064e\u0631\u0652\u062a\u064f\u0645\u0652 \u0644\u064e\u0623\u064e\u0632\u0650\u064a\u062f\u064e\u0646\u0651\u064e\u0643\u064f\u0645\u0652",
+            translation: "If you are grateful, I will surely increase you in favor.",
+            tafsirSnippet: "Gratitude that is real opens the door to more blessings in ways we cannot anticipate.",
+          },
+          {
+            verseKey: "93:11",
+            arabicText: "\u0648\u064e\u0623\u064e\u0645\u0651\u064e\u0627 \u0628\u0650\u0646\u0650\u0639\u0652\u0645\u064e\u0629\u0650 \u0631\u064e\u0628\u0651\u0650\u0643\u064e \u0641\u064e\u062d\u064e\u062f\u0651\u0650\u062b\u0652",
+            translation: "And proclaim the blessings of your Lord.",
+            tafsirSnippet: "Naming and speaking about Allah's blessings strengthens gratitude and spreads positivity.",
+          },
+          {
+            verseKey: "2:152",
+            arabicText: "\u0641\u064e\u0627\u0630\u0652\u0643\u064f\u0631\u064f\u0648\u0646\u0650\u064a \u0623\u064e\u0630\u0652\u0643\u064f\u0631\u0652\u0643\u064f\u0645\u0652",
+            translation: "Remember Me; I will remember you.",
+            tafsirSnippet: "Dhikr is a reciprocal bond — when you remember Allah, He remembers you in return.",
+          },
+        ],
+      },
+      {
+        test: /tawakkul|trust|hope|harap|doa|prayer|supplication|goal|cita|impian|dream|manifest/,
+        verses: [
+          {
+            verseKey: "3:160",
+            arabicText: "\u0648\u064e\u0639\u064e\u0644\u064e\u0649 \u0627\u0644\u0644\u0651\u0647\u0650 \u0641\u064e\u0644\u0652\u064a\u064e\u062a\u064e\u0648\u064e\u0643\u0651\u064e\u0644\u0650 \u0627\u0644\u0652\u0645\u064f\u0624\u0652\u0645\u0650\u0646\u064f\u0648\u0646\u064e",
+            translation: "And upon Allah let the believers rely.",
+            tafsirSnippet: "The mark of true iman is placing full reliance on Allah after exhausting one's effort.",
+          },
+          {
+            verseKey: "40:60",
+            arabicText: "\u0627\u062f\u0652\u0639\u064f\u0648\u0646\u0650\u064a \u0623\u064e\u0633\u0652\u062a\u064e\u062c\u0650\u0628\u0652 \u0644\u064e\u0643\u064f\u0645\u0652",
+            translation: "Call upon Me; I will respond to you.",
+            tafsirSnippet: "Allah's promise to answer dua is absolute — sincerity and persistence are key.",
+          },
+          {
+            verseKey: "65:3",
+            arabicText: "\u0648\u064e\u0645\u064e\u0646 \u064a\u064e\u062a\u064e\u0648\u064e\u0643\u0651\u064e\u0644\u0652 \u0639\u064e\u0644\u064e\u0649 \u0627\u0644\u0644\u0651\u0647\u0650 \u0641\u064e\u0647\u064f\u0648\u064e \u062d\u064e\u0633\u0652\u0628\u064f\u0647\u064f",
+            translation: "And whoever relies upon Allah — then He is sufficient for him.",
+            tafsirSnippet: "True tawakkul combines sincere effort with complete trust in Allah's decree.",
+          },
+        ],
+      },
+    ];
+
+    // Default (patience/hardship) verses
+    const defaultVerses: VerseResult[] = [
       {
         verseKey: "94:5",
-        arabicText: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
+        arabicText: "\u0641\u064e\u0625\u0650\u0646\u0651\u064e \u0645\u064e\u0639\u064e \u0627\u0644\u0652\u0639\u064f\u0633\u0652\u0631\u0650 \u064a\u064f\u0633\u0652\u0631\u064b\u0627",
         translation: "Indeed, with hardship comes ease.",
-        tafsirSnippet: "Allah menegaskan bahwa kesulitan tidak datang sendirian; selalu ada kemudahan yang menyertainya.",
+        tafsirSnippet: "Allah confirms that hardship is never without its accompanying ease.",
       },
       {
         verseKey: "2:286",
-        arabicText: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا",
+        arabicText: "\u0644\u0627 \u064a\u064f\u0643\u064e\u0644\u0651\u0650\u0641\u064f \u0627\u0644\u0644\u0651\u0647\u064f \u0646\u064e\u0641\u0652\u0633\u064b\u0627 \u0625\u0650\u0644\u0651\u0627 \u0648\u064f\u0633\u0652\u0639\u064e\u0647\u064e\u0627",
         translation: "Allah does not burden a soul beyond what it can bear.",
-        tafsirSnippet: "Setiap ujian berada dalam batas kemampuan hamba, sehingga ujian juga mengandung potensi pertumbuhan.",
+        tafsirSnippet: "Every test is within your capacity — the difficulty itself contains potential for growth.",
       },
       {
         verseKey: "13:28",
-        arabicText: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
+        arabicText: "\u0623\u064e\u0644\u064e\u0627 \u0628\u0650\u0630\u0650\u0643\u0652\u0631\u0650 \u0627\u0644\u0644\u0651\u0647\u0650 \u062a\u064e\u0637\u0652\u0645\u064e\u0626\u0650\u0646\u0651\u064f \u0627\u0644\u0652\u0642\u064f\u0644\u064f\u0648\u0628\u064f",
         translation: "Surely in the remembrance of Allah do hearts find rest.",
-        tafsirSnippet: "Ketenangan hati paling dalam muncul ketika hati kembali mengingat Allah secara sadar dan konsisten.",
+        tafsirSnippet: "True peace of heart comes only from connecting with Allah through dhikr.",
       },
     ];
 
-    const gratitudeVerses: VerseResult[] = [
-      {
-        verseKey: "14:7",
-        arabicText: "لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ",
-        translation: "If you are grateful, I will surely increase you.",
-        tafsirSnippet: "Syukur yang nyata membuka tambahan nikmat, baik dalam ketenangan batin maupun peluang hidup.",
-      },
-      {
-        verseKey: "93:11",
-        arabicText: "وَأَمَّا بِنِعْمَةِ رَبِّكَ فَحَدِّثْ",
-        translation: "And proclaim the blessings of your Lord.",
-        tafsirSnippet: "Menyadari dan menyebut nikmat Allah menumbuhkan optimisme, adab, dan rasa cukup.",
-      },
-      {
-        verseKey: "2:152",
-        arabicText: "فَاذْكُرُونِي أَذْكُرْكُمْ",
-        translation: "Remember Me; I will remember you.",
-        tafsirSnippet: "Dzikir adalah hubungan timbal balik yang menguatkan jiwa dan orientasi hidup.",
-      },
-    ];
-
-    const base = /syukur|grateful|nikmat/.test(q) ? gratitudeVerses : patienceVerses;
+    const matched = topicMap.find((t) => t.test.test(q));
+    const base = matched ? matched.verses : defaultVerses;
     return base.slice(0, Math.max(1, Math.min(size, 3)));
   }
 
