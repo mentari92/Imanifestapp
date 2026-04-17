@@ -25,17 +25,29 @@ interface Reciter {
   photo: string;
 }
 
-function reciterAvatar(name: string): string {
-  return `https://api.dicebear.com/9.x/avataaars/png?seed=${encodeURIComponent(name)}&size=120&backgroundColor=b6e3f4,c0aede,d1d4f9&facialHairProbability=100&accessories=Blank&clotheType=BlazerShirt`;
+function reciterAvatar(seed: string): string {
+  // Force short male hair + full beard + warm skin tone for Arab male appearance
+  const params = new URLSearchParams({
+    seed,
+    size: "120",
+    backgroundColor: "b6e3f4,c0aede,d1d4f9",
+    facialHairProbability: "100",
+    facialHair: "beardMedium,beardLight,beardMajestic",
+    top: "shortHairShortFlat,shortHairShortCurly,shortHairTheCaesar,shortHairShortRound,noHair",
+    accessories: "blank",
+    skinColor: "edb98a,d08b5b,f8d25c",
+    clotheType: "blazerShirt,blazerSweater,collarSweater",
+  });
+  return `https://api.dicebear.com/9.x/avataaars/png?${params.toString()}`;
 }
 
 const STATIC_RECITERS: Reciter[] = [
-  { id: 7, name: "Mishary Rashid Alafasy",      subtitle: "Kuwait · Murattal",   cdnId: "ar.alafasy",     initials: "MA", bg: "#7c3aed", photo: reciterAvatar("Mishary Rashid Alafasy") },
-  { id: 3, name: "Abdur-Rahman as-Sudais",       subtitle: "Makkah Imam",         cdnId: "ar.sudais",      initials: "AS", bg: "#0e6030", photo: reciterAvatar("Abdur-Rahman as-Sudais") },
-  { id: 6, name: "Maher Al-Muaiqly",             subtitle: "Madinah Imam",        cdnId: "ar.mahermuaiqly",initials: "MM", bg: "#1d4ed8", photo: reciterAvatar("Maher Al-Muaiqly") },
-  { id: 1, name: "AbdulBaset AbdulSamad",        subtitle: "Egypt · Mujawwad",    cdnId: "ar.abdulsamad",  initials: "AB", bg: "#92400e", photo: reciterAvatar("AbdulBaset AbdulSamad") },
-  { id: 9, name: "Mohamed Siddiq El-Minshawi",   subtitle: "Egypt · Murattal",    cdnId: "ar.minshawi",    initials: "MS", bg: "#334155", photo: reciterAvatar("Mohamed Siddiq El-Minshawi") },
-  { id: 4, name: "Saud ash-Shuraym",             subtitle: "Makkah Imam",         cdnId: "ar.shuraym",     initials: "SS", bg: "#065f46", photo: reciterAvatar("Saud ash-Shuraym") },
+  { id: 7, name: "Mishary Rashid Alafasy",    subtitle: "Kuwait · Murattal",  cdnId: "ar.alafasy",      initials: "MA", bg: "#7c3aed", photo: reciterAvatar("mishary-alafasy") },
+  { id: 3, name: "Abdur-Rahman as-Sudais",    subtitle: "Makkah Imam",        cdnId: "ar.sudais",       initials: "AS", bg: "#0e6030", photo: reciterAvatar("abdurrahman-sudais") },
+  { id: 6, name: "Maher Al-Muaiqly",          subtitle: "Madinah Imam",       cdnId: "ar.mahermuaiqly", initials: "MM", bg: "#1d4ed8", photo: reciterAvatar("maher-muaiqly") },
+  { id: 1, name: "AbdulBaset AbdulSamad",     subtitle: "Egypt · Mujawwad",   cdnId: "ar.abdulsamad",   initials: "AB", bg: "#92400e", photo: reciterAvatar("abdulbaset-samad") },
+  { id: 9, name: "Mohamed Siddiq al-Minshawi",subtitle: "Egypt · Murattal",   cdnId: "ar.minshawi",     initials: "MS", bg: "#334155", photo: reciterAvatar("minshawi-siddiq") },
+  { id: 4, name: "Saud ash-Shuraym",          subtitle: "Makkah Imam",        cdnId: "ar.shuraym",      initials: "SS", bg: "#065f46", photo: reciterAvatar("saud-shuraym") },
 ];
 
 const DHIKR_LIST = [
