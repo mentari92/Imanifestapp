@@ -67,7 +67,16 @@ services:
       - "127.0.0.1:8080:80"   # hanya localhost, tidak expose ke internet langsung
     depends_on:
       - api
+    networks:
+      - default
+      - n8n_default
 
 volumes:
   pgdata:
   redisdata:
+
+networks:
+  default: {}
+  # Caddy (n8n stack) resolves container names from this network
+  n8n_default:
+    external: true
