@@ -287,63 +287,62 @@ score between 0 and 1.`;
       throw new Error("No AI provider configured");
     }
 
-    if (this.zhipuApiKey) {
+    // OpenRouter (Gemini 3.0 Flash) — PRIMARY
+    if (this.openRouterApiKey) {
       try {
         const response = await axios.post(
-          `${this.baseUrl}/chat/completions`,
+          this.openRouterUrl,
           {
-            model: "glm-4-flash-250414",
+            model: "google/gemini-3-flash-preview",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userMessage },
             ],
-            temperature: 0.2,
-            max_tokens: 1200,
+            temperature: 0.4,
           },
           {
             headers: {
-              ...ZhipuService.GLM_BASE_HEADERS,
-              Authorization: `Bearer ${this.zhipuApiKey}`,
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${this.openRouterApiKey}`,
+              "HTTP-Referer": "https://imanifestapp.com",
+              "X-Title": "IManifestApp",
             },
-            timeout: 12000,
+            timeout: 15000,
           },
         );
-
         const content = response.data?.choices?.[0]?.message?.content || "";
         if (content) return content;
       } catch (error: any) {
-        if (error.response?.data) {
-          this.logger.error(`Zhipu API Error: ${JSON.stringify(error.response.data)}`);
-        }
+        this.logger.warn(`OpenRouter error: ${error.response?.data?.error?.message || error.message}`);
       }
     }
 
-    if (!this.openRouterApiKey) {
-      throw new Error("All AI providers unavailable");
+    // Zhipu GLM — fallback
+    if (this.zhipuApiKey) {
+      const response = await axios.post(
+        `${this.baseUrl}/chat/completions`,
+        {
+          model: "glm-4-flash-250414",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+          temperature: 0.2,
+          max_tokens: 1200,
+        },
+        {
+          headers: {
+            ...ZhipuService.GLM_BASE_HEADERS,
+            Authorization: `Bearer ${this.zhipuApiKey}`,
+          },
+          timeout: 12000,
+        },
+      );
+      const content = response.data?.choices?.[0]?.message?.content || "";
+      if (content) return content;
     }
 
-    const fallbackResponse = await axios.post(
-      this.openRouterUrl,
-      {
-        model: "google/gemini-2.0-flash-001",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        temperature: 0.4,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.openRouterApiKey}`,
-          "HTTP-Referer": "https://imanifestapp.com",
-          "X-Title": "IManifestApp",
-        },
-        timeout: 10000,
-      },
-    );
-
-    return fallbackResponse.data?.choices?.[0]?.message?.content || "";
+    throw new Error("All AI providers unavailable");
   }
 
   private async callGLM5Vision(
@@ -404,7 +403,7 @@ Return ONLY a valid JSON array of English keywords.`;
     const fallbackResponse = await axios.post(
       this.openRouterUrl,
       {
-        model: "google/gemini-2.0-flash-001",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           {
