@@ -289,8 +289,7 @@ score between 0 and 1.`;
 
     const models = [
       "google/gemini-3-flash-preview",
-      "google/gemini-flash-1.5",
-      "meta-llama/llama-3.1-8b-instruct:free",
+      "deepseek/deepseek-chat-v3-0324",
     ];
 
     for (const model of models) {
@@ -341,7 +340,7 @@ score between 0 and 1.`;
 Extract the 3 most relevant Islamic spiritual themes from the user's intention and image.
 Return ONLY a valid JSON array of English keywords.`;
 
-    const models = ["google/gemini-3-flash-preview", "google/gemini-flash-1.5"];
+    const models = ["google/gemini-3-flash-preview", "deepseek/deepseek-chat-v3-0324"];
 
     for (const model of models) {
       try {
