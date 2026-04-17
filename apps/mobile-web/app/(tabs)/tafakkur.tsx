@@ -176,7 +176,7 @@ export default function TafakkurHubScreen() {
     (async () => {
       try {
         const res = await fetch(
-          `https://api.quran.com/api/v4/verses/by_chapter/${activeSurah.number}?language=en&words=false&translations=85,131&per_page=300`
+          `https://api.quran.com/api/v4/verses/by_chapter/${activeSurah.number}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`
         );
         const data = await res.json();
         const verses: Verse[] = (data.verses || []).map((v: any) => {

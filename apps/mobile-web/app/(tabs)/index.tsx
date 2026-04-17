@@ -44,6 +44,7 @@ function computePrayer(timings: Record<string, string>) {
 
 function usePrayerTimes() {
   const [prayer, setPrayer] = useState<{ current: { name: string; time: string }; next: { name: string; countdown: string } } | null>(null);
+  const [allTimings, setAllTimings] = useState<{ name: string; time: string }[]>([]);
   const timingsRef = useRef<Record<string, string> | null>(null);
 
   useEffect(() => {
@@ -56,11 +57,12 @@ function usePrayerTimes() {
         const timings: Record<string, string> = data?.data?.timings || {};
         timingsRef.current = timings;
         setPrayer(computePrayer(timings));
+        setAllTimings(PRAYER_ORDER.filter((p) => timings[p]).map((p) => ({ name: p, time: fmtTime(timings[p]) })));
       } catch {}
     };
     navigator.geolocation?.getCurrentPosition(
       (pos) => load(pos.coords.latitude, pos.coords.longitude),
-      () => load(3.139, 101.6869), // fallback: KL
+      () => load(3.139, 101.6869),
     );
     const tick = setInterval(() => {
       if (timingsRef.current) setPrayer(computePrayer(timingsRef.current));
@@ -68,7 +70,7 @@ function usePrayerTimes() {
     return () => clearInterval(tick);
   }, []);
 
-  return prayer;
+  return { prayer, allTimings };
 }
 
 const glass = {
@@ -167,7 +169,8 @@ function QuickCard({ icon: Icon, iconColor, title, desc, bg, onPress }: QuickCar
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const prayer = usePrayerTimes();
+  const { prayer, allTimings } = usePrayerTimes();
+  const [showBell, setShowBell] = useState(false);
 
   return (
     <ScrollView
@@ -220,17 +223,38 @@ export default function DashboardScreen() {
           </Text>
         </View>
         <TouchableOpacity
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          onPress={() => setShowBell((v) => !v)}
+          style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: showBell ? "rgba(22,101,52,0.1)" : "transparent" }}
         >
           <Text style={{ fontSize: 22 }}>🔔</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Prayer Times Bell Panel */}
+      {showBell && (
+        <View style={{ marginHorizontal: 16, marginTop: 4, marginBottom: 4, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.5)", ...(Platform.OS === "web" ? ({ backdropFilter: "blur(24px)", boxShadow: "0 8px 32px rgba(0,0,0,0.08)" } as any) : {}), zIndex: 49 }}>
+          <Text style={{ fontFamily: "Newsreader", fontSize: 18, fontWeight: "600", color: "#2f3338", marginBottom: 12 }}>Today's Prayer Times</Text>
+          {allTimings.length === 0 ? (
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>Detecting your location...</Text>
+          ) : (
+            <View style={{ gap: 8 }}>
+              {allTimings.map((p) => (
+                <View key={p.name} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: "rgba(174,178,185,0.15)" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <Text style={{ fontSize: 16 }}>{PRAYER_EMOJI[p.name] ?? "🕌"}</Text>
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: prayer?.current.name === p.name ? "700" : "500", color: prayer?.current.name === p.name ? "#166534" : "#2f3338" }}>{p.name}</Text>
+                    {prayer?.current.name === p.name && <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 9, color: "#166534", fontWeight: "700", letterSpacing: 1 }}>NOW</Text>}
+                  </View>
+                  <Text style={{ fontFamily: "Newsreader", fontSize: 16, color: prayer?.current.name === p.name ? "#166534" : "#5b5f65", fontWeight: "600" }}>{p.time}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          <TouchableOpacity onPress={() => setShowBell(false)} style={{ marginTop: 12, alignSelf: "center" }}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65" }}>Close ✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 32 }}>
         {/* Welcome */}
