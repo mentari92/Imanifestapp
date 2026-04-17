@@ -1,7 +1,75 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Heart, Sparkles, ListChecks, Headphones } from "lucide-react-native";
+
+const PRAYER_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+const PRAYER_EMOJI: Record<string, string> = { Fajr: "🌙", Sunrise: "🌅", Dhuhr: "☀️", Asr: "🌤️", Maghrib: "🌇", Isha: "🌃" };
+
+function timeStrToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function fmtCountdown(diffMin: number): string {
+  const h = Math.floor(diffMin / 60);
+  const m = diffMin % 60;
+  return h > 0 ? `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}` : `00:${String(m).padStart(2,"0")}`;
+}
+
+function fmtTime(t: string): string {
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
+}
+
+function computePrayer(timings: Record<string, string>) {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const prayers = PRAYER_ORDER.filter((p) => timings[p]).map((p) => ({ name: p, min: timeStrToMinutes(timings[p]) }));
+  let currentIdx = prayers.length - 1;
+  for (let i = 0; i < prayers.length; i++) {
+    if (prayers[i].min > nowMin) { currentIdx = i === 0 ? prayers.length - 1 : i - 1; break; }
+    if (i === prayers.length - 1) currentIdx = i;
+  }
+  const nextIdx = (currentIdx + 1) % prayers.length;
+  const nextMin = prayers[nextIdx].min;
+  const diffMin = nextMin > nowMin ? nextMin - nowMin : 24 * 60 - nowMin + nextMin;
+  return {
+    current: { name: prayers[currentIdx].name, time: fmtTime(timings[prayers[currentIdx].name]) },
+    next: { name: prayers[nextIdx].name, countdown: fmtCountdown(diffMin) },
+  };
+}
+
+function usePrayerTimes() {
+  const [prayer, setPrayer] = useState<{ current: { name: string; time: string }; next: { name: string; countdown: string } } | null>(null);
+  const timingsRef = useRef<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const load = async (lat: number, lng: number) => {
+      try {
+        const ts = Math.floor(Date.now() / 1000);
+        const res = await fetch(`https://api.aladhan.com/v1/timings/${ts}?latitude=${lat}&longitude=${lng}&method=2`);
+        const data = await res.json();
+        const timings: Record<string, string> = data?.data?.timings || {};
+        timingsRef.current = timings;
+        setPrayer(computePrayer(timings));
+      } catch {}
+    };
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => load(pos.coords.latitude, pos.coords.longitude),
+      () => load(3.139, 101.6869), // fallback: KL
+    );
+    const tick = setInterval(() => {
+      if (timingsRef.current) setPrayer(computePrayer(timingsRef.current));
+    }, 60000);
+    return () => clearInterval(tick);
+  }, []);
+
+  return prayer;
+}
 
 const glass = {
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -99,6 +167,7 @@ function QuickCard({ icon: Icon, iconColor, title, desc, bg, onPress }: QuickCar
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const prayer = usePrayerTimes();
 
   return (
     <ScrollView
@@ -204,53 +273,22 @@ export default function DashboardScreen() {
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontSize: 26 }}>☀️</Text>
+              <Text style={{ fontSize: 26 }}>{PRAYER_EMOJI[prayer?.current.name ?? "Dhuhr"] ?? "☀️"}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: "Newsreader",
-                  fontSize: 22,
-                  color: "#2f3338",
-                  fontWeight: "600",
-                }}
-              >
-                Dhuhr
+              <Text style={{ fontFamily: "Newsreader", fontSize: 22, color: "#2f3338", fontWeight: "600" }}>
+                {prayer?.current.name ?? "—"}
               </Text>
-              <Text
-                style={{
-                  fontFamily: "Plus Jakarta Sans",
-                  fontSize: 10,
-                  textTransform: "uppercase",
-                  letterSpacing: 2,
-                  color: "#5b5f65",
-                }}
-              >
-                Current Prayer · 12:45 PM
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65" }}>
+                {prayer ? `Current Prayer · ${prayer.current.time}` : "Detecting location..."}
               </Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text
-                style={{
-                  fontFamily: "Plus Jakarta Sans",
-                  fontSize: 10,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  color: "#605d71",
-                  fontWeight: "700",
-                }}
-              >
-                Next: Asr in
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 1, color: "#605d71", fontWeight: "700" }}>
+                {prayer ? `Next: ${prayer.next.name} in` : ""}
               </Text>
-              <Text
-                style={{
-                  fontFamily: "Newsreader",
-                  fontSize: 32,
-                  color: "#2f3338",
-                  fontWeight: "600",
-                }}
-              >
-                02:42
+              <Text style={{ fontFamily: "Newsreader", fontSize: 32, color: "#2f3338", fontWeight: "600" }}>
+                {prayer?.next.countdown ?? "--:--"}
               </Text>
             </View>
           </View>

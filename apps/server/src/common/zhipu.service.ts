@@ -83,7 +83,9 @@ Do not include any explanation or extra text.`;
       .join("\n");
 
     const systemPrompt = `You are a warm, knowledgeable Islamic life coach.
-Given the user's intention and related Quranic verses, write a concise and practical guidance in Indonesian.
+Given the user's intention and related Quranic verses, write a concise and practical guidance.
+IMPORTANT: Detect the language of the user's intention and respond in the SAME language.
+If the intention is in English, respond in English. If Indonesian, respond in Indonesian. If Arabic, respond in Arabic.
 Return 2 short paragraphs:
 1) spiritual reassurance with a cited verse key
 2) concrete next steps for today.`;
@@ -93,9 +95,9 @@ Return 2 short paragraphs:
     if (!this.hasAnyAiProvider()) {
       const verse = verses[0];
       if (verse) {
-        return `Allah memahami perjuanganmu. Pegang pesan ${verse.verseKey}: \"${verse.translation}\" sebagai jangkar hati agar tetap tenang dan tidak menyerah.\n\nLangkah hari ini: pilih 1 ikhtiar kecil yang bisa kamu selesaikan dalam 30 menit, tutup dengan doa singkat, lalu evaluasi progres sebelum tidur.`;
+        return `Allah understands your struggle. Hold onto ${verse.verseKey}: "${verse.translation}" as an anchor for your heart — stay calm and keep moving forward.\n\nToday's step: choose 1 small ikhtiar you can complete in 30 minutes, close with a sincere dua, then reflect on your progress before sleeping.`;
       }
-      return "Allah tidak meninggalkan hamba-Nya yang terus berikhtiar. Jaga hati dengan dzikir dan lanjutkan usaha kecil yang konsisten.\n\nLangkah hari ini: tetapkan satu target realistis, kerjakan tanpa distraksi, lalu tutup dengan syukur atas kemajuan sekecil apa pun.";
+      return "Allah never abandons a servant who keeps striving. Protect your heart with dhikr and continue with small, consistent efforts.\n\nToday's step: set one realistic goal, work on it without distraction, then close with gratitude for every small step forward.";
     }
 
     try {
@@ -107,9 +109,9 @@ Return 2 short paragraphs:
       this.logger.error("Failed to generate summary", error);
       const verse = verses[0];
       if (verse) {
-        return `Allah memahami perjuanganmu. Pegang pesan ${verse.verseKey}: \"${verse.translation}\" sebagai jangkar hati agar tetap tenang dan tidak menyerah.\n\nLangkah hari ini: pilih 1 ikhtiar kecil yang bisa kamu selesaikan dalam 30 menit, tutup dengan doa singkat, lalu evaluasi progres sebelum tidur.`;
+        return `Allah understands your struggle. Hold onto ${verse.verseKey}: "${verse.translation}" as an anchor for your heart.\n\nToday's step: choose 1 small ikhtiar you can complete in 30 minutes, close with a sincere dua, then reflect on your progress.`;
       }
-      return "Allah tidak meninggalkan hamba-Nya yang terus berikhtiar. Jaga hati dengan dzikir dan lanjutkan usaha kecil yang konsisten.\n\nLangkah hari ini: tetapkan satu target realistis, kerjakan tanpa distraksi, lalu tutup dengan syukur atas kemajuan sekecil apa pun.";
+      return "Allah never abandons a servant who keeps striving. Protect your heart with dhikr and continue with small, consistent efforts.\n\nToday's step: set one realistic goal, work on it without distraction, then close with gratitude for every small step forward.";
     }
   }
 
@@ -120,30 +122,30 @@ Return 2 short paragraphs:
     const source = intentText.toLowerCase();
     const tasks: string[] = [];
 
-    tasks.push("Shalat 5 waktu tepat waktu dan catat konsistensinya");
+    tasks.push("Perform all 5 daily prayers on time and track your consistency");
 
-    if (/pekerjaan|kerja|karier|cv|lamaran/.test(source)) {
-      tasks.push("Perbarui CV/portofolio dan kirim minimal 2 lamaran hari ini");
-    } else if (/bisnis|usaha|jualan/.test(source)) {
-      tasks.push("Validasi 1 ide usaha: hubungi 3 calon pelanggan");
+    if (/pekerjaan|kerja|karier|cv|lamaran|work|job|career|resume/.test(source)) {
+      tasks.push("Update your CV/portfolio and send at least 2 job applications today");
+    } else if (/bisnis|usaha|jualan|business|startup/.test(source)) {
+      tasks.push("Validate 1 business idea: reach out to 3 potential customers");
     } else {
-      tasks.push("Kerjakan 1 tugas prioritas utama selama 45 menit fokus");
+      tasks.push("Work on your top priority task for 45 minutes of focused effort");
     }
 
-    if (/utang|cicilan|keuangan|rezeki/.test(source)) {
-      tasks.push("Buat rencana keuangan 7 hari: pengeluaran wajib, hemat, dan target tabung");
+    if (/utang|cicilan|keuangan|rezeki|debt|money|finance/.test(source)) {
+      tasks.push("Create a 7-day financial plan: essentials, savings target, and spending limit");
     } else {
-      tasks.push("Tuliskan 3 hal yang kamu syukuri dan 1 pelajaran hari ini");
+      tasks.push("Write 3 specific things you are grateful for and 1 lesson from today");
     }
 
     const verse = verses[0];
     if (verse?.verseKey) {
-      tasks.push(`Baca dan renungkan ayat ${verse.verseKey} selama 10 menit`);
+      tasks.push(`Read and reflect on verse ${verse.verseKey} for 10 minutes`);
     } else {
-      tasks.push("Baca Al-Quran 2 halaman setelah salah satu shalat wajib");
+      tasks.push("Read 2 pages of the Quran after one of your obligatory prayers");
     }
 
-    tasks.push("Tutup hari dengan doa spesifik untuk niatmu dan evaluasi progres");
+    tasks.push("Close the day with a specific dua for your intention and evaluate your progress");
 
     return tasks.slice(0, 5);
   }
@@ -158,7 +160,9 @@ Return 2 short paragraphs:
 
     const systemPrompt = `You are an Islamic life coach creating practical action plans.
 Given the user's intention and related Quranic verses, generate exactly 5 actionable steps (Ikhtiar).
-Return ONLY a valid JSON array of 5 short action descriptions in Indonesian (max 120 chars each).
+IMPORTANT: Detect the language of the user's intention and respond in the SAME language.
+If the intention is in English, write tasks in English. If Indonesian, write in Indonesian. If Arabic, write in Arabic.
+Return ONLY a valid JSON array of 5 short action descriptions (max 120 chars each).
 Do not include any explanation or extra text.`;
 
     const userMessage = `Intention: ${intentText}\n\nVerses:\n${versesContext}`;
@@ -186,14 +190,15 @@ Do not include any explanation or extra text.`;
   ): Promise<{ spiritual: string; tafsir: string; scientific: string }> {
     const systemPrompt = `You are a warm Islamic counselor combining Quranic wisdom with modern science.
 Analyze the user's reflection and return ONLY a JSON object with keys spiritual, tafsir, scientific.
-Language: Indonesian. Include one Quran verse citation in spiritual.`;
+IMPORTANT: Detect the language of the user's text and respond in the SAME language (English, Indonesian, or Arabic).
+Include one Quran verse citation in spiritual.`;
 
     if (!this.hasAnyAiProvider()) {
       const verseCitation = sentiment === "anxious" || sentiment === "struggling" ? "(94:5-6)" : "(13:28)";
       return {
-        spiritual: `Perasaanmu valid, dan Allah tidak pernah jauh dari hamba yang berdoa. Pegang janji Allah ${verseCitation} sambil terus melangkah dengan sabar dan tawakkal.`,
-        tafsir: "Tafsir ringkasnya: ujian bukan tanda ditinggalkan, melainkan ruang pertumbuhan iman. Ketika hati kembali kepada Allah, arah hidup menjadi lebih jelas.",
-        scientific: "Secara psikologis, doa terarah, journaling syukur, dan napas teratur membantu menurunkan stres, menstabilkan emosi, dan meningkatkan fokus keputusan.",
+        spiritual: `Your feelings are valid, and Allah is never far from a servant who calls upon Him. Hold onto His promise ${verseCitation} and keep moving with sabr and tawakkul.`,
+        tafsir: "In brief: trials are not signs of abandonment, but spaces for iman to grow. When the heart returns to Allah, life's direction becomes clearer.",
+        scientific: "Psychologically, directed dua, gratitude journaling, and regulated breathing help reduce stress, stabilize emotions, and improve decision-making focus.",
       };
     }
 
@@ -207,9 +212,9 @@ Language: Indonesian. Include one Quran verse citation in spiritual.`;
     } catch (error) {
       this.logger.error("Failed to generate reflection insight", error);
       return {
-        spiritual: "Perasaanmu valid, dan Allah tidak pernah jauh dari hamba yang berdoa. Pegang janji Allah (13:28) sambil terus melangkah dengan sabar dan tawakkal.",
-        tafsir: "Tafsir ringkasnya: ketenangan hati tumbuh saat hati terhubung dengan Allah dan ikhtiar dijalankan dengan disiplin.",
-        scientific: "Secara psikologis, doa terarah, journaling syukur, dan napas teratur membantu menurunkan stres, menstabilkan emosi, dan meningkatkan fokus keputusan.",
+        spiritual: "Your feelings are valid, and Allah is never far from a servant who calls upon Him. Hold onto His promise (13:28) and keep moving with sabr and tawakkul.",
+        tafsir: "In brief: peace of heart grows when the heart stays connected to Allah and effort is carried out with discipline.",
+        scientific: "Psychologically, directed dua, gratitude journaling, and regulated breathing help reduce stress, stabilize emotions, and improve decision-making focus.",
       };
     }
   }

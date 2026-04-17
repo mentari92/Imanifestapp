@@ -108,11 +108,11 @@ export default function NiyyahBoardScreen() {
         (window as any).SpeechRecognition ||
         (window as any).webkitSpeechRecognition;
       if (!SR) {
-        setError("Voice not supported in this browser. Please type below.");
+        setError("Voice recording requires Chrome browser. On iPhone/iPad, please type your intention below.");
         return;
       }
       const recognition = new SR();
-      recognition.lang = "id-ID";
+      recognition.lang = navigator.language || "en-US";
       recognition.continuous = false;
       recognition.interimResults = false;
       recognitionRef.current = recognition;

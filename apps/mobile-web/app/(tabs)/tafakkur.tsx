@@ -26,21 +26,16 @@ interface Reciter {
   photo: string;
 }
 
-// Quran.com CDN reciter photos
-const RECITER_PHOTO_MAP: Record<number, string> = {
-  7:  "https://static.qurancdn.com/images/reciters/7/profile-picture.jpg",
-  1:  "https://static.qurancdn.com/images/reciters/1/profile-picture.jpg",
-  3:  "https://static.qurancdn.com/images/reciters/3/profile-picture.jpg",
-  10: "https://static.qurancdn.com/images/reciters/10/profile-picture.jpg",
-  4:  "https://static.qurancdn.com/images/reciters/4/profile-picture.jpg",
-};
+function reciterAvatar(name: string): string {
+  return `https://api.dicebear.com/9.x/avataaars/png?seed=${encodeURIComponent(name)}&size=120&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+}
 
 const RECITER_COLORS = ["#7c3aed", "#0e6030", "#1d4ed8", "#92400e", "#334155"];
 
 const FALLBACK_RECITERS: Reciter[] = [
-  { id: 7, name: "Mishary Rashid Alafasy", subtitle: "114 Surahs", style: "Murattal", initials: "MA", bg: "#7c3aed", photo: RECITER_PHOTO_MAP[7] },
-  { id: 1, name: "AbdulBaset AbdulSamad",  subtitle: "Egypt",      style: "Murattal", initials: "AB", bg: "#0e6030", photo: RECITER_PHOTO_MAP[1] },
-  { id: 3, name: "Abdur-Rahman as-Sudais", subtitle: "Makkah Imam",style: "Murattal", initials: "AS", bg: "#1d4ed8", photo: RECITER_PHOTO_MAP[3] },
+  { id: 7, name: "Mishary Rashid Alafasy", subtitle: "114 Surahs", style: "Murattal", initials: "MA", bg: "#7c3aed", photo: reciterAvatar("Mishary Rashid Alafasy") },
+  { id: 1, name: "AbdulBaset AbdulSamad",  subtitle: "Egypt",      style: "Murattal", initials: "AB", bg: "#0e6030", photo: reciterAvatar("AbdulBaset AbdulSamad") },
+  { id: 3, name: "Abdur-Rahman as-Sudais", subtitle: "Makkah Imam",style: "Murattal", initials: "AS", bg: "#1d4ed8", photo: reciterAvatar("Abdur-Rahman as-Sudais") },
 ];
 
 const DHIKR_LIST = [
@@ -145,7 +140,7 @@ export default function TafakkurHubScreen() {
             style: String(r.style || "Murattal"),
             initials,
             bg: RECITER_COLORS[i % RECITER_COLORS.length],
-            photo: `https://static.qurancdn.com/images/reciters/${r.id}/profile-picture.jpg`,
+            photo: reciterAvatar(name),
           };
         });
         if (mapped.length > 0) setReciters(mapped);
