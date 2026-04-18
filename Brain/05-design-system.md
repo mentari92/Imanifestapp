@@ -1,5 +1,9 @@
-# Design System
+# Design System (Legacy)
 # ImanifestApp – AI-Powered Spiritual Productivity Platform
+
+> IMPORTANT (April 2026): This document is legacy guidance.
+> Active UI source of truth is Stitch output in apps/mobile-web/assets/stitch/*.json and the current implementation patterns in apps/mobile-web/global.css.
+> If this file conflicts with Stitch artifacts, follow Stitch artifacts.
 
 **Version:** 1.0  
 **Status:** Final — Ready for Development  

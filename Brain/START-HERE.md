@@ -15,7 +15,7 @@ imanifestapp/
 │   ├── 02-prd.md                ← Semua FR, NFR, user stories, acceptance criteria
 │   ├── 03-architecture.md       ← Folder structure, DB schema, API design, turbo.json, deps, ADRs
 │   ├── 04-epics-and-stories.md  ← 6 epics, 13 stories, build order checklist
-│   └── 05-design-system.md      ← Color palette, typography, component patterns, Tailwind config
+│   └── 05-design-system.md      ← LEGACY docs (gunakan hanya jika tidak konflik dengan Stitch)
 ├── .env.example                      ← Template variabel environment
 ├── .env                              ← Buat sendiri dari template, isi nilainya
 └── (kode dibuat oleh agent)
@@ -59,16 +59,23 @@ Jika **fresh start (belum ada kode sama sekali):**
 
 ```
 Read all docs in the /Brain folder, especially 
-03-architecture.md, 04-epics-and-stories.md, and 05-design-system.md.
+03-architecture.md and 04-epics-and-stories.md.
+
+For UI/design source of truth, use:
+- apps/mobile-web/assets/stitch/*.json
+- apps/mobile-web/assets/stitch/*.html
+- apps/mobile-web/global.css
+
+Treat Brain/05-design-system.md as legacy reference only.
 
 Implement Story 1.1 — Turborepo + Monorepo Setup:
 - Initialize Turborepo with pnpm workspaces (turbo.json from 03-architecture.md Section 2.1)
 - apps/mobile-web: Expo app with Expo Router + NativeWind v4 (config from 03-architecture.md Section 2.4)
 - apps/server: NestJS with TypeScript strict mode
 - packages/database: Prisma schema with schema.prisma (4 tables as per architecture doc Section 3)
-- packages/shared: shared types, Zod validators, AND theme tokens (from 05-design-system.md Section 4)
-- tailwind.config.js: copy EXACTLY from 05-design-system.md Section 4 — Forest Green primary, NOT purple
-- packages/shared/src/theme.ts: copy shared theme object from 05-design-system.md Section 4
+- packages/shared: shared types, Zod validators, AND theme tokens (align with active Stitch artifacts)
+- tailwind.config.js: align with active Stitch design tokens in apps/mobile-web/assets/stitch/
+- packages/shared/src/theme.ts: keep in sync with active Stitch color/typography direction
 - Install fonts: @expo-google-fonts/playfair-display, lora, amiri, jetbrains-mono
 - Install icons: lucide-react-native
 - babel.config.js, metro.config.js, nativewind-env.d.ts per 03-architecture.md Section 2.4
@@ -79,7 +86,7 @@ Implement Story 1.1 — Turborepo + Monorepo Setup:
 - .env.example with all required variables (see architecture.md Section 7)
 
 Tech stack is LOCKED. Reference 03-architecture.md for all decisions.
-Design system is LOCKED. Reference 05-design-system.md for all color, typography, and component specs.
+Design source is LOCKED to Stitch artifacts in apps/mobile-web/assets/stitch/ and apps/mobile-web/global.css.
 ```
 
 Jika **sudah selesai Story 1.1, mau lanjut Story 1.2:**
@@ -103,7 +110,9 @@ Implement Story 1.2 — Database Schema & Migration:
 Gunakan format ini untuk setiap story baru:
 
 ```
-Read Brain/03-architecture.md, Brain/04-epics-and-stories.md, and Brain/05-design-system.md.
+Read Brain/03-architecture.md and Brain/04-epics-and-stories.md.
+
+For visual/style decisions, use Stitch artifacts in apps/mobile-web/assets/stitch/ and apps/mobile-web/global.css.
 
 Implement [STORY NUMBER] — [STORY NAME]:
 
@@ -113,7 +122,7 @@ Acceptance Criteria:
 Rules:
 - Follow folder structure in 03-architecture.md Section 2 exactly
 - TypeScript strict mode throughout
-- All colors, fonts, and component styles per 05-design-system.md
+- All colors, fonts, and component styles per Stitch artifacts (apps/mobile-web/assets/stitch/) and apps/mobile-web/global.css
 - Dependency versions per 03-architecture.md Section 2.2 (LOCKED)
 - All DB operations via packages/database prisma singleton
 - All Redis operations via common/redis.service.ts
@@ -121,7 +130,7 @@ Rules:
 - All Quran Foundation API calls via common/quran-api.service.ts
 - Validate all API inputs with class-validator DTOs
 - Error messages in English (Indonesian as stretch goal)
-- Use lucide-react-native for all icons (05-design-system.md Section 8)
+- Use lucide-react-native for all icons (unless a screen-specific Stitch artifact states otherwise)
 ```
 
 ---

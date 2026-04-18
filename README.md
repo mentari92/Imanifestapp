@@ -59,14 +59,12 @@ This starts:
 
 ## Design System
 
-- **Primary:** Forest Green `#064E3B`
-- **Accent:** Rosewood `#54161B`
-- **Highlight:** Champagne Gold `#E3C567`
-- **Background:** Off-White `#F8FAFC`
-- **Fonts:** Playfair Display, Lora, Amiri, JetBrains Mono
-- **Icons:** Lucide (`lucide-react-native`)
+- Active source of truth: Stitch artifacts in apps/mobile-web/assets/stitch/
+- Runtime styling baseline: apps/mobile-web/global.css
+- Icons: Lucide (lucide-react-native)
+- Brain/05-design-system.md is legacy reference only
 
-Full design spec → `Brain/05-design-system.md`
+Primary visual direction follows the Celestial Ether Stitch outputs.
 
 ## Tech Stack
 
