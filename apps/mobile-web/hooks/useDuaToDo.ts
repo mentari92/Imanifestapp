@@ -1,6 +1,16 @@
 import { useState, useCallback } from 'react';
 import { apiPost, apiPatch } from '../lib/api';
 
+const LAST_MANIFESTATION_KEY = 'last_manifestation_id';
+
+function saveLastManifestationId(id: string) {
+  try { sessionStorage.setItem(LAST_MANIFESTATION_KEY, id); } catch (_) {}
+}
+
+function loadLastManifestationId(): string | undefined {
+  try { return sessionStorage.getItem(LAST_MANIFESTATION_KEY) ?? undefined; } catch (_) { return undefined; }
+}
+
 interface Verse {
   number: number;
   text: string;
@@ -100,6 +110,7 @@ export function useDuaToDo() {
 
       setTasks(mappedTasks);
       setVerses(mappedVerses);
+      saveLastManifestationId(analyzeResponse.manifestationId);
 
       return {
         tasks: mappedTasks,
@@ -116,7 +127,8 @@ export function useDuaToDo() {
   }, []);
 
   const fetchTasks = useCallback(async (manifestationId?: string) => {
-    if (!manifestationId) {
+    const resolvedId = manifestationId ?? loadLastManifestationId();
+    if (!resolvedId) {
       setTasks([]);
       setVerses([]);
       return [];
@@ -127,7 +139,7 @@ export function useDuaToDo() {
     try {
       const existing = await apiPost<{ tasks: RawTask[] }>(
         '/dua-to-do/tasks',
-        { manifestationId },
+        { manifestationId: resolvedId },
       );
 
       const existingTasks = Array.isArray(existing?.tasks)
@@ -136,18 +148,20 @@ export function useDuaToDo() {
 
       if (existingTasks.length > 0) {
         setTasks(existingTasks);
+        saveLastManifestationId(resolvedId);
         return existingTasks;
       }
 
       const generated = await apiPost<{ tasks: RawTask[] }>(
         '/dua-to-do/generate',
-        { manifestationId },
+        { manifestationId: resolvedId },
       );
 
       const mappedTasks = Array.isArray(generated?.tasks)
         ? generated.tasks.map(mapTask)
         : [];
       setTasks(mappedTasks);
+      if (mappedTasks.length > 0) saveLastManifestationId(resolvedId);
       return mappedTasks;
     } catch (err: any) {
       const message = err.message || 'Failed to fetch tasks';

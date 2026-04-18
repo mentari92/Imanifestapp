@@ -319,12 +319,9 @@ export default function DuaTodoScreen() {
         )}
 
         <TouchableOpacity
-          onPress={totalCount > 0 ? () => router.push('/(tabs)/tafakkur') : handleGenerate}
+          onPress={() => router.push('/(tabs)/tafakkur')}
           activeOpacity={0.85}
-          style={[
-            styles.ctaButton,
-            totalCount > 0 ? styles.bottomPrimaryButton : { marginTop: 0, marginBottom: 24 },
-          ]}
+          style={[styles.ctaButton, totalCount > 0 ? styles.bottomPrimaryButton : { marginTop: 0, marginBottom: 24 }]}
         >
           <Text style={[styles.ctaText, totalCount > 0 ? styles.bottomPrimaryText : undefined]}>
             {totalCount > 0 ? 'Add to Daily Tasks' : 'Open Tafakkur Hub  →'}
