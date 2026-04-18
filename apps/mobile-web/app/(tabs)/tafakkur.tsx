@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Platform,
-  ActivityIndicator, TextInput, Image,
+  ActivityIndicator, TextInput,
 } from "react-native";
 import { Headphones } from "lucide-react-native";
 
@@ -20,38 +20,22 @@ interface Reciter {
   name: string;
   subtitle: string;
   cdnId: string;
+  everyayahPath: string;
   initials: string;
   bg: string;
-  photo: string;
-}
-
-function reciterAvatar(seed: string): string {
-  // Force short male hair + full beard + warm skin tone for Arab male appearance
-  const params = new URLSearchParams({
-    seed,
-    size: "120",
-    backgroundColor: "b6e3f4,c0aede,d1d4f9",
-    facialHairProbability: "100",
-    facialHair: "beardMedium,beardLight,beardMajestic",
-    top: "shortHairShortFlat,shortHairShortCurly,shortHairTheCaesar,shortHairShortRound,noHair",
-    accessories: "blank",
-    skinColor: "edb98a,d08b5b,f8d25c",
-    clotheType: "blazerShirt,blazerSweater,collarSweater",
-  });
-  return `https://api.dicebear.com/9.x/avataaars/png?${params.toString()}`;
 }
 
 const STATIC_RECITERS: Reciter[] = [
-  { id: 7,  name: "Mishary Rashid Alafasy",     subtitle: "Kuwait · Murattal",    cdnId: "ar.alafasy",              initials: "MA", bg: "#7c3aed", photo: reciterAvatar("mishary-alafasy") },
-  { id: 3,  name: "Abdur-Rahman as-Sudais",     subtitle: "Makkah Imam",          cdnId: "ar.abdurrahmansudais",    initials: "AS", bg: "#0e6030", photo: reciterAvatar("abdurrahman-sudais") },
-  { id: 6,  name: "Maher Al-Muaiqly",           subtitle: "Madinah Imam",         cdnId: "ar.mahermuaiqly",         initials: "MM", bg: "#1d4ed8", photo: reciterAvatar("maher-muaiqly") },
-  { id: 1,  name: "AbdulBaset AbdulSamad",      subtitle: "Egypt · Mujawwad",     cdnId: "ar.abdulsamad",           initials: "AB", bg: "#92400e", photo: reciterAvatar("abdulbaset-samad") },
-  { id: 9,  name: "Mohamed Siddiq al-Minshawi", subtitle: "Egypt · Murattal",     cdnId: "ar.minshawi",             initials: "MS", bg: "#334155", photo: reciterAvatar("minshawi-siddiq") },
-  { id: 4,  name: "Saud ash-Shuraym",           subtitle: "Makkah Imam",          cdnId: "ar.saudshuraym",          initials: "SS", bg: "#065f46", photo: reciterAvatar("saud-shuraym") },
-  { id: 10, name: "Abu Bakr al-Shatri",         subtitle: "Saudi · Murattal",     cdnId: "ar.shaatree",             initials: "BS", bg: "#7e22ce", photo: reciterAvatar("abubakar-shatri") },
-  { id: 11, name: "Hani ar-Rifai",              subtitle: "Saudi · Murattal",     cdnId: "ar.hanirifai",            initials: "HR", bg: "#0f766e", photo: reciterAvatar("hani-rifai") },
-  { id: 12, name: "Saad Al-Ghamdi",             subtitle: "Saudi · Murattal",     cdnId: "ar.saadalghamdi",         initials: "SG", bg: "#1e40af", photo: reciterAvatar("saad-ghamdi") },
-  { id: 13, name: "Yasser Al-Dosari",           subtitle: "Saudi · Murattal",     cdnId: "ar.yasseraldossari",      initials: "YD", bg: "#9f1239", photo: reciterAvatar("yasser-dosari") },
+  { id: 7,  name: "Mishary Rashid Alafasy",     subtitle: "Kuwait · Murattal",    cdnId: "ar.alafasy",              everyayahPath: "Alafasy_128kbps",                  initials: "MA", bg: "#7c3aed" },
+  { id: 3,  name: "Abdur-Rahman as-Sudais",     subtitle: "Makkah Imam",          cdnId: "ar.abdurrahmansudais",    everyayahPath: "Sudais_128kbps",                   initials: "AS", bg: "#0e6030" },
+  { id: 6,  name: "Maher Al-Muaiqly",           subtitle: "Madinah Imam",         cdnId: "ar.mahermuaiqly",         everyayahPath: "MaherAlMuaiqly128",                initials: "MM", bg: "#1d4ed8" },
+  { id: 1,  name: "AbdulBaset AbdulSamad",      subtitle: "Egypt · Mujawwad",     cdnId: "ar.abdulsamad",           everyayahPath: "AbdulSamad_128kbps",               initials: "AB", bg: "#92400e" },
+  { id: 9,  name: "Mohamed Siddiq al-Minshawi", subtitle: "Egypt · Murattal",     cdnId: "ar.minshawi",             everyayahPath: "Minshawy_Murattal_128kbps",        initials: "MS", bg: "#334155" },
+  { id: 4,  name: "Saud ash-Shuraym",           subtitle: "Makkah Imam",          cdnId: "ar.saudshuraym",          everyayahPath: "Saud_ash-Shuraym_128kbps",         initials: "SS", bg: "#065f46" },
+  { id: 10, name: "Abu Bakr al-Shatri",         subtitle: "Saudi · Murattal",     cdnId: "ar.shaatree",             everyayahPath: "abu_bakr_ash-shaatree_128kbps",    initials: "BS", bg: "#7e22ce" },
+  { id: 11, name: "Hani ar-Rifai",              subtitle: "Saudi · Murattal",     cdnId: "ar.hanirifai",            everyayahPath: "hani_ar-rifai_128kbps",            initials: "HR", bg: "#0f766e" },
+  { id: 12, name: "Saad Al-Ghamdi",             subtitle: "Saudi · Murattal",     cdnId: "ar.saadalghamdi",         everyayahPath: "Ghamadi_40kbps",                  initials: "SG", bg: "#1e40af" },
+  { id: 13, name: "Yasser Al-Dosari",           subtitle: "Saudi · Murattal",     cdnId: "ar.yasseraldossari",      everyayahPath: "Yasser_Ad-Dussary_128kbps",        initials: "YD", bg: "#9f1239" },
 ];
 
 const DHIKR_LIST = [
@@ -107,7 +91,7 @@ export default function TafakkurHubScreen() {
   const [activeNature, setActiveNature] = useState<string | null>(null);
   const [surahVerses, setSurahVerses]   = useState<Verse[]>([]);
   const [currentVerseIdx, setCurrentVerseIdx] = useState(0);
-  const [photoErrors, setPhotoErrors]   = useState<Record<number, boolean>>({});
+  const [pendingPlay, setPendingPlay]   = useState(false);
 
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const intervalRef   = useRef<any>(null);
@@ -169,74 +153,113 @@ export default function TafakkurHubScreen() {
     })();
   }, [activeSurah]);
 
-  // Sync displayed verse with audio progress
+  // Start playing when verses are ready (after surah tap)
   useEffect(() => {
-    if (surahVerses.length === 0) return;
-    const idx = Math.min(
-      Math.floor((progress / 100) * surahVerses.length),
-      surahVerses.length - 1
-    );
-    setCurrentVerseIdx(idx);
-  }, [progress, surahVerses.length]);
+    if (pendingPlay && surahVerses.length > 0 && activeSurah) {
+      setPendingPlay(false);
+      loadAndPlayVerses(activeReciter, activeSurah, 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [surahVerses, pendingPlay]);
 
   const stopAudio = useCallback(() => {
-    requestIdRef.current++; // cancel any pending loadAndPlay
+    requestIdRef.current++;
     audioRef.current?.pause();
     if (audioRef.current) { audioRef.current.src = ""; audioRef.current = null; }
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsPlaying(false); setProgress(0); setCurrentTime(0); setDuration(0);
-    setIsLoadingAudio(false); setAudioError(null);
+    setIsLoadingAudio(false); setAudioError(null); setPendingPlay(false);
   }, []);
 
-  const loadAndPlay = async (reciterIdx: number, surah: Surah) => {
+  // Build everyayah.com verse audio URL
+  const verseUrl = (reciterPath: string, surahNum: number, ayahNum: number) => {
+    const s = String(surahNum).padStart(3, '0');
+    const a = String(ayahNum).padStart(3, '0');
+    return `https://everyayah.com/data/${reciterPath}/${s}${a}.mp3`;
+  };
+
+  const loadAndPlayVerses = useCallback((reciterIdx: number, _surah: Surah, startIdx: number) => {
     if (Platform.OS !== "web") return;
     const reciter = reciters[reciterIdx];
     if (!reciter) return;
 
-    stopAudio();
     const thisId = ++requestIdRef.current;
     setAudioError(null);
     setIsLoadingAudio(true);
+    setIsPlaying(false);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
-    const url = `https://cdn.islamic.network/quran/audio/128/${reciter.cdnId}/${surah.number}.mp3`;
+    const verses = surahVerses;
+    if (verses.length === 0) { setIsLoadingAudio(false); return; }
 
-    // Stale request — a newer surah was tapped
-    if (thisId !== requestIdRef.current) return;
+    const playVerse = (idx: number) => {
+      if (thisId !== requestIdRef.current || idx >= verses.length) {
+        setIsPlaying(false);
+        setIsLoadingAudio(false);
+        if (idx >= verses.length) setProgress(100);
+        return;
+      }
+      setCurrentVerseIdx(idx);
+      setProgress(Math.round((idx / verses.length) * 100));
 
-    const audio = new Audio(url);
-    audioRef.current = audio;
-    audio.onloadedmetadata = () => { if (thisId === requestIdRef.current) setDuration(audio.duration || 0); };
-    audio.oncanplay = () => {
-      if (thisId !== requestIdRef.current) { audio.pause(); return; }
-      setIsLoadingAudio(false);
-      audio.play().then(() => {
+      const verse = verses[idx];
+      const [surahNum, ayahNum] = verse.verseKey.split(':').map(Number);
+      const url = verseUrl(reciter.everyayahPath, surahNum, ayahNum);
+
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.oncanplay = () => {
         if (thisId !== requestIdRef.current) { audio.pause(); return; }
-        setIsPlaying(true);
-        intervalRef.current = setInterval(() => {
-          if (audio.duration > 0) {
-            setCurrentTime(audio.currentTime);
-            setProgress((audio.currentTime / audio.duration) * 100);
-          }
-        }, 500);
-      }).catch(() => { setIsLoadingAudio(false); setAudioError("Tap ▶ to start."); });
+        setIsLoadingAudio(false);
+        audio.play().then(() => {
+          if (thisId !== requestIdRef.current) { audio.pause(); return; }
+          setIsPlaying(true);
+          intervalRef.current = setInterval(() => {
+            if (audio.duration > 0) { setCurrentTime(audio.currentTime); setDuration(audio.duration); }
+          }, 300);
+        }).catch(() => {
+          setIsLoadingAudio(false);
+          if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 300);
+        });
+      };
+      audio.onended = () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (thisId === requestIdRef.current) playVerse(idx + 1);
+      };
+      audio.onerror = () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setIsLoadingAudio(false);
+        if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 200);
+      };
+      audio.load();
     };
-    audio.onerror = () => { if (thisId === requestIdRef.current) { setIsLoadingAudio(false); setAudioError("Could not load audio."); } };
-    audio.onended = () => { if (thisId === requestIdRef.current) { setIsPlaying(false); setProgress(100); if (intervalRef.current) clearInterval(intervalRef.current); } };
-    audio.load();
-  };
+
+    playVerse(startIdx);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reciters, surahVerses]);
 
   const togglePlay = () => {
-    if (!audioRef.current?.src) { if (activeSurah) loadAndPlay(activeReciter, activeSurah); return; }
+    if (!audioRef.current?.src && activeSurah) {
+      if (surahVerses.length > 0) {
+        loadAndPlayVerses(activeReciter, activeSurah, currentVerseIdx);
+      } else {
+        setPendingPlay(true);
+      }
+      return;
+    }
     if (isPlaying) {
-      audioRef.current.pause(); setIsPlaying(false);
+      audioRef.current?.pause();
+      setIsPlaying(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
     } else {
-      audioRef.current.play().then(() => {
+      audioRef.current?.play().then(() => {
         setIsPlaying(true);
         intervalRef.current = setInterval(() => {
           const a = audioRef.current;
-          if (a && a.duration > 0) { setCurrentTime(a.currentTime); setProgress((a.currentTime / a.duration) * 100); }
-        }, 500);
+          if (a && a.duration > 0) { setCurrentTime(a.currentTime); setDuration(a.duration); }
+        }, 300);
       });
     }
   };
@@ -255,9 +278,11 @@ export default function TafakkurHubScreen() {
     setActiveNature(soundId);
   };
 
+  const normalize = (s: string) => s.toLowerCase().replace(/[-'\u2019]/g, ' ').replace(/\s+/g, ' ').trim();
   const filtered = surahs.filter((s) =>
-    s.englishName.toLowerCase().includes(surahSearch.toLowerCase()) ||
-    s.name.includes(surahSearch) || String(s.number).includes(surahSearch)
+    normalize(s.englishName).includes(normalize(surahSearch)) ||
+    s.name.includes(surahSearch) ||
+    String(s.number).includes(surahSearch)
   );
   const dhikr = DHIKR_LIST[dhikrIndex];
   const showPlayer = isPlaying || isLoadingAudio || progress > 0 || !!audioError;
@@ -301,23 +326,13 @@ export default function TafakkurHubScreen() {
             {reciters.map((r, i) => (
               <TouchableOpacity
                 key={i}
-                onPress={() => { setActiveReciter(i); if (activeSurah) loadAndPlay(i, activeSurah); }}
+                onPress={() => { setActiveReciter(i); if (activeSurah && surahVerses.length > 0) loadAndPlayVerses(i, activeSurah, 0); }}
                 activeOpacity={0.85}
                 style={[glass(20), { flexDirection: "row", alignItems: "center", gap: 16, padding: 18, ...(activeReciter === i ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" } : {}) }]}
               >
-                {/* Photo or Initials fallback */}
-                <View style={{ width: 60, height: 60, borderRadius: 30, overflow: "hidden", backgroundColor: r.bg }}>
-                  {r.photo && !photoErrors[r.id] ? (
-                    <Image
-                      source={{ uri: r.photo }}
-                      style={{ width: 60, height: 60, borderRadius: 30 } as any}
-                      onError={() => setPhotoErrors((prev) => ({ ...prev, [r.id]: true }))}
-                    />
-                  ) : (
-                    <View style={{ width: 60, height: 60, alignItems: "center", justifyContent: "center" }}>
-                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "800", color: "#fff" }}>{r.initials}</Text>
-                    </View>
-                  )}
+                {/* Initials avatar */}
+                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: r.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 18, fontWeight: '800', color: '#fff' }}>{r.initials}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 14, fontWeight: "700", color: "#2f3338" }}>{r.name}</Text>
@@ -360,7 +375,7 @@ export default function TafakkurHubScreen() {
                   {filtered.map((s) => (
                     <TouchableOpacity
                       key={s.number}
-                      onPress={() => { setActiveSurah(s); loadAndPlay(activeReciter, s); }}
+                      onPress={() => { setActiveSurah(s); stopAudio(); setCurrentVerseIdx(0); setSurahVerses([]); setPendingPlay(true); }}
                       style={{
                         flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14,
                         borderBottomWidth: 1, borderBottomColor: "rgba(174,178,185,0.15)",

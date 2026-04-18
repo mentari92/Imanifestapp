@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useDuaToDo } from '../../hooks/useDuaToDo';
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../../components/shared/ErrorMessage';
@@ -50,6 +51,7 @@ const glass = {
 
 export default function DuaTodoScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const {
     loading,
     error,
@@ -305,6 +307,17 @@ export default function DuaTodoScreen() {
             })}
           </View>
         )}
+
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/tafakkur')}
+          activeOpacity={0.85}
+          style={[
+            styles.ctaButton,
+            { backgroundColor: 'rgba(255,255,255,0.65)', marginTop: 0, marginBottom: 24 },
+          ]}
+        >
+          <Text style={[styles.ctaText, { color: C.tertiary }]}>Open Tafakkur Hub  →</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 120 }} />
       </ScrollView>

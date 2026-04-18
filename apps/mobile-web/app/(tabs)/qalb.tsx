@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -60,10 +60,45 @@ export default function QalbScreen() {
     useHeartPulse();
   const [journalText, setJournalText] = useState('');
   const [activeSentiment, setActiveSentiment] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     fetchStreak();
   }, []);
+
+  const toggleVoiceRecording = () => {
+    if (Platform.OS !== 'web') {
+      // On native, just submit if text present
+      if (journalText.trim()) handleSubmit();
+      return;
+    }
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      Alert.alert('Voice input not supported in this browser. Please type in the writing section below.');
+      return;
+    }
+    const recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognitionRef.current = recognition;
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results as any[])
+        .map((r: any) => r[0].transcript)
+        .join(' ');
+      setJournalText(transcript);
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+    recognition.start();
+    setIsRecording(true);
+  };
 
   const handleSubmit = async () => {
     if (!journalText.trim()) {
@@ -138,16 +173,20 @@ export default function QalbScreen() {
         {/* ── Central Mic Button ──────────────────────────────────── */}
         <View style={styles.micSection}>
           <TouchableOpacity
-            style={[glass, styles.micCircle]}
-            onPress={handleSubmit}
+            style={[glass, styles.micCircle, isRecording && { borderColor: '#ac3149', borderWidth: 2 }]}
+            onPress={toggleVoiceRecording}
             disabled={loading}
             activeOpacity={0.88}
           >
-            <View style={styles.micIconBg}>
-              <Text style={styles.micEmoji}>🎙</Text>
+            <View style={[styles.micIconBg, isRecording && { backgroundColor: 'rgba(172,49,73,0.12)' }]}>
+              <Text style={styles.micEmoji}>{isRecording ? '⏹' : '🎙'}</Text>
             </View>
-            <Text style={styles.micCaption}>Begin</Text>
-            <Text style={styles.micLabel}>Tap to Commence{'\n'}Reflection</Text>
+            <Text style={[styles.micCaption, isRecording && { color: '#ac3149' }]}>
+              {isRecording ? 'Recording...' : 'Begin'}
+            </Text>
+            <Text style={styles.micLabel}>
+              {isRecording ? 'Tap to Stop Recording' : 'Tap to Commence{`\n`}Reflection'}
+            </Text>
           </TouchableOpacity>
 
           {streak && (

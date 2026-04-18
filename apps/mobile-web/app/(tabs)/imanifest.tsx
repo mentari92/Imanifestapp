@@ -9,7 +9,10 @@ import {
   Platform,
   Alert,
   StyleSheet,
+  Image,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useImanSync } from '../../hooks/useImanSync';
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner';
@@ -52,10 +55,13 @@ const glass = {
 };
 
 export default function ImanifestScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { loading, error, result, analyzeIntention } = useImanSync();
   const [intentionText, setIntentionText] = useState('');
   const [gratitude, setGratitude] = useState(['', '', '']);
+  const [isRecording, setIsRecording] = useState(false);
+  const [visionImage, setVisionImage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!intentionText.trim()) {
@@ -63,9 +69,49 @@ export default function ImanifestScreen() {
       return;
     }
     try {
-      await analyzeIntention(intentionText.trim());
+      const res = await analyzeIntention(intentionText.trim());
+      if (res) {
+        router.push('/(tabs)/dua-todo');
+      }
     } catch (_) {
       // Error is already set in the hook
+    }
+  };
+
+  const startVoiceRecording = () => {
+    if (Platform.OS !== 'web') {
+      Alert.alert('Voice input is available on web. Please type your intention.');
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      Alert.alert('Voice input not supported in this browser. Please type your intention.');
+      return;
+    }
+    const recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    setIsRecording(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setIntentionText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      setIsRecording(false);
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+    recognition.start();
+  };
+
+  const pickVisionImage = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!res.canceled && res.assets[0]) {
+      setVisionImage(res.assets[0].uri);
     }
   };
 
@@ -103,10 +149,42 @@ export default function ImanifestScreen() {
           </Text>
         </View>
 
+        {/* ── Vision Focus Board ─────────────────────────────────── */}
+        <TouchableOpacity
+          onPress={pickVisionImage}
+          activeOpacity={0.85}
+          style={[glass, {
+            marginBottom: 28,
+            padding: 0,
+            overflow: 'hidden',
+            minHeight: 160,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }]}
+        >
+          {visionImage ? (
+            <Image
+              source={{ uri: visionImage }}
+              style={{ width: '100%', height: 220, borderRadius: 32 } as any}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={{ alignItems: 'center', gap: 10, padding: 32 }}>
+              <Text style={{ fontSize: 36 }}>🖼</Text>
+              <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: C.primaryDim, fontWeight: '700' } as any}>Visual Focus Board</Text>
+              <Text style={{ fontFamily: 'Noto Serif', fontStyle: 'italic', fontSize: 14, color: C.onSurfaceVariant, textAlign: 'center' } as any}>Tap to upload an image that represents{`\n`}your vision or intention</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
         {/* ── Soul's Intention ───────────────────────────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>Soul's Intention</Text>
-          <Text style={styles.voiceLabel}>🎙 Voice Record</Text>
+          <TouchableOpacity onPress={startVoiceRecording} disabled={isRecording}>
+            <Text style={[styles.voiceLabel, isRecording && { color: '#ac3149' }]}>
+              {isRecording ? '⏺ Recording...' : '🎙 Voice Record'}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={[glass, styles.intentionCard]}>
           <TextInput
@@ -123,7 +201,7 @@ export default function ImanifestScreen() {
         {/* ── Gratitude Journal ──────────────────────────────────── */}
         <View style={styles.gratitudeHeader}>
           <View style={styles.gratitudeLine} />
-          <Text style={styles.gratitudeTitle}>Moments of Grateful</Text>
+          <Text style={styles.gratitudeTitle}>What are you grateful for today</Text>
           <View style={styles.gratitudeLine} />
         </View>
         {['Something I am grateful for...', 'Another blessing today...', 'A final moment of gratitude...'].map(
