@@ -14,7 +14,7 @@ import { colors } from '../../constants/theme';
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { loading, error, data, fetchDashboard } = useDashboard();
+  const { loading, error, data, fetchDashboard, isOfflineMode } = useDashboard();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -23,21 +23,16 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchDashboard();
+    try {
+      await fetchDashboard();
+    } catch (err) {
+      // Error already handled in hook
+    }
     setRefreshing(false);
   };
 
   if (loading && !data) {
     return <LoadingSpinner message="Loading your spiritual dashboard..." />;
-  }
-
-  if (error && !data) {
-    return (
-      <ErrorMessage
-        message={error}
-        onRetry={fetchDashboard}
-      />
-    );
   }
 
   return (
@@ -56,6 +51,24 @@ export default function DashboardScreen() {
           {data?.user?.name || 'Muslim'}
         </Text>
       </View>
+
+      {/* Offline Mode Alert */}
+      {isOfflineMode && (
+        <View style={styles.offlineAlert}>
+          <Text style={styles.offlineAlertText}>📡 Demo Mode - Server Offline</Text>
+        </View>
+      )}
+
+      {/* Error Message with Retry */}
+      {error && (
+        <View style={{ marginBottom: 16 }}>
+          <ErrorMessage
+            message={error}
+            onRetry={fetchDashboard}
+            isOffline={isOfflineMode}
+          />
+        </View>
+      )}
 
       {/* Verse of the Day */}
       {data?.verseOfTheDay && (
@@ -129,6 +142,20 @@ const styles = {
     marginTop: 16,
     marginBottom: 24,
   },
+  offlineAlert: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F59E0B',
+  },
+  offlineAlertText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: '#92400E',
+    fontFamily: 'Inter-SemiBold',
+  },
   greeting: {
     fontSize: 16,
     color: colors.textSecondary,
@@ -160,7 +187,7 @@ const styles = {
     fontSize: 16,
     lineHeight: 24,
     color: colors.text,
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
     fontFamily: 'Inter-Regular',
     marginBottom: 8,
   },
@@ -177,7 +204,7 @@ const styles = {
   },
   statCard: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: 150,
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
