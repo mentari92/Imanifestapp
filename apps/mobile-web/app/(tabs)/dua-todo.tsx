@@ -268,7 +268,6 @@ const styles = {
     fontSize: 15,
     lineHeight: 22,
     color: colors.text,
-    fontStyle: 'italic',
     fontFamily: 'Inter-Regular',
     marginBottom: 8,
   },

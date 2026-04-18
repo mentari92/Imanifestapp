@@ -244,7 +244,6 @@ const styles = {
     fontSize: 16,
     lineHeight: 24,
     color: colors.text,
-    fontStyle: 'italic',
     fontFamily: 'Inter-Regular',
   },
   sentimentBadge: {
@@ -281,7 +280,6 @@ const styles = {
     fontSize: 15,
     lineHeight: 22,
     color: colors.text,
-    fontStyle: 'italic',
     fontFamily: 'Inter-Regular',
     marginBottom: 8,
   },

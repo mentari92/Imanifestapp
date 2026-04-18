@@ -1,16 +1,17 @@
 export const colors = {
-  primary: '#10b981',
-  secondary: '#6366f1',
-  background: '#0f172a',
-  surface: '#1e293b',
-  card: '#1e293b',
-  text: '#f8fafc',
-  textSecondary: '#94a3b8',
-  border: '#334155',
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  info: '#3b82f6',
+  // Stitch - Celestial Ether
+  primary: '#605d71',
+  secondary: '#6d5965',
+  background: '#f9f9fd',
+  surface: '#f2f3f8',
+  card: 'rgba(255,255,255,0.62)',
+  text: '#2f3338',
+  textSecondary: '#5b5f65',
+  border: 'rgba(174,178,185,0.35)',
+  success: '#206c3a',
+  warning: '#a87519',
+  error: '#ac3149',
+  info: '#5c596d',
 };
 
 export const spacing = {
