@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
 import { View, TouchableOpacity, Platform, Text } from 'react-native';
-import { Heart, Sparkles, ListChecks, Headphones } from 'lucide-react-native';
+import { LayoutDashboard, Heart, Sparkles, ListChecks, Headphones } from 'lucide-react-native';
 
 const TABS = [
+  { name: 'index', icon: LayoutDashboard, label: 'Dashboard' },
   { name: 'qalb', icon: Heart, label: 'Qalb' },
   { name: 'imanifest', icon: Sparkles, label: 'Imanifest' },
   { name: 'dua-todo', icon: ListChecks, label: 'Dua-to-Do' },
@@ -40,7 +41,6 @@ function GlassTabBar({ state, navigation }: any) {
       }}
     >
       {state.routes
-        .filter((route: any) => route.name !== 'index')
         .map((route: any, index: number) => {
           const isFocused = state.index === state.routes.findIndex((r: any) => r.key === route.key);
           const Icon = TABS[index]?.icon ?? Heart;
@@ -97,11 +97,10 @@ function GlassTabBar({ state, navigation }: any) {
 export default function TabLayout() {
   return (
     <Tabs
-      initialRouteName='qalb'
+      initialRouteName='index'
       tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tabs.Screen name='index' options={{ href: null }} />
       {TABS.map((tab) => (
         <Tabs.Screen
           key={tab.name}
