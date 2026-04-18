@@ -23,6 +23,48 @@ const CACHE_TTL = 3600;
 export class ImanSyncService {
   private readonly logger = new Logger(ImanSyncService.name);
 
+  private getFallbackVerseKeys(text: string, themes: string[]): string[] {
+    const source = `${text} ${themes.join(' ')}`.toLowerCase();
+
+    if (/sedih|cemas|takut|anxious|heavy|loss|kehilangan|galau|gelisah/.test(source)) {
+      return ["13:28", "94:5", "94:6"];
+    }
+
+    if (/rezeki|pekerjaan|job|career|work|provision|money|finance|cicilan|debt/.test(source)) {
+      return ["65:2", "65:3", "2:286"];
+    }
+
+    if (/syukur|gratitude|grateful|nikmat/.test(source)) {
+      return ["14:7", "2:152", "93:11"];
+    }
+
+    if (/taubat|repentance|dosa|ampun|istighfar/.test(source)) {
+      return ["39:53", "11:90", "66:8"];
+    }
+
+    return ["13:28", "2:286", "94:5"];
+  }
+
+  private async getCuratedFallbackVerses(
+    text: string,
+    themes: string[],
+  ): Promise<VerseResult[]> {
+    const verseKeys = this.getFallbackVerseKeys(text, themes);
+    const seenKeys = new Set<string>();
+    const verses: VerseResult[] = [];
+
+    for (const verseKey of verseKeys) {
+      if (seenKeys.has(verseKey)) continue;
+      seenKeys.add(verseKey);
+      const verse = await this.quranApi.getVerseWithTranslation(verseKey);
+      if (verse) {
+        verses.push(verse);
+      }
+    }
+
+    return verses;
+  }
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly zhipu: ZhipuService,
@@ -36,10 +78,20 @@ export class ImanSyncService {
       if (themes.length === 0) return { verses: [] };
 
       const verses = await this.searchVersesForThemes(themes);
-      return { verses };
+      if (verses.length > 0) {
+        return { verses };
+      }
+
+      const fallbackVerses = await this.getCuratedFallbackVerses(text, themes);
+      return { verses: fallbackVerses };
     } catch (err) {
       this.logger.error("Quick search failed", err);
-      return { verses: [] };
+      try {
+        const fallbackVerses = await this.getCuratedFallbackVerses(text, []);
+        return { verses: fallbackVerses };
+      } catch {
+        return { verses: [] };
+      }
     }
   }
 
