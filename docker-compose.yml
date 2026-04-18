@@ -61,7 +61,7 @@ services:
       context: .
       dockerfile: Dockerfile.web
       args:
-        EXPO_PUBLIC_API_URL: https://api.imanifestapp.com
+        EXPO_PUBLIC_API_URL: https://imanifestapp.com/api
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:80"   # hanya localhost, tidak expose ke internet langsung

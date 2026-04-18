@@ -17,7 +17,7 @@ function getApiBaseUrl(): string {
     const { hostname, protocol } = window.location;
 
     if (hostname.endsWith('imanifestapp.com')) {
-      return 'https://api.imanifestapp.com';
+      return `${protocol}//${hostname}/api`;
     }
 
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
