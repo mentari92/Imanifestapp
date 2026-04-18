@@ -389,9 +389,18 @@ Do not include explanation text.`;
   async generateReflectionInsight(
     transcriptText: string,
     sentiment: string,
-  ): Promise<{ spiritual: string; tafsir: string; scientific: string }> {
+  ): Promise<{
+    spiritual: string;
+    tafsir: string;
+    scientific: string;
+    hadith: Array<{ reference: string; text: string }>;
+  }> {
     const systemPrompt = `You are a warm Islamic counselor combining Quranic wisdom with modern science.
-Return ONLY a JSON object with keys spiritual, tafsir, scientific.
+Return ONLY a JSON object with keys spiritual, tafsir, scientific, hadith.
+Rules for hadith:
+- hadith must be an array of exactly 2 items
+- each item must contain: reference, text
+- reference must include source name and hadith number when possible
 IMPORTANT: Detect the language of the user's text and respond in the SAME language.`;
 
     if (!this.hasAnyAiProvider()) {
@@ -400,14 +409,56 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
         spiritual: `Your feelings are valid, and Allah is near to the one who calls Him. Hold to His promise ${verseCitation}.`,
         tafsir: "Trials are not abandonment. They can be the place where iman deepens and direction becomes clearer.",
         scientific: "Regulated breathing, gratitude writing, and mindful prayer can reduce stress and improve clarity.",
+        hadith: [
+          {
+            reference: "Sahih Muslim 2699",
+            text: "Whoever relieves a believer's distress, Allah will relieve his distress on the Day of Resurrection.",
+          },
+          {
+            reference: "Sahih Bukhari 6464",
+            text: "Be in this world as though you were a stranger or a traveler.",
+          },
+        ],
       };
     }
 
     try {
       const response = await this.callTextAI(systemPrompt, `${transcriptText}\nSentiment: ${sentiment}`);
-      const parsed = this.parseJSONResponse<{ spiritual: string; tafsir: string; scientific: string }>(response);
+      const parsed = this.parseJSONResponse<{
+        spiritual: string;
+        tafsir: string;
+        scientific: string;
+        hadith?: Array<{ reference?: string; text?: string }>;
+      }>(response);
       if (parsed?.spiritual && parsed?.tafsir && parsed?.scientific) {
-        return parsed;
+        const hadith = Array.isArray(parsed.hadith)
+          ? parsed.hadith
+              .filter((item) => item?.reference && item?.text)
+              .slice(0, 2)
+              .map((item) => ({
+                reference: String(item.reference),
+                text: String(item.text),
+              }))
+          : [];
+
+        return {
+          spiritual: parsed.spiritual,
+          tafsir: parsed.tafsir,
+          scientific: parsed.scientific,
+          hadith:
+            hadith.length > 0
+              ? hadith
+              : [
+                  {
+                    reference: "Sahih Muslim 2699",
+                    text: "Whoever relieves a believer's distress, Allah will relieve his distress on the Day of Resurrection.",
+                  },
+                  {
+                    reference: "Sunan Ibn Majah 4241",
+                    text: "The best deeds are those done consistently, even if they are small.",
+                  },
+                ],
+        };
       }
       throw new Error("Invalid reflection JSON");
     } catch (error) {
@@ -416,6 +467,16 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
         spiritual: "Your feelings are valid, and Allah is near to the one who calls Him. Hold to His promise (13:28).",
         tafsir: "Peace of heart grows when we return to Allah and stay consistent in effort.",
         scientific: "Regulated breathing, gratitude writing, and mindful prayer can reduce stress and improve clarity.",
+        hadith: [
+          {
+            reference: "Sahih Muslim 2699",
+            text: "Whoever relieves a believer's distress, Allah will relieve his distress on the Day of Resurrection.",
+          },
+          {
+            reference: "Sunan Ibn Majah 4241",
+            text: "The best deed is that which is done consistently, even if it is small.",
+          },
+        ],
       };
     }
   }

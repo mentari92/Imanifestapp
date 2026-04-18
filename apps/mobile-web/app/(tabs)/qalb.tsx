@@ -114,11 +114,12 @@ export default function QalbScreen() {
           verses: Array.isArray(nextResult?.verses)
             ? nextResult.verses.map((verse) => ({
                 verseKey: `${verse.surahNumber}:${verse.ayahNumber}`,
-                arabicText: '',
+                arabicText: verse.arabicText || '',
                 translation: verse.text || '',
-                tafsirSnippet: '',
+                tafsirSnippet: verse.tafsirSnippet || '',
               }))
             : [],
+          hadith: Array.isArray(nextResult?.hadith) ? nextResult.hadith : [],
         };
         sessionStorage.setItem('qalb_result', JSON.stringify(serialized));
       }
@@ -233,9 +234,9 @@ export default function QalbScreen() {
 
         {/* ── Writing Section ─────────────────────────────────────── */}
         <View style={[glass, styles.writePanel]}>
-          <Text style={styles.writePanelTitle}>Prefer to write?</Text>
+          <Text style={styles.writePanelTitle}>Write Your Problem</Text>
           <Text style={styles.writePanelSub}>
-            Transcribe your internal dialogue into the physical realm.
+            Tell what you are facing. AI will answer with Quran, tafsir, hadith, and practical steps.
           </Text>
           <View style={styles.textareaWrap}>
             <TextInput
@@ -253,7 +254,7 @@ export default function QalbScreen() {
               disabled={loading}
             >
               <Text style={styles.archiveBtnText}>
-                {loading ? 'Receiving...' : 'Archive Soul-Note'}
+                {loading ? 'Preparing Guidance...' : 'Get AI Guidance'}
               </Text>
             </TouchableOpacity>
           </View>

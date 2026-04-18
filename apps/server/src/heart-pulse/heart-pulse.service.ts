@@ -16,6 +16,16 @@ export class HeartPulseService {
     tafsir: "Reflecting on one's state is a form of ibadah that brings tranquility.",
     scientific:
       "Neural studies suggest that focused prayer or meditation activates the frontal lobes associated with calm.",
+    hadith: [
+      {
+        reference: "Sahih Muslim 2699",
+        text: "Whoever relieves a believer's distress, Allah will relieve his distress on the Day of Resurrection.",
+      },
+      {
+        reference: "Sunan Ibn Majah 4241",
+        text: "The most beloved deeds to Allah are those that are consistent, even if small.",
+      },
+    ],
   };
 
   constructor(
@@ -143,6 +153,7 @@ export class HeartPulseService {
         spiritual: insight.spiritual,
         tafsir:    insight.tafsir,
         scientific: insight.scientific,
+        hadith: insight.hadith,
       },
     };
   }
@@ -153,11 +164,21 @@ export class HeartPulseService {
   private async generateReflectionInsightWithTimeout(
     transcriptText: string,
     sentiment: string,
-  ): Promise<{ spiritual: string; tafsir: string; scientific: string }> {
+  ): Promise<{
+    spiritual: string;
+    tafsir: string;
+    scientific: string;
+    hadith: Array<{ reference: string; text: string }>;
+  }> {
     try {
       return await Promise.race([
         this.zhipu.generateReflectionInsight(transcriptText, sentiment),
-        new Promise<{ spiritual: string; tafsir: string; scientific: string }>((resolve) => {
+        new Promise<{
+          spiritual: string;
+          tafsir: string;
+          scientific: string;
+          hadith: Array<{ reference: string; text: string }>;
+        }>((resolve) => {
           setTimeout(() => {
             this.logger.warn(
               `Reflection insight timed out after ${HeartPulseService.INSIGHT_TIMEOUT_MS}ms, using fallback`,
