@@ -23,6 +23,26 @@ const CACHE_TTL = 3600;
 export class ImanSyncService {
   private readonly logger = new Logger(ImanSyncService.name);
 
+  private extractQuickThemes(text: string): string[] {
+    const source = text.toLowerCase();
+    const themes: string[] = [];
+
+    const pick = (pattern: RegExp, theme: string) => {
+      if (pattern.test(source) && !themes.includes(theme)) {
+        themes.push(theme);
+      }
+    };
+
+    pick(/sedih|galau|cemas|anxious|takut|kehilangan|down|heavy|gelisah/, 'patience');
+    pick(/rezeki|pekerjaan|karier|kerja|usaha|bisnis|job|work|career|money|finance|debt|cicilan/, 'provision');
+    pick(/syukur|nikmat|grateful|alhamdulillah/, 'gratitude');
+    pick(/tenang|hati|qalb|damai|remembrance|peace/, 'remembrance of Allah');
+    pick(/dosa|taubat|ampun|istighfar|repentance/, 'repentance');
+    pick(/keluarga|ortu|suami|istri|anak|family/, 'family ties');
+
+    return themes.slice(0, 3);
+  }
+
   private getFallbackVerseKeys(text: string, themes: string[]): string[] {
     const source = `${text} ${themes.join(' ')}`.toLowerCase();
 
@@ -74,8 +94,11 @@ export class ImanSyncService {
 
   async quickSearch(text: string): Promise<{ verses: VerseResult[] }> {
     try {
-      const themes = await this.zhipu.extractThemes(text.substring(0, 140));
-      if (themes.length === 0) return { verses: [] };
+      const themes = this.extractQuickThemes(text.substring(0, 140));
+      if (themes.length === 0) {
+        const fallbackVerses = await this.getCuratedFallbackVerses(text, []);
+        return { verses: fallbackVerses };
+      }
 
       const verses = await this.searchVersesForThemes(themes);
       if (verses.length > 0) {

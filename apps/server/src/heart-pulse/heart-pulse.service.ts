@@ -10,7 +10,7 @@ const QF_API_KEY = process.env.QURAN_FOUNDATION_API_KEY || "";
 @Injectable()
 export class HeartPulseService {
   private readonly logger = new Logger(HeartPulseService.name);
-  private static readonly INSIGHT_TIMEOUT_MS = 9000;
+  private static readonly INSIGHT_TIMEOUT_MS = 5500;
   private static readonly INSIGHT_FALLBACK = {
     spiritual: "May Allah grant your heart peace.",
     tafsir: "Reflecting on one's state is a form of ibadah that brings tranquility.",
