@@ -18,8 +18,8 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+    void fetchDashboard().catch(() => undefined);
+  }, [fetchDashboard]);
 
   const onRefresh = async () => {
     setRefreshing(true);
