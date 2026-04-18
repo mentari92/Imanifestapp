@@ -56,13 +56,13 @@ jobs:
 
             # ── Create .env file from GitHub Secrets ────────────────
             echo "=== Creating apps/server/.env from secrets ==="
-            cat > "$REPO_DIR/apps/server/.env" << ENVEOF
-# Quran Foundation API Credentials (set from GitHub Secrets)
-QURAN_FOUNDATION_CLIENT_ID=$QURAN_FOUNDATION_CLIENT_ID
-QURAN_FOUNDATION_CLIENT_SECRET=$QURAN_FOUNDATION_CLIENT_SECRET
-QURAN_FOUNDATION_OAUTH_BASE_URL=https://oauth2.quran.foundation
-QURAN_FOUNDATION_AUTH_TOKEN=$QURAN_FOUNDATION_AUTH_TOKEN
-ENVEOF
+            {
+              echo "# Quran Foundation API Credentials (set from GitHub Secrets)"
+              echo "QURAN_FOUNDATION_CLIENT_ID=${QURAN_FOUNDATION_CLIENT_ID}"
+              echo "QURAN_FOUNDATION_CLIENT_SECRET=${QURAN_FOUNDATION_CLIENT_SECRET}"
+              echo "QURAN_FOUNDATION_OAUTH_BASE_URL=https://oauth2.quran.foundation"
+              echo "QURAN_FOUNDATION_AUTH_TOKEN=${QURAN_FOUNDATION_AUTH_TOKEN}"
+            } > "$REPO_DIR/apps/server/.env"
             echo "=== .env file created ==="
 
             # ── Rebuild API + Web containers ───────────────────────
