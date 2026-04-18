@@ -95,3 +95,48 @@ jobs:
               docker compose logs --tail=120 api || true
               exit 1
             fi
+
+            # ── Public API health check + diagnostics (captures reverse-proxy issues) ──
+            echo "=== Checking public API health with retry ==="
+            PUBLIC_API_URL="https://api.imanifestapp.com/health"
+            PUBLIC_CODE="000"
+            PUBLIC_ATTEMPT=1
+            PUBLIC_MAX_ATTEMPTS=8
+            while [ "$PUBLIC_ATTEMPT" -le "$PUBLIC_MAX_ATTEMPTS" ]; do
+              PUBLIC_CODE=$(curl -sS -o /tmp/public-health.out -w "%{http_code}" "$PUBLIC_API_URL" || true)
+              if [ "$PUBLIC_CODE" = "200" ]; then
+                echo "=== Public health check passed on attempt $PUBLIC_ATTEMPT ==="
+                cat /tmp/public-health.out
+                break
+              fi
+
+              echo "=== Public health attempt $PUBLIC_ATTEMPT/$PUBLIC_MAX_ATTEMPTS failed (code=$PUBLIC_CODE), retrying in 5s ==="
+              PUBLIC_ATTEMPT=$((PUBLIC_ATTEMPT + 1))
+              sleep 5
+            done
+
+            if [ "$PUBLIC_CODE" != "200" ]; then
+              echo "ERROR: Public API health check failed after retries (code=$PUBLIC_CODE)"
+              echo "=== Diagnostic: docker compose ps ==="
+              docker compose ps || true
+
+              echo "=== Diagnostic: API logs (last 200) ==="
+              docker compose logs --tail=200 api || true
+
+              echo "=== Diagnostic: Web logs (last 120) ==="
+              docker compose logs --tail=120 web || true
+
+              echo "=== Diagnostic: local API health from host ==="
+              curl -sS -i -m 10 http://127.0.0.1:3001/health || true
+
+              echo "=== Diagnostic: public API health verbose ==="
+              curl -sS -i -m 15 "$PUBLIC_API_URL" || true
+
+              echo "=== Diagnostic: DNS resolve for api.imanifestapp.com ==="
+              getent hosts api.imanifestapp.com || true
+
+              echo "=== Diagnostic: listening ports (80/443/3001/8080) ==="
+              (ss -lntp 2>/dev/null || netstat -lntp 2>/dev/null || true) | grep -E ":80|:443|:3001|:8080" || true
+
+              exit 1
+            fi
