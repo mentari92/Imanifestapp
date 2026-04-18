@@ -3,6 +3,12 @@ import axios from "axios";
 import { RedisService } from "./redis.service";
 import { QuranMcpService } from "./quran-mcp.service";
 
+interface FoundationOauthTokenResponse {
+  access_token?: string;
+  token_type?: string;
+  expires_in?: number;
+}
+
 interface QuranSearchResult {
   verse_key: string;
   text?: string;
@@ -100,10 +106,16 @@ export class QuranApiService {
     "https://apis.quran.foundation/content/api/v4";
   private readonly foundationClientId =
     process.env.QURAN_FOUNDATION_CLIENT_ID || "";
+  private readonly foundationClientSecret =
+    process.env.QURAN_FOUNDATION_CLIENT_SECRET || "";
+  private readonly foundationOauthBaseUrl =
+    process.env.QURAN_FOUNDATION_OAUTH_BASE_URL || "https://oauth2.quran.foundation";
   private readonly foundationAuthToken =
     process.env.QURAN_FOUNDATION_AUTH_TOKEN || "";
   private readonly foundationAudioBaseUrl =
     process.env.QURAN_FOUNDATION_AUDIO_BASE_URL || "https://audio.qurancdn.com";
+  private cachedFoundationToken: string | null = null;
+  private cachedFoundationTokenExpiryMs = 0;
 
   constructor(
     private readonly redis: RedisService,
@@ -384,7 +396,7 @@ export class QuranApiService {
   }
 
   async getFoundationRecitations(): Promise<FoundationRecitation[]> {
-    const headers = this.getFoundationHeaders();
+    const headers = await this.getFoundationHeaders();
     if (!headers) {
       return [];
     }
@@ -413,7 +425,7 @@ export class QuranApiService {
     recitationId: number,
     ayahKey: string,
   ): Promise<string | null> {
-    const headers = this.getFoundationHeaders();
+    const headers = await this.getFoundationHeaders();
     if (!headers) {
       return null;
     }
@@ -449,14 +461,15 @@ export class QuranApiService {
   }
 
   async getFoundationHealth(): Promise<FoundationHealthResult> {
+    const hasFoundationAuth = !!this.foundationAuthToken || !!this.foundationClientSecret;
     const configured = {
       clientId: !!this.foundationClientId,
-      authToken: !!this.foundationAuthToken,
+      authToken: hasFoundationAuth,
       contentApiUrl: this.foundationBaseUrl,
       audioBaseUrl: this.foundationAudioBaseUrl,
     };
 
-    if (!configured.clientId || !configured.authToken) {
+    if (!configured.clientId || !hasFoundationAuth) {
       return {
         healthy: false,
         configured,
@@ -471,7 +484,7 @@ export class QuranApiService {
       const response = await axios.get<{ recitations?: FoundationRecitation[] }>(
         `${this.foundationBaseUrl}/resources/recitations`,
         {
-          headers: this.getFoundationHeaders() || undefined,
+          headers: (await this.getFoundationHeaders()) || undefined,
           timeout: 9000,
         },
       );
@@ -533,16 +546,74 @@ export class QuranApiService {
     return headers;
   }
 
-  private getFoundationHeaders(): Record<string, string> | null {
-    if (!this.foundationClientId || !this.foundationAuthToken) {
+  private async getFoundationHeaders(): Promise<Record<string, string> | null> {
+    if (!this.foundationClientId) {
+      return null;
+    }
+
+    const authToken = await this.getFoundationAuthToken();
+    if (!authToken) {
       return null;
     }
 
     return {
       "Content-Type": "application/json",
       "x-client-id": this.foundationClientId,
-      "x-auth-token": this.foundationAuthToken,
+      "x-auth-token": authToken,
     };
+  }
+
+  private async getFoundationAuthToken(): Promise<string | null> {
+    // Prefer OAuth client credentials for always-fresh tokens.
+    if (this.foundationClientId && this.foundationClientSecret) {
+      const now = Date.now();
+      if (this.cachedFoundationToken && now < this.cachedFoundationTokenExpiryMs) {
+        return this.cachedFoundationToken;
+      }
+
+      try {
+        const params = new URLSearchParams();
+        params.set("grant_type", "client_credentials");
+        params.set("scope", "content");
+
+        const tokenResponse = await axios.post<FoundationOauthTokenResponse>(
+          `${this.foundationOauthBaseUrl}/oauth2/token`,
+          params.toString(),
+          {
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            auth: {
+              username: this.foundationClientId,
+              password: this.foundationClientSecret,
+            },
+            timeout: 9000,
+          },
+        );
+
+        const accessToken = tokenResponse.data?.access_token || "";
+        if (!accessToken) {
+          return null;
+        }
+
+        const expiresInSec =
+          typeof tokenResponse.data?.expires_in === "number"
+            ? tokenResponse.data.expires_in
+            : 3600;
+
+        this.cachedFoundationToken = accessToken;
+        // Refresh 60s earlier to avoid edge expiry in-flight.
+        this.cachedFoundationTokenExpiryMs = Date.now() + Math.max(expiresInSec - 60, 30) * 1000;
+        return accessToken;
+      } catch (error) {
+        this.logger.warn(
+          `Failed to mint Foundation OAuth token: ${error instanceof Error ? error.message : error}`,
+        );
+      }
+    }
+
+    // Fallback for environments that only provide a static token.
+    return this.foundationAuthToken || null;
   }
 
   private toAbsoluteFoundationAudioUrl(pathOrUrl: string): string {
