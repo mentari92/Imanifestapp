@@ -87,41 +87,22 @@ export function useHeartPulse() {
     };
   };
 
-  const buildGuidancePrompt = (text: string): string => {
-    return [
-      'User reflection:',
-      text,
-      '',
-      'Instruction:',
-      'Analyze this reflection according to Quranic teachings and the authentic Sunnah/Hadith of Prophet Muhammad (peace be upon him).',
-      'Provide compassionate, practical, and spiritually grounded guidance that is faithful to Islam.',
-    ].join('\n');
-  };
-
   const analyzeEntry = useCallback(async (text: string) => {
     setLoading(true);
     setError(null);
     try {
-      const guidancePrompt = buildGuidancePrompt(text);
-
-      const [reflectResponse, verseResponse, modelGuidanceResponse] = await Promise.all([
+      const [reflectResponse, verseResponse] = await Promise.all([
         apiPost<any>('/heart-pulse/reflect', { transcriptText: text }),
         apiPost<any>('/iman-sync/quick-search', { text }),
-        apiPost<any>('/iman-sync/analyze', { intentText: guidancePrompt }),
       ]);
 
       const aiInsight = reflectResponse?.aiInsight || {};
-      const modelAdvice =
-        typeof modelGuidanceResponse?.aiSummary === 'string'
-          ? modelGuidanceResponse.aiSummary.trim()
-          : '';
 
       const mapped: HeartPulseResult = {
         id: reflectResponse?.reflection?.id || `qalb-${Date.now()}`,
         sentiment: mapSentiment(reflectResponse?.sentiment || 'neutral'),
         emotion: reflectResponse?.sentiment || 'neutral',
         advice:
-          modelAdvice ||
           [aiInsight.spiritual, aiInsight.tafsir, aiInsight.scientific]
             .filter((part) => typeof part === 'string' && part.trim().length > 0)
             .join('\n\n') ||
