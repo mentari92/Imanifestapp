@@ -51,6 +51,17 @@ export class ZhipuService {
     }
   }
 
+  private cleanGeneratedText(text: string): string {
+    return String(text || "")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      .replace(/^#+\s*/gm, "")
+      .replace(/^[-*]\s+/gm, "")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
   private extractThemesHeuristic(text: string): string[] {
     const source = text.toLowerCase();
     const bucket: string[] = [];
@@ -311,7 +322,7 @@ Return 2 short paragraphs:
       const response = await this.callTextAI(systemPrompt, `Intention: ${intentText}\n\nVerses:\n${versesContext}`);
       const cleaned = response.trim();
       if (!cleaned) throw new Error("Empty summary response");
-      return cleaned;
+      return this.cleanGeneratedText(cleaned);
     } catch (error) {
       this.logger.warn(`generateSummary fallback: ${error instanceof Error ? error.message : error}`);
       const verse = verses[0];
@@ -442,12 +453,16 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
           : [];
 
         return {
-          spiritual: parsed.spiritual,
-          tafsir: parsed.tafsir,
-          scientific: parsed.scientific,
+          spiritual: this.cleanGeneratedText(parsed.spiritual),
+          tafsir: this.cleanGeneratedText(parsed.tafsir),
+          scientific: this.cleanGeneratedText(parsed.scientific),
           hadith:
             hadith.length > 0
               ? hadith
+                  .map((item) => ({
+                    reference: this.cleanGeneratedText(item.reference),
+                    text: this.cleanGeneratedText(item.text),
+                  }))
               : [
                   {
                     reference: "Sahih Muslim 2699",
