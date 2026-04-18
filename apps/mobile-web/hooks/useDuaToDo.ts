@@ -23,6 +23,7 @@ interface DuaTask {
   id: string;
   title: string;
   description: string;
+  guidance?: string;
   completed: boolean;
   order: number;
   createdAt: string;
@@ -52,6 +53,7 @@ interface AnalyzeResponse {
 interface RawTask {
   id: string;
   description: string;
+  guidance?: string;
   isCompleted: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -81,6 +83,7 @@ export function useDuaToDo() {
     id: task.id,
     title: task.description,
     description: task.description,
+    guidance: task.guidance,
     completed: Boolean(task.isCompleted),
     order: index,
     createdAt: task.createdAt,

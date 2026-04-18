@@ -134,201 +134,169 @@ export default function DuaTodoScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentWrap}>
-        {/* ── Header ─────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <Text style={styles.brandTitle}>Dua-to-Do</Text>
-        </View>
 
-        {/* ── Hero ───────────────────────────────────────────────── */}
-        <View style={styles.hero}>
-          <Text style={styles.displayHeadline}>
-            {totalCount > 0
-              ? `${totalCount} Steps to Manifest\nyour Intention`
-              : 'Turn your Duas into\nActionable Steps'}
-          </Text>
-        </View>
-
-        {/* ── Progress Bento (only when tasks exist) ─────────────── */}
-        {totalCount > 0 && (
-          <View style={[glass, styles.progressCard]}>
-            <View style={styles.progressLeft}>
-              <Text style={styles.progressLabel}>Journey Status</Text>
-              <Text style={styles.progressValue}>
-                {completedCount}/{totalCount} Steps Completed
-              </Text>
-            </View>
-            {Platform.OS === 'web' ? (
-              <View style={styles.ringWrap}>
-                {/* SVG ring on web */}
-                <svg
-                  width="96"
-                  height="96"
-                  viewBox="0 0 96 96"
-                  style={{ display: 'block' } as any}
-                >
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r={RADIUS}
-                    fill="none"
-                    stroke="#eceef3"
-                    strokeWidth="6"
-                  />
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r={RADIUS}
-                    fill="none"
-                    stroke={C.tertiary}
-                    strokeWidth="6"
-                    strokeDasharray={CIRCUM}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' } as any}
-                  />
-                  <text
-                    x="48"
-                    y="53"
-                    textAnchor="middle"
-                    fill={C.tertiary}
-                    fontSize="14"
-                    fontWeight="700"
-                    fontFamily="system-ui"
-                  >
-                    {progressPct}%
-                  </text>
-                </svg>
-              </View>
-            ) : (
-              <View style={styles.ringNative}>
-                <Text style={styles.ringPctText}>{progressPct}%</Text>
-              </View>
-            )}
+          {/* ── Header ─────────────────────────────────────────────── */}
+          <View style={styles.header}>
+            <Text style={styles.brandTitle}>Dua-to-Do</Text>
           </View>
-        )}
 
-        {/* ── Intention Input ─────────────────────────────────────── */}
-        {totalCount === 0 ? (
-          <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>Your Dua / Intention</Text>
-            </View>
-            <View style={[glass, styles.inputCard]}>
-              <TextInput
-                style={styles.intentionInput}
-                placeholder="e.g., I want to become closer to Allah through daily Quran reading..."
-                placeholderTextColor="rgba(91,95,101,0.4)"
-                value={intention}
-                onChangeText={setIntention}
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
-            <TouchableOpacity
-              style={[styles.ctaButton, loading && styles.ctaDisabled]}
-              onPress={handleGenerate}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.ctaText}>
-                {loading ? 'Generating...' : 'Add to Daily Tasks'}
-              </Text>
-            </TouchableOpacity>
-          </>
-        ) : null}
+          {/* ── Hero ───────────────────────────────────────────────── */}
+          <View style={styles.hero}>
+            <Text style={styles.displayHeadline}>
+              {totalCount > 0
+                ? `${totalCount} Steps to Manifest your Intention`
+                : 'Turn your Duas into Actionable Steps'}
+            </Text>
+          </View>
 
-        {/* ── Feedback ───────────────────────────────────────────── */}
-        {error && <ErrorMessage message={error} />}
-        {loading && <LoadingSpinner message="AI is generating your tasks..." />}
-
-        {/* ── Related Verses ──────────────────────────────────────── */}
-        {verses && verses.length > 0 && (
-          <View style={styles.versesSection}>
-            <Text style={styles.subSectionTitle}>Related Quran Verses</Text>
-            {verses.map((verse, idx) => (
-              <View key={verse.number || idx} style={[glass, styles.verseCard]}>
-                <Text style={styles.verseText}>"{verse.text}"</Text>
-                <Text style={styles.verseRef}>
-                  {verse.surahName} {verse.surahNumber}:{verse.ayahNumber}
+          {/* ── Progress Bento (only when tasks exist) ─────────────── */}
+          {totalCount > 0 && (
+            <View style={[glass, styles.progressCard]}>
+              <View style={styles.progressLeft}>
+                <Text style={styles.progressLabel}>Journey Status</Text>
+                <Text style={styles.progressValue}>
+                  {completedCount}/{totalCount} Steps Completed
                 </Text>
               </View>
-            ))}
-          </View>
-        )}
-
-        {/* ── Task Checklist ──────────────────────────────────────── */}
-        {tasks && tasks.length > 0 && (
-          <View style={styles.tasksSection}>
-            {tasks.map((task, idx) => {
-              const isActive = idx === activeIndex && !task.completed;
-              const isPending = !task.completed && !isActive;
-              const completedAt = task.updatedAt || task.createdAt;
-              const completedLabel = completedAt
-                ? new Date(completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : null;
-
-              return (
-                <View
-                  key={task.id}
-                  style={[
-                    styles.taskRow,
-                    isActive && [glass, styles.taskRowActive],
-                    isPending && styles.taskRowPending,
-                  ]}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.taskCheck,
-                      task.completed && styles.taskCheckDone,
-                    ]}
-                    onPress={() => handleToggleComplete(task.id, task.completed)}
-                    activeOpacity={0.75}
-                  >
-                    {task.completed && <Text style={styles.taskCheckMark}>✓</Text>}
-                  </TouchableOpacity>
-
-                  <View style={styles.taskContent}>
-                    <Text
-                      style={[
-                        styles.taskTitle,
-                        task.completed && styles.taskTitleDone,
-                      ]}
-                    >
-                      {task.title}
-                    </Text>
-                    {task.completed && (
-                      <Text style={styles.taskMeta}>Completed at {completedLabel || '--:--'}</Text>
-                    )}
-                    {isActive && (
-                      <Text style={styles.taskMetaActive}>
-                        Connect one focused block of effort to your dua and finish it before the day ends.
-                      </Text>
-                    )}
-                    {isPending && (
-                      <Text style={styles.taskMeta}>
-                        Unlocks after Task {idx}
-                      </Text>
-                    )}
-                  </View>
-
-                  {isActive ? <Text style={styles.taskSparkle}>✦</Text> : null}
+              {Platform.OS === 'web' ? (
+                <View style={styles.ringWrap}>
+                  <svg width="96" height="96" viewBox="0 0 96 96" style={{ display: 'block' } as any}>
+                    <circle cx="48" cy="48" r={RADIUS} fill="none" stroke="#eceef3" strokeWidth="6" />
+                    <circle
+                      cx="48" cy="48" r={RADIUS} fill="none"
+                      stroke={C.tertiary} strokeWidth="6"
+                      strokeDasharray={CIRCUM} strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                      style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' } as any}
+                    />
+                    <text x="48" y="53" textAnchor="middle" fill={C.tertiary} fontSize="14" fontWeight="700" fontFamily="system-ui">
+                      {progressPct}%
+                    </text>
+                  </svg>
                 </View>
-              );
-            })}
-          </View>
-        )}
+              ) : (
+                <View style={styles.ringNative}>
+                  <Text style={styles.ringPctText}>{progressPct}%</Text>
+                </View>
+              )}
+            </View>
+          )}
 
-        <TouchableOpacity
-          onPress={() => router.push('/(tabs)/tafakkur')}
-          activeOpacity={0.85}
-          style={[styles.ctaButton, totalCount > 0 ? styles.bottomPrimaryButton : { marginTop: 0, marginBottom: 24 }]}
-        >
-          <Text style={[styles.ctaText, totalCount > 0 ? styles.bottomPrimaryText : undefined]}>
-            {totalCount > 0 ? 'Add to Daily Tasks' : 'Open Tafakkur Hub  →'}
-          </Text>
-        </TouchableOpacity>
+          {/* ── Intention Input (only when no tasks) ─────────────── */}
+          {totalCount === 0 && (
+            <>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionLabel}>Your Dua / Intention</Text>
+              </View>
+              <View style={[glass, styles.inputCard]}>
+                <TextInput
+                  style={styles.intentionInput}
+                  placeholder="e.g., I want to become closer to Allah through daily Quran reading..."
+                  placeholderTextColor="rgba(91,95,101,0.4)"
+                  value={intention}
+                  onChangeText={setIntention}
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.ctaButtonFull, loading && styles.ctaDisabled]}
+                onPress={handleGenerate}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.ctaText}>
+                  {loading ? 'Generating...' : 'Add to Daily Tasks'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
 
-        <View style={{ height: 120 }} />
+          {/* ── Feedback ─────────────────────────────────────────── */}
+          {error && <ErrorMessage message={error} />}
+          {loading && <LoadingSpinner message="AI is generating your tasks..." />}
+
+          {/* ── Task Checklist ──────────────────────────────────────── */}
+          {tasks && tasks.length > 0 && (
+            <View style={styles.tasksSection}>
+              {tasks.map((task, idx) => {
+                const isActive = idx === activeIndex && !task.completed;
+                const isPending = !task.completed && !isActive;
+                const completedAt = task.updatedAt && task.completed ? task.updatedAt : null;
+                const completedLabel = completedAt
+                  ? new Date(completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : null;
+
+                if (isActive) {
+                  // ── Active task: glass card, left green border, indented
+                  return (
+                    <View key={task.id} style={[glass, styles.taskRowActive]}>
+                      <TouchableOpacity
+                        style={styles.taskCircleOutline}
+                        onPress={() => handleToggleComplete(task.id, task.completed)}
+                        activeOpacity={0.75}
+                      />
+                      <View style={styles.taskContent}>
+                        <Text style={styles.taskTitleActive}>{task.title}</Text>
+                        {task.guidance ? (
+                          <Text style={styles.taskGuidance}>{task.guidance}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                }
+
+                if (task.completed) {
+                  // ── Completed task: filled green circle, strikethrough title
+                  return (
+                    <TouchableOpacity
+                      key={task.id}
+                      style={styles.taskRow}
+                      onPress={() => handleToggleComplete(task.id, task.completed)}
+                      activeOpacity={0.75}
+                    >
+                      <View style={styles.taskCircleDone}>
+                        <Text style={styles.taskCheckMark}>✓</Text>
+                      </View>
+                      <View style={styles.taskContent}>
+                        <Text style={styles.taskTitleDone}>{task.title}</Text>
+                        <Text style={styles.taskMeta}>
+                          Completed at {completedLabel || '--:--'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }
+
+                // ── Pending task: faint outline circle, opacity 50%
+                return (
+                  <View key={task.id} style={[styles.taskRow, styles.taskRowPending]}>
+                    <View style={styles.taskCirclePending} />
+                    <View style={styles.taskContent}>
+                      <Text style={styles.taskTitlePending}>{task.title}</Text>
+                      <Text style={styles.taskMeta}>Unlocks after Task {idx}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {/* ── Bottom CTA ──────────────────────────────────────────── */}
+          {totalCount > 0 && (
+            <View style={styles.ctaRow}>
+              <TouchableOpacity
+                style={styles.ctaButton}
+                onPress={() => router.push('/(tabs)/tafakkur')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.ctaIcon}>✓</Text>
+                <Text style={styles.ctaText}>Add to Daily Tasks</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={{ height: 120 }} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -419,11 +387,11 @@ const styles = StyleSheet.create({
     color: C.onSurfaceVariant,
   },
   progressValue: {
-    fontSize: 20,
+    fontSize: 28,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurfaceVariant,
-    lineHeight: 28,
+    lineHeight: 36,
   },
   ringWrap: {
     width: 96,
@@ -467,15 +435,15 @@ const styles = StyleSheet.create({
     minHeight: 90,
     textAlignVertical: 'top',
   },
-  // CTA
-  ctaButton: {
+  // CTA full-width (empty state)
+  ctaButtonFull: {
     backgroundColor: C.tertiary,
     borderRadius: 9999,
     paddingVertical: 20,
     paddingHorizontal: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     gap: 10,
     marginBottom: 24,
     shadowColor: '#166534',
@@ -487,135 +455,155 @@ const styles = StyleSheet.create({
   ctaDisabled: {
     opacity: 0.6,
   },
+  // CTA row (right-aligned, tasks state — matches reference)
+  ctaRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'flex-end' as const,
+    marginTop: 32,
+    marginBottom: 24,
+  },
+  ctaButton: {
+    backgroundColor: '#166534',
+    borderRadius: 9999,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 10,
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.30,
+    shadowRadius: 32,
+    elevation: 8,
+  },
+  ctaIcon: {
+    color: '#e8ffe8',
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
   ctaText: {
     color: '#e8ffe8',
     fontSize: 14,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
     fontWeight: '700' as const,
-  },
-  // verses
-  versesSection: {
-    marginBottom: 24,
-  },
-  subSectionTitle: {
-    fontSize: 13,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase' as const,
-    color: C.onSurfaceVariant,
-    fontWeight: '700' as const,
-    marginBottom: 12,
-  },
-  verseCard: {
-    padding: 20,
-    marginBottom: 10,
-  },
-  verseText: {
-    fontSize: 16,
-    lineHeight: 25,
-    color: C.onSurface,
-    fontFamily: 'Noto Serif',
-    marginBottom: 8,
-  },
-  verseRef: {
-    fontSize: 12,
-    color: C.primary,
-    fontWeight: '600' as const,
-    letterSpacing: 0.4,
+    fontFamily: 'Plus Jakarta Sans',
   },
   // tasks
   tasksSection: {
     gap: 0,
-    marginBottom: 24,
+    marginBottom: 0,
   },
+  // Completed/pending task row — plain, no card
   taskRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 14,
-    gap: 18,
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    paddingVertical: 12,
+    gap: 20,
   },
+  // Pending task opacity
+  taskRowPending: {
+    opacity: 0.50,
+  },
+  // Active task: glass card, indented, left green border
   taskRowActive: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
     padding: 20,
     marginTop: 8,
-    marginBottom: 10,
+    marginBottom: 8,
+    marginLeft: Platform.OS === 'web' ? 24 : 8,
     borderLeftWidth: 4,
-    borderLeftColor: C.tertiary,
+    borderLeftColor: '#166534',
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.78)',
+    gap: 20,
   },
-  taskRowPending: {
-    opacity: 0.38,
-  },
-  taskCheck: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: 'rgba(119,123,129,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    marginTop: 4,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-  },
-  taskCheckDone: {
+  // Completed: large filled green circle w-10 h-10
+  taskCircleDone: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: C.tertiary,
-    borderColor: C.tertiary,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    flexShrink: 0 as const,
+    marginTop: 2,
     shadowColor: C.tertiary,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
-    shadowRadius: 12,
+    shadowRadius: 8,
     elevation: 4,
+  },
+  // Active: large outlined circle
+  taskCircleOutline: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(119,123,129,0.35)',
+    backgroundColor: 'transparent',
+    flexShrink: 0 as const,
+    marginTop: 2,
+  },
+  // Pending: large faint circle
+  taskCirclePending: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(119,123,129,0.20)',
+    backgroundColor: 'transparent',
+    flexShrink: 0 as const,
+    marginTop: 2,
   },
   taskCheckMark: {
     color: '#e8ffe8',
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700' as const,
   },
   taskContent: {
     flex: 1,
     paddingBottom: 4,
   },
-  taskTitle: {
-    fontSize: 17,
-    fontFamily: 'Newsreader',
-    fontStyle: 'italic' as const,
-    color: C.onSurface,
-    lineHeight: 25,
-  },
+  // Completed title: Noto Serif, line-through, muted
   taskTitleDone: {
-    textDecorationLine: 'line-through' as const,
+    fontSize: 18,
+    fontFamily: 'Noto Serif',
     color: C.onSurfaceVariant,
     opacity: 0.6,
+    textDecorationLine: 'line-through' as const,
+    lineHeight: 26,
+  },
+  // Active title: Noto Serif, larger, medium weight
+  taskTitleActive: {
+    fontSize: 20,
+    fontFamily: 'Noto Serif',
+    fontWeight: '500' as const,
+    color: C.onSurface,
+    lineHeight: 28,
+  },
+  // Pending title: Noto Serif, normal
+  taskTitlePending: {
+    fontSize: 18,
+    fontFamily: 'Noto Serif',
+    color: C.onSurface,
+    lineHeight: 26,
   },
   taskMeta: {
-    fontSize: 12,
-    color: C.outlineVariant,
+    fontSize: 13,
+    fontFamily: 'Plus Jakarta Sans',
+    color: '#777b81',
     marginTop: 4,
     fontStyle: 'italic' as const,
   },
-  taskMetaActive: {
-    fontSize: 12,
+  // AI guidance shown below active task title
+  taskGuidance: {
+    fontSize: 13,
+    fontFamily: 'Plus Jakarta Sans',
     color: C.onSurfaceVariant,
     marginTop: 6,
-    lineHeight: 18,
-  },
-  taskSparkle: {
-    fontSize: 28,
-    color: '#d8d1e6',
-    lineHeight: 28,
-    marginTop: 8,
-  },
-  bottomPrimaryButton: {
-    marginTop: 6,
-    marginBottom: 24,
-    alignSelf: 'center',
-    minWidth: 220,
-    paddingHorizontal: 26,
-    paddingVertical: 18,
-  },
-  bottomPrimaryText: {
-    color: '#e8ffe8',
+    lineHeight: 20,
+    maxWidth: 280,
   },
 });
 
