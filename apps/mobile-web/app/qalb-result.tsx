@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
@@ -51,15 +51,56 @@ interface HadithItem {
   text: string;
 }
 
+interface ChapterInfo {
+  id: number;
+  name_simple: string;
+}
+
 function cleanModelText(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/__(.*?)__/g, '$1')
+    .replace(/\*/g, '')
     .replace(/^#+\s*/gm, '')
     .replace(/^[-*]\s+/gm, '')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+function getVerseMeta(verseKey: string, chapterNames: Record<number, string>) {
+  const [surahPart, ayahPart] = verseKey.split(':').map(Number);
+  return {
+    surahNumber: surahPart || 0,
+    ayahNumber: ayahPart || 0,
+    surahName: chapterNames[surahPart || 0] || `Surah ${surahPart || '?'}`,
+  };
+}
+
+function buildLogicalPath(text: string, sentiment?: string) {
+  const source = `${text} ${sentiment || ''}`.toLowerCase();
+
+  if (/job|work|career|pekerjaan|kerja|cicilan|finance|debt|rezeki/.test(source)) {
+    return [
+      'Inventory your immediate strengths and update one practical asset today, such as your CV, portfolio, or contact list.',
+      'Anchor your search rhythm around prayer so your effort stays structured, calm, and spiritually grounded.',
+      'Reduce panic by focusing on one high-impact action today while trusting Allah for the doors you cannot control yet.',
+    ];
+  }
+
+  if (/anxious|cemas|takut|gelisah|heavy|sedih/.test(source)) {
+    return [
+      'Slow the moment down with dhikr and breathing so your next decision comes from sakinah instead of panic.',
+      'Name the problem clearly, then separate what you can act on today from what must be left to tawakkul.',
+      'Take one small step before the day ends so your heart feels movement, not helplessness.',
+    ];
+  }
+
+  return [
+    'Receive the reminder first, so your heart is steadied before you plan your response.',
+    'Translate that reminder into one practical action you can complete today.',
+    'Close the cycle with dua and consistent follow-through, not overthinking.',
+  ];
 }
 
 export default function QalbResultScreen() {
@@ -70,6 +111,9 @@ export default function QalbResultScreen() {
   }>();
 
   const [result, setResult] = useState<QalbStoredResult | null>(null);
+  const [chapterNames, setChapterNames] = useState<Record<number, string>>({});
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Read large result payload from sessionStorage (avoids URL length limits)
   useEffect(() => {
@@ -81,6 +125,27 @@ export default function QalbResultScreen() {
         }
       }
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch('https://api.quran.com/api/v4/chapters?language=en')
+      .then((response) => response.json())
+      .then((data) => {
+        if (!active) return;
+        const mapped = Object.fromEntries(
+          ((data?.chapters || []) as ChapterInfo[]).map((chapter) => [chapter.id, chapter.name_simple]),
+        );
+        setChapterNames(mapped);
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   const verses: Verse[] = Array.isArray(result?.verses)
@@ -117,6 +182,33 @@ export default function QalbResultScreen() {
         .filter((h) => h?.reference && h?.text)
         .map((h) => ({ reference: String(h.reference), text: String(h.text) }))
     : [];
+
+  const logicalPath = useMemo(
+    () => buildLogicalPath(String(userText || ''), sentiment),
+    [userText, sentiment],
+  );
+
+  const speakAnswer = () => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.speechSynthesis || !cleanedSummary) {
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new window.SpeechSynthesisUtterance(cleanedSummary);
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    speechRef.current = utterance;
+    setIsSpeaking(true);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
 
   return (
     <ScrollView
@@ -204,12 +296,44 @@ export default function QalbResultScreen() {
               <Text style={{ fontFamily: "Newsreader", fontSize: 20, fontStyle: "italic", color: "#0e6030" }}>
                 Divine Response
               </Text>
+              {Platform.OS === 'web' ? (
+                <TouchableOpacity
+                  onPress={speakAnswer}
+                  style={{ marginLeft: 'auto', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 9999, backgroundColor: 'rgba(32,108,58,0.1)' }}
+                >
+                  <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 11, fontWeight: '700', color: '#206c3a', letterSpacing: 1 }}>
+                    {isSpeaking ? 'Stop Voice' : 'Play Voice'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
             <Text style={{ fontFamily: "Noto Serif", fontSize: 15, color: "#2f3338", lineHeight: 28 }}>
                 {cleanedSummary}
             </Text>
           </View>
         ) : null}
+
+        {/* Logical Path */}
+        <View style={{ gap: 14 }}>
+          <Text style={{ fontFamily: 'Newsreader', fontSize: 22, fontStyle: 'italic', color: '#2f3338' }}>
+            Logical Path
+          </Text>
+          <View style={[glass(24), { padding: 22, gap: 14, borderWidth: 1.5, borderColor: 'rgba(32,108,58,0.45)' }]}> 
+            <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 11, fontWeight: '700', color: '#206c3a', letterSpacing: 1.2, textTransform: 'uppercase' }}>
+              To navigate this with spiritual clarity
+            </Text>
+            {logicalPath.map((item, index) => (
+              <View key={index} style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+                <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(169,247,183,0.45)', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                  <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 11, fontWeight: '700', color: '#206c3a' }}>{index + 1}</Text>
+                </View>
+                <Text style={{ flex: 1, fontFamily: 'Noto Serif', fontSize: 14, lineHeight: 23, color: '#4b5058' }}>
+                  {item}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
 
         {/* Quran Verses */}
         {verses.length > 0 ? (
@@ -221,7 +345,14 @@ export default function QalbResultScreen() {
               </Text>
             </View>
             {verses.map((verse, i) => (
-              <View key={i} style={[glass(24), { padding: 28, gap: 20 }]}>
+              <View key={i} style={[glass(24), { padding: 28, gap: 20 }]}> 
+                {(() => {
+                  const meta = getVerseMeta(verse.verseKey, chapterNames);
+                  return (
+                    <>
+                      <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 10, textTransform: 'uppercase', letterSpacing: 2, color: '#777b81', textAlign: 'center', fontWeight: '700' }}>
+                        Quoted from {meta.surahName} {meta.surahNumber}:{meta.ayahNumber}
+                      </Text>
                 {/* Arabic */}
                 <Text style={{
                   fontFamily: "Amiri", fontSize: 26, lineHeight: 52,
@@ -236,7 +367,7 @@ export default function QalbResultScreen() {
                   "{cleanModelText(verse.translation)}"
                 </Text>
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
-                  — {verse.verseKey}
+                  — {meta.surahName} ({meta.surahNumber}:{meta.ayahNumber})
                 </Text>
                 {/* Tafsir */}
                 {verse.tafsirSnippet ? (
@@ -249,6 +380,9 @@ export default function QalbResultScreen() {
                     </Text>
                   </View>
                 ) : null}
+                    </>
+                  );
+                })()}
               </View>
             ))}
           </View>

@@ -117,6 +117,9 @@ export default function QalbScreen() {
                 arabicText: verse.arabicText || '',
                 translation: verse.text || '',
                 tafsirSnippet: verse.tafsirSnippet || '',
+                surahName: verse.surahName || '',
+                surahNumber: verse.surahNumber || 0,
+                ayahNumber: verse.ayahNumber || 0,
               }))
             : [],
           hadith: Array.isArray(nextResult?.hadith) ? nextResult.hadith : [],
