@@ -24,6 +24,8 @@ packages/database/prisma/migrations/
 # IDE
 .idea/
 .vscode/
+.vscodegooglestitch/
+Brain/.vscodegooglestitch/
 *.swp
 *.swo
 
