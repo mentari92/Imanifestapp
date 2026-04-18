@@ -18,11 +18,10 @@ import { Public } from "../auth/public.decorator";
 import { RedisService } from "../common/redis.service";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-// Rate limit configuration — DISABLED for Hackathon
-const TEXT_RATE_LIMIT = 99999; 
-const VISION_RATE_LIMIT = 99999; 
+const TEXT_RATE_LIMIT = 10;
+const VISION_RATE_LIMIT = 5;
 const RATE_WINDOW_SECONDS = 3600;
 
 @Controller("iman-sync")
@@ -33,10 +32,6 @@ export class ImanSyncController {
     private readonly redis: RedisService,
   ) {}
 
-  /**
-   * Check rate limit using Redis counter.
-   * Graceful degradation: if Redis unavailable, allow request through.
-   */
   private async checkRateLimit(
     userId: string,
     endpoint: string,
@@ -45,14 +40,12 @@ export class ImanSyncController {
     const key = `rate:iman-sync:${endpoint}:${userId}`;
     const count = await this.redis.incr(key, RATE_WINDOW_SECONDS);
 
-    // If Redis is unavailable, count will be 0 — allow request
     if (count === 0) return;
-
     if (count > maxRequests) {
       throw new HttpException(
         {
           statusCode: 429,
-          message: `Rate limit exceeded. You can make at most ${maxRequests} ${endpoint} requests per hour. Please try again later.`,
+          message: `Rate limit exceeded. Max ${maxRequests} ${endpoint} requests per hour.`,
           error: "Too Many Requests",
         },
         HttpStatus.TOO_MANY_REQUESTS,
@@ -63,7 +56,6 @@ export class ImanSyncController {
   @Public()
   @Post("quick-search")
   async quickSearch(
-    @Request() req: { user?: { userId: string } },
     @Body("text") text: string,
   ) {
     if (!text?.trim()) return { verses: [] };
@@ -91,9 +83,7 @@ export class ImanSyncController {
           cb(null, true);
         } else {
           cb(
-            new BadRequestException(
-              "Invalid file type. Only JPG and PNG images are allowed.",
-            ),
+            new BadRequestException("Invalid file type. Only JPG and PNG images are allowed."),
             false,
           );
         }

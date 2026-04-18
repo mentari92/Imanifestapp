@@ -43,11 +43,12 @@ export class DuaToDoService {
         verses = (manifestation.verses as { verseKey: string; translation: string }[]) || [];
         quranApiKey = manifestation.user?.quranApiKey || "";
       } else {
-        this.logger.warn(
-          `Manifestation ${manifestationId} not found in DB — generating tasks with default intent`,
-        );
+        throw new NotFoundException("Manifestation not found");
       }
     } catch (err: any) {
+      if (err instanceof NotFoundException) {
+        throw err;
+      }
       this.logger.warn(
         `DB lookup failed (demo mode): ${err?.message} — generating tasks with default intent`,
       );

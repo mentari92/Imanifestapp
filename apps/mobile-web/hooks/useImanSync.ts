@@ -1,119 +1,124 @@
-import { useState, useCallback } from "react";
-import { api } from "../lib/api";
-import type { ImanSyncAnalyzeResponse } from "@imanifest/shared";
+import { useState, useCallback } from 'react';
+import { apiPost, apiGet } from '../lib/api';
 
-interface UseImanSyncReturn {
-  /** Analysis result from the server */
-  result: ImanSyncAnalyzeResponse | null;
-  /** Loading state */
-  isLoading: boolean;
-  /** Error message if analysis failed */
-  error: string | null;
-  /** Trigger text analysis */
-  analyze: (intentText: string) => Promise<void>;
-  /** Real-time verse discovery */
-  quickSearch: (text: string) => Promise<any[]>;
-  /** Trigger vision analysis (image + text) */
-  analyzeVision: (intentText: string, imageBase64: string, imageUri?: string) => Promise<void>;
-  /** Reset state to initial */
-  reset: () => void;
+interface Verse {
+  number: number;
+  text: string;
+  surahName: string;
+  surahNumber: number;
+  ayahNumber: number;
 }
 
-export function useImanSync(): UseImanSyncReturn {
-  const [result, setResult] = useState<ImanSyncAnalyzeResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+interface ImanSyncResult {
+  id: string;
+  sentiment: 'positive' | 'neutral' | 'negative';
+  verses: Verse[];
+  suggestedActions: string[];
+  encouragement: string;
+  createdAt: string;
+}
+
+interface RawVerse {
+  verseKey: string;
+  arabicText: string;
+  translation: string;
+  tafsirSnippet: string;
+}
+
+interface AnalyzeResponse {
+  manifestationId: string;
+  verses: RawVerse[];
+  aiSummary: string;
+  tasks: string[];
+}
+
+interface HistoryItem extends ImanSyncResult {
+  text: string;
+  type: 'text' | 'voice';
+}
+
+interface HistoryResponse {
+  data: HistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export function useImanSync() {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ImanSyncResult | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
 
-  const analyze = useCallback(async (intentText: string) => {
-    setIsLoading(true);
+  const mapVerse = (verse: RawVerse): Verse => {
+    const [surahPart, ayahPart] = String(verse.verseKey || '').split(':');
+    const surahNumber = Number(surahPart) || 0;
+    const ayahNumber = Number(ayahPart) || 0;
+
+    return {
+      number: 0,
+      text: verse.translation || '',
+      surahName: `Surah ${surahNumber || '?'}`,
+      surahNumber,
+      ayahNumber,
+    };
+  };
+
+  const analyzeIntention = useCallback(async (text: string) => {
+    setLoading(true);
     setError(null);
-    setResult(null);
-
     try {
-      const response = await api.post<ImanSyncAnalyzeResponse>(
-        "/iman-sync/analyze",
-        { intentText },
+      const response = await apiPost<AnalyzeResponse>(
+        '/iman-sync/analyze',
+        { intentText: text },
       );
-      setResult(response.data);
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Try again.";
+
+      const mapped: ImanSyncResult = {
+        id: response.manifestationId,
+        sentiment: 'neutral',
+        verses: Array.isArray(response.verses)
+          ? response.verses.map(mapVerse)
+          : [],
+        suggestedActions: Array.isArray(response.tasks) ? response.tasks : [],
+        encouragement: response.aiSummary || '',
+        createdAt: new Date().toISOString(),
+      };
+
+      setResult(mapped);
+      return mapped;
+    } catch (err: any) {
+      const message = err.message || 'Failed to analyze intention';
       setError(message);
+      throw err;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
-  const quickSearch = useCallback(async (text: string) => {
-    try {
-      const response = await api.post<{ verses: any[] }>("/iman-sync/quick-search", { text });
-      return response.data.verses;
-    } catch (err) {
-      console.error("Quick search failed", err);
-      return [];
-    }
-  }, []);
-
-  const analyzeVision = useCallback(
-    async (intentText: string, imageBase64: string, imageUri?: string) => {
-      setIsLoading(true);
+  const fetchHistory = useCallback(
+    async (page = 1, limit = 10) => {
+      setLoading(true);
       setError(null);
-      setResult(null);
-
       try {
-        // Detect MIME type from URI extension
-        let mimeType = "image/jpeg";
-        if (imageUri) {
-          const ext = imageUri.toLowerCase().split(".").pop()?.split("?")[0];
-          if (ext === "png") mimeType = "image/png";
-        }
-
-        const formData = new FormData();
-        formData.append("intentText", intentText);
-
-        // Create a blob from base64 for multipart upload
-        const byteCharacters = atob(imageBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mimeType });
-        const extension = mimeType === "image/png" ? "png" : "jpg";
-        formData.append("image", blob, `image.${extension}`);
-
-        const response = await api.post<ImanSyncAnalyzeResponse>(
-          "/iman-sync/analyze-vision",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-            timeout: 15000,
-          },
-        );
-
-        setResult(response.data);
-      } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : "Vision analysis failed. Try again.";
+        setHistory([]);
+        return [];
+      } catch (err: any) {
+        const message = err.message || 'Failed to fetch history';
         setError(message);
+        throw err;
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     },
     [],
   );
 
-  const reset = useCallback(() => {
-    setResult(null);
-    setError(null);
-    setIsLoading(false);
-  }, []);
-
-  return { result, isLoading, error, analyze, quickSearch, analyzeVision, reset };
+  return {
+    loading,
+    error,
+    result,
+    history,
+    analyzeIntention,
+    fetchHistory,
+  };
 }

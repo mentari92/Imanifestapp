@@ -1,369 +1,354 @@
-import { useState, useRef } from "react";
-import { Heart } from "lucide-react-native";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
-  TouchableOpacity,
   TextInput,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { api } from "../../lib/api";
-
-const glass = (radius = 28) => ({
-  backgroundColor: "rgba(255,255,255,0.6)",
-  borderRadius: radius,
-  borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.2)",
-  ...(Platform.OS === "web"
-    ? ({
-        backdropFilter: "blur(24px) saturate(140%)",
-        WebkitBackdropFilter: "blur(24px) saturate(140%)",
-      } as any)
-    : {}),
-});
-
-const SENTIMENTS = [
-  { label: "Hopeful", color: "#524f63" },
-  { label: "Peaceful", color: "#65515d" },
-  { label: "Grounded", color: "#0e6030" },
-  { label: "Anxious", color: "#5b5f65" },
-  { label: "Seeking", color: "#524f63" },
-  { label: "Grateful", color: "#65515d" },
-];
+  Alert,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeartPulse } from '../../hooks/useHeartPulse';
+import { LoadingSpinner } from '../../components/shared/LoadingSpinner';
+import { ErrorMessage } from '../../components/shared/ErrorMessage';
+import { colors } from '../../constants/theme';
 
 export default function QalbScreen() {
   const router = useRouter();
-  const [note, setNote] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const insets = useSafeAreaInsets();
+  const { loading, error, result, streak, analyzeEntry, fetchStreak } =
+    useHeartPulse();
+  const [journalText, setJournalText] = useState('');
 
-  const startVoice = () => {
-    if (Platform.OS !== "web") return;
-    setError(null);
-    setNotice(null);
-    try {
-      const SR =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
-      if (!SR) {
-        setError("Voice not supported in this browser. Please type below.");
-        return;
-      }
-      const recognition = new SR();
-      recognition.lang = navigator.language || "en-US";
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognitionRef.current = recognition;
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setNote((prev) => (prev ? prev + " " + transcript : transcript));
-        setIsRecording(false);
-      };
-      recognition.onerror = () => setIsRecording(false);
-      recognition.onend = () => setIsRecording(false);
-      setIsRecording(true);
-      recognition.start();
-    } catch {
-      setIsRecording(false);
-      setError("Voice recording failed. Please type your reflection below.");
-    }
-  };
+  useEffect(() => {
+    fetchStreak();
+  }, []);
 
-  const stopVoice = () => {
-    recognitionRef.current?.stop();
-    setIsRecording(false);
-  };
-
-  const submit = async (text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed) {
-      setError("Please share what's in your heart before seeking guidance.");
+  const handleSubmit = async () => {
+    if (!journalText.trim()) {
+      Alert.alert('Please write how you feel in your heart');
       return;
     }
-
-    setError(null);
-    setNotice(null);
-    setLoading(true);
-
     try {
-      const [reflectRes, versesRes] = await Promise.allSettled([
-        api.post(
-          "/heart-pulse/reflect",
-          { transcriptText: trimmed },
-          { timeout: 18000 },
-        ),
-        api.post(
-          "/iman-sync/quick-search",
-          { text: trimmed },
-          { timeout: 14000 },
-        ),
-      ]);
+      const nextResult = await analyzeEntry(journalText.trim());
 
-      const reflectData = reflectRes.status === "fulfilled" ? reflectRes.value?.data : null;
-      const verseData = versesRes.status === "fulfilled" ? versesRes.value?.data : null;
-
-      const aiSummary = reflectData?.aiInsight
-        ? [
-            reflectData.aiInsight.spiritual,
-            reflectData.aiInsight.tafsir,
-            reflectData.aiInsight.scientific,
-          ]
-            .filter(Boolean)
-            .join("\n\n")
-        : "Allah hears every sincere heart. Keep striving with ikhtiar, deepen your dua, and guard your heart with dhikr.";
-
-      const payload = {
-        manifestationId: "qalb-response",
-        aiSummary,
-        verses: Array.isArray(verseData?.verses) ? verseData.verses : [],
-      };
-
-      if (typeof sessionStorage !== "undefined") {
-        sessionStorage.setItem("qalb_result", JSON.stringify(payload));
-      }
-
-      if (reflectRes.status !== "fulfilled") {
-        setNotice("AI is temporarily busy, showing a relevant fallback guidance.");
+      if (typeof sessionStorage !== 'undefined') {
+        const serialized = {
+          aiSummary: nextResult?.advice || '',
+          verses: Array.isArray(nextResult?.verses)
+            ? nextResult.verses.map((verse) => ({
+                verseKey: `${verse.surahNumber}:${verse.ayahNumber}`,
+                arabicText: '',
+                translation: verse.text || '',
+                tafsirSnippet: '',
+              }))
+            : [],
+        };
+        sessionStorage.setItem('qalb_result', JSON.stringify(serialized));
       }
 
       router.push({
-        pathname: "/qalb-result",
+        pathname: '/qalb-result',
         params: {
-          userText: trimmed,
-          sentiment: reflectData?.sentiment || selected || "",
+          userText: journalText.trim(),
+          sentiment: nextResult?.emotion || '',
         },
       });
-    } catch {
-      setNotice("AI is busy, showing fallback guidance.");
-      const fallback = {
-        manifestationId: "demo",
-        aiSummary:
-          "Allah SWT hears every sincere dua. With every hardship comes ease (QS 94:5-6). " +
-          "Take one small step today, then continue with consistent ikhtiar.",
-        verses: [
-          {
-            verseKey: "94:5",
-            arabicText: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
-            translation: "For indeed, with hardship will be ease.",
-            tafsirSnippet: "Allah promises that alongside every difficulty there is ease.",
-          },
-          {
-            verseKey: "13:28",
-            arabicText: "أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ",
-            translation: "Verily, in the remembrance of Allah do hearts find rest.",
-            tafsirSnippet: "Peace of heart grows when we consciously remember Allah.",
-          },
-        ],
-      };
-      if (typeof sessionStorage !== "undefined") {
-        sessionStorage.setItem("qalb_result", JSON.stringify(fallback));
-      }
-      router.push({
-        pathname: "/qalb-result",
-        params: { userText: trimmed, sentiment: selected || "" },
-      });
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      // Error handled in hook
     }
   };
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 120 }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Holographic blobs */}
-      <View
-        pointerEvents="none"
-        style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: -1 } as any}
+      <ScrollView
+        style={[styles.scrollView, { paddingTop: insets.top }]}
+        keyboardShouldPersistTaps="handled"
       >
-        <View
-          style={{
-            position: "absolute", top: "-10%", left: "-10%",
-            width: "60%", height: "60%",
-            backgroundColor: "#e5dff8", borderRadius: 9999, opacity: 0.4,
-            ...(Platform.OS === "web" ? ({ filter: "blur(80px)" } as any) : {}),
-          } as any}
-        />
-        <View
-          style={{
-            position: "absolute", bottom: "-10%", right: "-10%",
-            width: "50%", height: "50%",
-            backgroundColor: "#ffe4f2", borderRadius: 9999, opacity: 0.4,
-            ...(Platform.OS === "web" ? ({ filter: "blur(80px)" } as any) : {}),
-          } as any}
-        />
-      </View>
-
-      {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 24, paddingVertical: 16,
-          flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-          backgroundColor: "rgba(255,255,255,0.6)",
-          ...(Platform.OS === "web"
-            ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)" } as any)
-            : {}),
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#fce7f3", alignItems: "center", justifyContent: "center" }}>
-            <Heart size={20} color="#be185d" strokeWidth={1.8} />
-          </View>
-          <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>
-            Qalb
-          </Text>
-        </View>
-        <TouchableOpacity style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontSize: 22 }}>🔔</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 32, maxWidth: 680, alignSelf: "center", width: "100%" }}>
-        {/* Hero */}
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontFamily: "Newsreader", fontSize: 38, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 46 }}>
-            A Sanctuary for your Spiritual Voice
-          </Text>
-          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#5b5f65", lineHeight: 20 }}>
-            Share what weighs on your heart. Receive guidance from the Quran and wisdom of the Prophet ﷺ.
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>💚 Qalb</Text>
+          <Text style={styles.subtitle}>
+            Pour your heart out, and receive spiritual guidance from the Quran
           </Text>
         </View>
 
-        {/* How are you feeling? */}
-        <View style={{ gap: 12 }}>
-          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
-            How are you feeling?
-          </Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {SENTIMENTS.map((s) => (
-              <TouchableOpacity
-                key={s.label}
-                onPress={() => setSelected(selected === s.label ? null : s.label)}
-                style={{
-                  paddingHorizontal: 16, paddingVertical: 8, borderRadius: 9999,
-                  backgroundColor: selected === s.label ? s.color : "rgba(255,255,255,0.6)",
-                  borderWidth: 1,
-                  borderColor: selected === s.label ? s.color : "rgba(174,178,185,0.3)",
-                }}
-              >
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "600", color: selected === s.label ? "#fff" : s.color }}>
-                  {s.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Main Input */}
-        <View style={{ gap: 12 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
-              Share your reflection
-            </Text>
-            <TouchableOpacity
-              onPress={isRecording ? stopVoice : startVoice}
-              style={{
-                flexDirection: "row", alignItems: "center", gap: 6,
-                paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9999,
-                backgroundColor: isRecording ? "#be185d" : "rgba(255,255,255,0.7)",
-                borderWidth: 1, borderColor: isRecording ? "#be185d" : "rgba(174,178,185,0.4)",
-              }}
-            >
-              <Text style={{ fontSize: 14 }}>{isRecording ? "⏹" : "🎙️"}</Text>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: isRecording ? "#fff" : "#524f63" }}>
-                {isRecording ? "Stop" : "Voice"}
+        {/* Streak Card */}
+        {streak && (
+          <View style={styles.streakCard}>
+            <Text style={styles.streakEmoji}>🔥</Text>
+            <View>
+              <Text style={styles.streakNumber}>
+                {streak.currentStreak} Day Streak
               </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={[glass(24), { padding: 20, minHeight: 160 }]}>
-            {isRecording ? (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "rgba(190,24,93,0.2)" }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#be185d" }} />
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#be185d", fontWeight: "600" }}>
-                  Listening... speak clearly
-                </Text>
-              </View>
-            ) : null}
-            <TextInput
-              value={note}
-              onChangeText={setNote}
-              multiline
-              placeholder="Write or speak what is in your heart... What worries you? What do you hope for?"
-              placeholderTextColor="rgba(91,95,101,0.45)"
-              style={{
-                fontFamily: "Noto Serif", fontSize: 16, fontStyle: "italic",
-                color: "#2f3338", minHeight: 120, textAlignVertical: "top", lineHeight: 28,
-                ...(Platform.OS === "web" ? ({ outline: "none" } as any) : {}),
-              }}
-            />
-            <View style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 8 }}>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "rgba(91,95,101,0.4)" }}>
-                {note.length}/500
+              <Text style={styles.streakSubtext}>
+                Best: {streak.longestStreak} days
               </Text>
             </View>
           </View>
+        )}
+
+        {/* Input */}
+        <View style={styles.inputSection}>
+          <Text style={styles.inputLabel}>How does your heart feel today?</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Write your thoughts, feelings, or struggles..."
+            placeholderTextColor={colors.textSecondary}
+            value={journalText}
+            onChangeText={setJournalText}
+            multiline
+            numberOfLines={5}
+            textAlignVertical="top"
+          />
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              loading && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Text style={styles.submitButtonText}>
+              {loading ? 'Receiving Guidance...' : '✨ Receive Guidance'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Error */}
-        {error ? (
-          <View style={[glass(16), { padding: 16, backgroundColor: "rgba(254,202,202,0.4)" }]}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#991b1b" }}>{error}</Text>
-          </View>
-        ) : null}
+        {error && <ErrorMessage message={error} />}
 
-        {notice ? (
-          <View style={[glass(16), { padding: 16, backgroundColor: "rgba(187,247,208,0.45)" }]}> 
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#166534" }}>{notice}</Text>
-          </View>
-        ) : null}
+        {/* Loading */}
+        {loading && (
+          <LoadingSpinner message="Analyzing your feelings with AI..." />
+        )}
 
-        {/* Submit */}
-        <TouchableOpacity
-          onPress={() => submit(note)}
-          disabled={loading}
-          activeOpacity={0.85}
-          style={{
-            backgroundColor: loading ? "rgba(22,101,52,0.5)" : "#166534",
-            paddingVertical: 20, paddingHorizontal: 32, borderRadius: 9999,
-            flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12,
-            shadowColor: "#166534", shadowOpacity: 0.2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
-          }}
-        >
-          {loading ? (
-            <>
-              <ActivityIndicator color="#fff" size="small" />
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: "#fff" }}>
-                Seeking Guidance...
+        {/* Result */}
+        {result && !loading && (
+          <View style={styles.resultSection}>
+            {/* Sentiment */}
+            <View
+              style={[
+                styles.sentimentBadge,
+                {
+                  backgroundColor:
+                    result.sentiment === 'positive'
+                      ? colors.success + '20'
+                      : result.sentiment === 'negative'
+                        ? colors.error + '20'
+                        : colors.warning + '20',
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.sentimentText,
+                  {
+                    color:
+                      result.sentiment === 'positive'
+                        ? colors.success
+                        : result.sentiment === 'negative'
+                          ? colors.error
+                          : colors.warning,
+                  },
+                ]}
+              >
+                {result.sentiment === 'positive'
+                  ? '😊 Peaceful'
+                  : result.sentiment === 'negative'
+                    ? '😔 Troubled'
+                    : '😌 Calm'}{' '}
+                - Feeling {result.emotion}
               </Text>
-            </>
-          ) : (
-            <>
-              <Text style={{ fontSize: 18 }}>✨</Text>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: "#fff" }}>
-                Receive Guidance
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
+            </View>
 
-        {/* Streak pill */}
-        <View style={[glass(9999), { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 24, paddingVertical: 12, alignSelf: "center" }]}>
-          <Text style={{ fontSize: 18 }}>⭐</Text>
-          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 16, fontWeight: "700", color: "#6d5965" }}>12 Days</Text>
-          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#5b5f65" }}>Reflection Streak</Text>
-        </View>
-      </View>
-    </ScrollView>
+            {/* Advice */}
+            <View style={styles.adviceCard}>
+              <Text style={styles.adviceLabel}>💭 Spiritual Advice</Text>
+              <Text style={styles.adviceText}>{result.advice}</Text>
+            </View>
+
+            {/* Verses */}
+            {result.verses && result.verses.length > 0 && (
+              <View style={styles.versesSection}>
+                <Text style={styles.sectionTitle}>
+                  📖 Healing Verses for You
+                </Text>
+                {result.verses.map((verse, index) => (
+                  <View key={verse.number || index} style={styles.verseCard}>
+                    <Text style={styles.verseText}>"{verse.text}"</Text>
+                    <Text style={styles.verseRef}>
+                      {verse.surahName} {verse.surahNumber}:{verse.ayahNumber}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
+
+const styles = {
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  header: {
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    color: colors.text,
+    fontFamily: 'Inter-Bold',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+    lineHeight: 20,
+    fontFamily: 'Inter-Regular',
+  },
+  streakCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  streakEmoji: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  streakNumber: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: colors.text,
+    fontFamily: 'Inter-Bold',
+  },
+  streakSubtext: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontFamily: 'Inter-Regular',
+  },
+  inputSection: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginBottom: 8,
+    fontFamily: 'Inter-SemiBold',
+  },
+  textInput: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text,
+    minHeight: 140,
+    fontFamily: 'Inter-Regular',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  submitButton: {
+    backgroundColor: colors.success,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 12,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600' as const,
+    fontFamily: 'Inter-SemiBold',
+  },
+  resultSection: {
+    marginBottom: 24,
+  },
+  sentimentBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignSelf: 'flex-start' as const,
+    marginBottom: 16,
+  },
+  sentimentText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    fontFamily: 'Inter-SemiBold',
+  },
+  adviceCard: {
+    backgroundColor: colors.success + '15',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  adviceLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.success,
+    marginBottom: 8,
+    fontFamily: 'Inter-SemiBold',
+  },
+  adviceText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text,
+    fontFamily: 'Inter-Regular',
+  },
+  versesSection: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginBottom: 12,
+    fontFamily: 'Inter-SemiBold',
+  },
+  verseCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.success,
+  },
+  verseText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text,
+    fontStyle: 'italic' as const,
+    fontFamily: 'Inter-Regular',
+    marginBottom: 8,
+  },
+  verseRef: {
+    fontSize: 13,
+    color: colors.success,
+    fontWeight: '500' as const,
+    fontFamily: 'Inter-Medium',
+  },
+};

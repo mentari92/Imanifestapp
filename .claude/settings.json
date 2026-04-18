@@ -20,7 +20,14 @@
       "WebFetch(domain:www.mcpcurator.com)",
       "WebFetch(domain:skywork.ai)",
       "Bash(git -C /Users/mentarirahman/Documents/Imanifestapp add apps/server/src/common/zhipu.service.ts .claude/settings.json)",
-      "Bash(git -C /Users/mentarirahman/Documents/Imanifestapp commit -m ' *)"
+      "Bash(git -C /Users/mentarirahman/Documents/Imanifestapp commit -m ' *)",
+      "Bash(pnpm --filter @imanifest/server add @modelcontextprotocol/sdk)",
+      "Bash(rtk npx *)",
+      "Bash(node_modules/.bin/pnpm --version)",
+      "Bash(/Users/mentarirahman/Library/pnpm/pnpm --filter @imanifest/server add @modelcontextprotocol/sdk)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(k,'->',v.get\\('require',''\\) or v.get\\('import',''\\)\\) for k,v in d.get\\('exports',{}\\).items\\(\\) if isinstance\\(v,dict\\)]\")",
+      "Bash(ssh root@207.180.242.151 \"cd /root/imanifestapp && git pull && docker compose build --no-cache api && docker compose up -d api\")",
+      "Bash(ssh -i ~/.ssh/id_rsa -o ConnectTimeout=10 -o StrictHostKeyChecking=no root@207.180.242.151 \"echo connected && whoami\")"
     ]
   }
 }

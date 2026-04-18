@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "../auth/auth.guard";
+import { Public } from "../auth/public.decorator";
 import { HeartPulseService } from "./heart-pulse.service";
 
 const ALLOWED_AUDIO_MIME_TYPES = [
@@ -22,7 +23,7 @@ const ALLOWED_AUDIO_MIME_TYPES = [
   "audio/mp4",
   "audio/x-m4a",
 ];
-const MAX_AUDIO_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
 const MAX_TRANSCRIPT_LENGTH = 5000;
 
 @Controller("heart-pulse")
@@ -30,25 +31,32 @@ const MAX_TRANSCRIPT_LENGTH = 5000;
 export class HeartPulseController {
   constructor(private readonly heartPulseService: HeartPulseService) {}
 
-  /** Text-based reflection */
+  private resolveUserId(req: { user?: { userId: string } }): string {
+    return req.user?.userId ?? "demo-user-123";
+  }
+
+  @Public()
   @Post("reflect")
   async reflectText(
-    @Request() req: { user: { userId: string } },
+    @Request() req: { user?: { userId: string } },
     @Body() body: { transcriptText: string },
   ) {
     if (!body.transcriptText?.trim()) {
       throw new BadRequestException("transcriptText is required");
     }
     if (body.transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
-      throw new BadRequestException(`transcriptText must be ${MAX_TRANSCRIPT_LENGTH} characters or less`);
+      throw new BadRequestException(
+        `transcriptText must be ${MAX_TRANSCRIPT_LENGTH} characters or less`,
+      );
     }
+
     return this.heartPulseService.reflectText(
-      req.user.userId,
+      this.resolveUserId(req),
       body.transcriptText.trim(),
     );
   }
 
-  /** Voice-based reflection */
+  @Public()
   @Post("reflect-voice")
   @UseInterceptors(
     FileInterceptor("audio", {
@@ -68,7 +76,7 @@ export class HeartPulseController {
     }),
   )
   async reflectVoice(
-    @Request() req: { user: { userId: string } },
+    @Request() req: { user?: { userId: string } },
     @Body("transcriptText") transcriptText: string,
     @UploadedFile() file?: any,
   ) {
@@ -76,7 +84,9 @@ export class HeartPulseController {
       throw new BadRequestException("transcriptText is required");
     }
     if (transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
-      throw new BadRequestException(`transcriptText must be ${MAX_TRANSCRIPT_LENGTH} characters or less`);
+      throw new BadRequestException(
+        `transcriptText must be ${MAX_TRANSCRIPT_LENGTH} characters or less`,
+      );
     }
     if (!file) {
       throw new BadRequestException("Audio file is required");
@@ -84,25 +94,21 @@ export class HeartPulseController {
 
     const audioPath = `voice:${Date.now()}`;
     return this.heartPulseService.reflectVoice(
-      req.user.userId,
+      this.resolveUserId(req),
       audioPath,
       transcriptText.trim(),
     );
   }
 
-  /** Get reflection history + streak */
+  @Public()
   @Get("history")
-  async getHistory(@Request() req: { user: { userId: string } }) {
-    return this.handleHistory(req.user.userId);
+  async getHistory(@Request() req: { user?: { userId: string } }) {
+    return this.heartPulseService.getHistory(this.resolveUserId(req));
   }
 
-  /** Get reflection history + streak (POST — legacy alias) */
+  @Public()
   @Post("history")
-  async getHistoryPost(@Request() req: { user: { userId: string } }) {
-    return this.handleHistory(req.user.userId);
-  }
-
-  private handleHistory(userId: string) {
-    return this.heartPulseService.getHistory(userId);
+  async getHistoryPost(@Request() req: { user?: { userId: string } }) {
+    return this.heartPulseService.getHistory(this.resolveUserId(req));
   }
 }

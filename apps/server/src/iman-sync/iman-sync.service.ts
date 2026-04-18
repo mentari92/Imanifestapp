@@ -17,17 +17,8 @@ export interface AnalyzeVisionResult extends AnalyzeResult {
   imagePath: string;
 }
 
-const CACHE_TTL = 3600; // 1 hour
+const CACHE_TTL = 3600;
 
-/**
- * ImanSync service — orchestrates text and vision analysis flows:
- * 1. Check Redis cache for existing result (text only)
- * 2. Extract themes from intent via GLM-5 / GLM-5V
- * 3. Search Quran verses matching themes
- * 4. Generate AI summary via GLM-5
- * 5. Save to Manifestation table
- * 6. Cache result in Redis (text only)
- */
 @Injectable()
 export class ImanSyncService {
   private readonly logger = new Logger(ImanSyncService.name);
@@ -39,10 +30,6 @@ export class ImanSyncService {
     private readonly redis: RedisService,
   ) {}
 
-  /**
-   * Quick search for real-time verse discovery.
-   * Uses fast AI theme extraction and lite Quran search without tafsir calls.
-   */
   async quickSearch(text: string): Promise<{ verses: VerseResult[] }> {
     try {
       const themes = await this.zhipu.extractThemes(text.substring(0, 140));
@@ -62,9 +49,6 @@ export class ImanSyncService {
     return createHash("sha256").update(text.trim().toLowerCase()).digest("hex");
   }
 
-  /**
-   * Search Quran verses for given themes, returning up to 3 unique results.
-   */
   private async searchVersesForThemes(themes: string[]): Promise<VerseResult[]> {
     this.logger.log(`Searching Quran verses for themes: ${themes.join(", ")}`);
 
@@ -92,9 +76,6 @@ export class ImanSyncService {
     return allVerses;
   }
 
-  /**
-   * Shared pipeline: generate summary, save manifestation, build result.
-   */
   private async buildAndSaveManifestation(params: {
     userId: string;
     intentText: string;
@@ -103,15 +84,19 @@ export class ImanSyncService {
   }): Promise<{ manifestationId: string; verses: VerseResult[]; aiSummary: string; tasks: string[] }> {
     const { userId, intentText, verses, imagePath } = params;
 
-    // Generate AI summary + actionable tasks in parallel
     this.logger.log("Generating AI summary and tasks...");
-    const versesForAI = verses.map((v) => ({ verseKey: v.verseKey, translation: v.translation }));
+    const versesForAI = verses.map((v) => ({
+      verseKey: v.verseKey,
+      translation: v.translation,
+    }));
+
     const [aiSummary, tasks] = await Promise.all([
       this.zhipu.generateSummary(intentText, versesForAI),
-      this.zhipu.generateTasks(intentText, versesForAI),
+      typeof (this.zhipu as any).generateTasks === "function"
+        ? (this.zhipu as any).generateTasks(intentText, versesForAI)
+        : Promise.resolve([]),
     ]);
 
-    // Try to save to DB, fallback to in-memory ID
     let manifestationId: string;
     try {
       const manifestation = await this.prisma.manifestation.create({
@@ -127,19 +112,17 @@ export class ImanSyncService {
       this.logger.log(`Saved manifestation ${manifestationId}`);
     } catch (dbErr: any) {
       manifestationId = `demo-manifest-${Date.now()}`;
-      this.logger.warn(`DB save failed (demo mode): ${dbErr?.message}. Using in-memory ID: ${manifestationId}`);
+      this.logger.warn(
+        `DB save failed (demo mode): ${dbErr?.message}. Using in-memory ID: ${manifestationId}`,
+      );
     }
 
     return { manifestationId, verses, aiSummary, tasks };
   }
 
-  /**
-   * Full ImanSync text analysis pipeline with caching.
-   * Target: < 8 seconds response time, < 200ms on cache hit.
-   */
   async analyze(userId: string, dto: AnalyzeDto): Promise<AnalyzeResult> {
-    // Check cache first — include userId to ensure data isolation
     const cacheKey = `iman-sync:cache:${userId}:${this.hashText(dto.intentText)}`;
+
     try {
       const cached = await this.redis.get(cacheKey);
       if (cached) {
@@ -147,20 +130,19 @@ export class ImanSyncService {
         return JSON.parse(cached) as AnalyzeResult;
       }
     } catch (err) {
-      this.logger.warn("Cache read failed — continuing with full pipeline", err instanceof Error ? err.message : err);
+      this.logger.warn(
+        "Cache read failed - continuing with full pipeline",
+        err instanceof Error ? err.message : err,
+      );
     }
 
     const startTime = Date.now();
-
-    // Step 1: Extract spiritual themes from intent text
     this.logger.log(`Extracting themes for user ${userId}`);
+
     const themes = await this.zhipu.extractThemes(dto.intentText);
     this.logger.log(`Themes extracted: ${themes.join(", ")}`);
 
-    // Step 2: Search Quran verses
     const allVerses = await this.searchVersesForThemes(themes);
-
-    // Step 3+4: Generate summary + save manifestation
     const result = await this.buildAndSaveManifestation({
       userId,
       intentText: dto.intentText,
@@ -168,23 +150,21 @@ export class ImanSyncService {
     });
 
     const elapsed = Date.now() - startTime;
-    this.logger.log(`Analysis complete in ${elapsed}ms — manifestation ${result.manifestationId}`);
+    this.logger.log(`Analysis complete in ${elapsed}ms - manifestation ${result.manifestationId}`);
 
-    // Cache the result
     try {
       await this.redis.set(cacheKey, JSON.stringify(result), CACHE_TTL);
       this.logger.log(`Cached result for key: ${cacheKey.substring(0, 30)}...`);
     } catch (err) {
-      this.logger.warn("Cache write failed — non-critical", err instanceof Error ? err.message : err);
+      this.logger.warn(
+        "Cache write failed - non-critical",
+        err instanceof Error ? err.message : err,
+      );
     }
 
     return result;
   }
 
-  /**
-   * ImanSync vision analysis pipeline — image + text via GLM-5V.
-   * Target: < 12 seconds response time.
-   */
   async analyzeVision(
     userId: string,
     intentText: string,
@@ -192,9 +172,9 @@ export class ImanSyncService {
     mimeType: string,
     imagePath: string,
   ): Promise<AnalyzeVisionResult> {
-    // Check cache for vision analysis too
     const visionHash = this.hashText(`${intentText}:${imageBase64}`);
     const cacheKey = `iman-sync:vision:${userId}:${visionHash}`;
+
     try {
       const cached = await this.redis.get(cacheKey);
       if (cached) {
@@ -202,20 +182,19 @@ export class ImanSyncService {
         return JSON.parse(cached) as AnalyzeVisionResult;
       }
     } catch (err) {
-      this.logger.warn("Vision cache read failed — continuing with full pipeline", err instanceof Error ? err.message : err);
+      this.logger.warn(
+        "Vision cache read failed - continuing with full pipeline",
+        err instanceof Error ? err.message : err,
+      );
     }
 
     const startTime = Date.now();
-
-    // Step 1: Extract spiritual themes from image + text via GLM-5V
     this.logger.log(`Extracting vision themes for user ${userId}`);
+
     const themes = await this.zhipu.extractThemesVision(intentText, imageBase64, mimeType);
     this.logger.log(`Vision themes extracted: ${themes.join(", ")}`);
 
-    // Step 2: Search Quran verses
     const allVerses = await this.searchVersesForThemes(themes);
-
-    // Step 3+4: Generate summary + save manifestation
     const baseResult = await this.buildAndSaveManifestation({
       userId,
       intentText,
@@ -224,16 +203,18 @@ export class ImanSyncService {
     });
 
     const elapsed = Date.now() - startTime;
-    this.logger.log(`Vision analysis complete in ${elapsed}ms — manifestation ${baseResult.manifestationId}`);
+    this.logger.log(`Vision analysis complete in ${elapsed}ms - manifestation ${baseResult.manifestationId}`);
 
     const result = { ...baseResult, imagePath };
 
-    // Cache the vision result
     try {
       await this.redis.set(cacheKey, JSON.stringify(result), CACHE_TTL);
       this.logger.log(`Cached vision result for key: ${cacheKey.substring(0, 30)}...`);
     } catch (err) {
-      this.logger.warn("Vision cache write failed — non-critical", err instanceof Error ? err.message : err);
+      this.logger.warn(
+        "Vision cache write failed - non-critical",
+        err instanceof Error ? err.message : err,
+      );
     }
 
     return result;

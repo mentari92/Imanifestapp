@@ -1,113 +1,212 @@
-import { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
-} from "react-native";
-import { useAuth } from "../lib/auth";
-import { colors } from "../constants/theme";
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { useAuthStore } from '../lib/auth';
+import { colors } from '../constants/theme';
 
 export default function AuthScreen() {
-  const { login, register } = useAuth();
+  const { login, register, isLoading } = useAuthStore();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  async function handleSubmit() {
-    if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
-      return;
-    }
-    if (!isLogin && password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters");
+  const handleSubmit = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Please fill in all fields');
       return;
     }
 
-    setLoading(true);
     try {
       if (isLogin) {
-        await login(email, password);
+        await login(email.trim(), password.trim());
       } else {
-        await register(email, password, name || undefined);
+        if (!name.trim()) {
+          Alert.alert('Please enter your name');
+          return;
+        }
+        await register(name.trim(), email.trim(), password.trim());
       }
-    } catch (err: any) {
-      Alert.alert("Auth Error", err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
+    } catch (error: any) {
+      Alert.alert(
+        isLogin ? 'Login Failed' : 'Registration Failed',
+        error.message || 'Something went wrong',
+      );
     }
-  }
+  };
 
   return (
-    <View className="flex-1 bg-background px-screen-x py-screen-y justify-center">
-      <View className="bg-surface-card border border-border shadow-card rounded-[24px] p-6 backdrop-blur-md">
-        <Text className="font-display text-display-xl text-primary text-center mb-2 mt-4">
-        Imanifest
-      </Text>
-        <Text className="font-sans text-body-lg text-ink-secondary text-center mb-8 italic">
-          Turn your intention into action.
-        </Text>
-
-      {/* Name field (register only) */}
-      {!isLogin && (
-        <TextInput
-          className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-4 border border-surface"
-          placeholder="Full Name"
-          placeholderTextColor="#9896A9"
-          value={name}
-          onChangeText={setName}
-        />
-      )}
-
-      <TextInput
-        className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-4 border border-surface"
-        placeholder="Email"
-        placeholderTextColor={colors.ink.disabled}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-
-      <TextInput
-        className="bg-surface-input rounded-button px-4 py-3 font-sans text-body-md text-primary mb-6 border border-surface"
-        placeholder="Password"
-        placeholderTextColor={colors.ink.disabled}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <TouchableOpacity
-        className="bg-primary rounded-button py-4 items-center"
-        onPress={handleSubmit}
-        disabled={loading}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text className="font-sans text-label text-ink-inverse">
-            {isLogin ? "Sign In" : "Create Account"}
-          </Text>
-        )}
-      </TouchableOpacity>
+        {/* Logo / Brand */}
+        <View style={styles.brandSection}>
+          <Text style={styles.logo}>☪️</Text>
+          <Text style={styles.appName}>Imanifest</Text>
+          <Text style={styles.tagline}>Your Islamic Spiritual Companion</Text>
+        </View>
 
-        {/* Toggle Login/Register */}
-        <TouchableOpacity
-          className="mt-6 mb-4 items-center"
-          onPress={() => setIsLogin(!isLogin)}
-        >
-          <Text className="font-sans text-body-sm text-ink-secondary hover:text-primary">
-            {isLogin
-              ? "Don't have an account? Sign Up"
-              : "Already have an account? Sign In"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+        {/* Form */}
+        <View style={styles.form}>
+          {!isLogin && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Your name"
+                placeholderTextColor={colors.textSecondary}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
+          )}
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="your@email.com"
+              placeholderTextColor={colors.textSecondary}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textSecondary}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            <Text style={styles.buttonText}>
+              {isLoading
+                ? 'Please wait...'
+                : isLogin
+                  ? 'Sign In'
+                  : 'Create Account'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.switchButton}
+            onPress={() => setIsLogin(!isLogin)}
+          >
+            <Text style={styles.switchText}>
+              {isLogin
+                ? "Don't have an account? Sign Up"
+                : 'Already have an account? Sign In'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
+
+const styles = {
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  brandSection: {
+    alignItems: 'center' as const,
+    marginBottom: 40,
+  },
+  logo: {
+    fontSize: 64,
+    marginBottom: 12,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: '700' as const,
+    color: colors.primary,
+    fontFamily: 'Inter-Bold',
+  },
+  tagline: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontFamily: 'Inter-Regular',
+  },
+  form: {
+    width: '100%',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.text,
+    marginBottom: 6,
+    fontFamily: 'Inter-SemiBold',
+  },
+  input: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: colors.text,
+    fontFamily: 'Inter-Regular',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  button: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600' as const,
+    fontFamily: 'Inter-SemiBold',
+  },
+  switchButton: {
+    marginTop: 16,
+    alignItems: 'center' as const,
+  },
+  switchText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontFamily: 'Inter-Regular',
+  },
+};

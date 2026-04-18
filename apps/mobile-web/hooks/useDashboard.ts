@@ -1,55 +1,62 @@
-import { useState, useEffect, useCallback } from "react";
-import { api } from "../lib/api";
+import { useState, useCallback } from 'react';
+import { apiGet } from '../lib/api';
 
-interface DashboardStats {
-  totalManifestations: number;
-  totalTasks: number;
-  completedTasks: number;
-  currentStreak: number;
-}
-
-interface SentimentDay {
-  date: string;
-  sentiment: string;
-  score: number;
-}
-
-interface ManifestationItem {
-  id: string;
-  title: string;
-  createdAt: string;
-  taskTotal: number;
-  taskCompleted: number;
-  completionPct: number;
-}
-
-export interface DashboardData {
-  stats: DashboardStats;
-  sentiment7Days: SentimentDay[];
-  manifestations: ManifestationItem[];
+interface DashboardData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  stats: {
+    totalIntentions: number;
+    totalJournalEntries: number;
+    totalDuaTasks: number;
+    completedDuaTasks: number;
+    currentStreak: number;
+    longestStreak: number;
+  };
+  recentActivity: Array<{
+    id: string;
+    type: string;
+    title: string;
+    createdAt: string;
+  }>;
+  verseOfTheDay: {
+    number: number;
+    text: string;
+    surahName: string;
+    surahNumber: number;
+    ayahNumber: number;
+  } | null;
 }
 
 export function useDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
 
-  const fetchOverview = useCallback(async () => {
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-      const res = await api.get<DashboardData>("/dashboard/overview");
-      setData(res.data);
+      const response = await apiGet<{ data: DashboardData }>(
+        '/dashboard/overview',
+      );
+      setData(response.data);
+      return response.data;
     } catch (err: any) {
-      setError(err.message || "Failed to load dashboard");
+      const message = err.message || 'Failed to fetch dashboard';
+      setError(message);
+      throw err;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchOverview();
-  }, [fetchOverview]);
-
-  return { data, isLoading, error, refresh: fetchOverview };
+  return {
+    loading,
+    error,
+    data,
+    fetchDashboard,
+  };
 }

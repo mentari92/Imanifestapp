@@ -1,111 +1,68 @@
-import { Tabs } from "expo-router";
-import { View, TouchableOpacity, Platform, Text } from "react-native";
-import { LayoutGrid, Heart, Sparkles, ListChecks, Headphones } from "lucide-react-native";
-
-const TABS = [
-  { name: "index", icon: LayoutGrid, label: "Dashboard" },
-  { name: "qalb", icon: Heart, label: "Qalb" },
-  { name: "imanifest", icon: Sparkles, label: "Imanifest" },
-  { name: "dua-todo", icon: ListChecks, label: "Dua-to-Do" },
-  { name: "tafakkur", icon: Headphones, label: "Tafakkur" },
-];
-
-function GlassTabBar({ state, navigation }: any) {
-  return (
-    <View
-      style={{
-        position: "absolute",
-        bottom: 18,
-        left: 12,
-        right: 12,
-        flexDirection: "row",
-        justifyContent: "space-around",
-        alignItems: "center",
-        paddingHorizontal: 10,
-        paddingVertical: 10,
-        backgroundColor: "rgba(255,255,255,0.82)",
-        borderRadius: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 14 },
-        shadowOpacity: 0.08,
-        shadowRadius: 32,
-        elevation: 8,
-        borderWidth: 1,
-        borderColor: "rgba(255,255,255,0.35)",
-        ...(Platform.OS === "web"
-          ? ({
-              backdropFilter: "blur(24px) saturate(125%)",
-              WebkitBackdropFilter: "blur(24px) saturate(125%)",
-            } as any)
-          : {}),
-      }}
-    >
-      {state.routes.map((route: any, index: number) => {
-        const isFocused = state.index === index;
-        const Icon = TABS[index]?.icon ?? LayoutGrid;
-
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
-
-        return (
-          <TouchableOpacity
-            key={route.key}
-            onPress={onPress}
-            activeOpacity={0.7}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingVertical: 8,
-              borderRadius: 9999,
-              backgroundColor: isFocused ? "rgba(22,101,52,0.12)" : "transparent",
-            }}
-          >
-            <Icon
-              size={18}
-              color={isFocused ? "#166534" : "#64748b"}
-              strokeWidth={isFocused ? 2.2 : 1.5}
-            />
-            <View style={{ height: 4 }} />
-            <Text
-              style={{
-                fontSize: 10,
-                fontFamily: "Plus Jakarta Sans",
-                color: isFocused ? "#166534" : "#64748b",
-                fontWeight: isFocused ? "700" : "600",
-                letterSpacing: 0.2,
-              }}
-            >
-              {TABS[index]?.label ?? "Tab"}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
+import React from 'react';
+import { Tabs } from 'expo-router';
+import { colors } from '../../constants/theme';
 
 export default function TabLayout() {
   return (
     <Tabs
-      tabBar={(props) => <GlassTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          paddingBottom: 4,
+          paddingTop: 4,
+          height: 60,
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontFamily: 'Inter-Regular',
+        },
+      }}
     >
-      {TABS.map((tab) => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{ title: tab.label }}
-        />
-      ))}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <TabIcon icon="🏠" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="imanifest"
+        options={{
+          title: 'Imanifest',
+          tabBarIcon: ({ color }) => <TabIcon icon="✨" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="qalb"
+        options={{
+          title: 'Qalb',
+          tabBarIcon: ({ color }) => <TabIcon icon="💚" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="dua-todo"
+        options={{
+          title: 'Dua',
+          tabBarIcon: ({ color }) => <TabIcon icon="🤲" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="tafakkur"
+        options={{
+          title: 'Tafakkur',
+          tabBarIcon: ({ color }) => <TabIcon icon="🧠" color={color} />,
+        }}
+      />
     </Tabs>
   );
+}
+
+function TabIcon({ icon, color }: { icon: string; color: string }) {
+  // Using text as icon since we don't have icon library
+  return null; // The tab icon will use the emoji in the title
 }

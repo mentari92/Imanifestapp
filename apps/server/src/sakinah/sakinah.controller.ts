@@ -1,30 +1,47 @@
-import { Controller, Get, Query } from "@nestjs/common";
-import { Public } from "../auth/public.decorator";
-import { SakinahService } from "./sakinah.service";
-import { GetAudioUrlDto } from "./dto/get-audio-url.dto";
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { SakinahService } from './sakinah.service';
+import { JwtAuthGuard } from '../auth/auth.guard';
 
-@Controller("sakinah")
-@Public()
+@Controller('sakinah')
+@UseGuards(JwtAuthGuard)
 export class SakinahController {
   constructor(private readonly sakinahService: SakinahService) {}
 
-  @Get("reciters")
-  async getReciters() {
-    return this.sakinahService.getReciters();
-  }
-
-  @Get("surahs")
+  @Get('surahs')
   async getSurahs() {
-    return this.sakinahService.getSurahs();
+    const surahs = await this.sakinahService.getSurahs();
+    return { data: surahs };
   }
 
-  @Get("audio")
-  async getAudioUrl(@Query() dto: GetAudioUrlDto) {
-    return this.sakinahService.getAudioUrl(dto.reciterId, dto.surahNumber);
+  @Get('reciters')
+  async getReciters() {
+    const reciters = await this.sakinahService.getReciters();
+    return { data: reciters };
   }
 
-  @Get("read-reflect")
-  async getReadReflect(@Query("surahNumber") surahNumber: string) {
-    return this.sakinahService.getReadReflect(Number(surahNumber));
+  @Get('popular-reciters')
+  async getPopularReciters() {
+    const reciters = await this.sakinahService.getPopularReciters();
+    return { data: reciters };
+  }
+
+  @Get('audio-url')
+  async getAudioUrl(
+    @Query('surah') surah: string,
+    @Query('reciter') reciter: string,
+    @Request() req: any,
+  ) {
+    const surahNumber = parseInt(surah, 10);
+    const reciterValue = /^\d+$/.test(reciter)
+      ? parseInt(reciter, 10)
+      : reciter;
+    const url = await this.sakinahService.getAudioUrl(reciterValue, surahNumber);
+    return { url };
   }
 }

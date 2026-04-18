@@ -19,11 +19,28 @@ interface Verse {
   tafsirSnippet: string;
 }
 
-interface AnalyzeResult {
+interface LegacyAnalyzeResult {
   manifestationId: string;
   aiSummary: string;
   verses: Verse[];
 }
+
+interface NewQalbStoredResult {
+  aiSummary?: string;
+  advice?: string;
+  verses?: Array<
+    | Verse
+    | {
+        number?: number;
+        text?: string;
+        surahName?: string;
+        surahNumber?: number;
+        ayahNumber?: number;
+      }
+  >;
+}
+
+type QalbStoredResult = LegacyAnalyzeResult | NewQalbStoredResult;
 
 export default function QalbResultScreen() {
   const router = useRouter();
@@ -32,7 +49,7 @@ export default function QalbResultScreen() {
     sentiment: string;
   }>();
 
-  const [result, setResult] = useState<AnalyzeResult | null>(null);
+  const [result, setResult] = useState<QalbStoredResult | null>(null);
 
   // Read large result payload from sessionStorage (avoids URL length limits)
   useEffect(() => {
@@ -46,8 +63,32 @@ export default function QalbResultScreen() {
     } catch {}
   }, []);
 
-  const verses: Verse[] = result?.verses ?? [];
-  const aiSummary = result?.aiSummary ?? "";
+  const verses: Verse[] = Array.isArray(result?.verses)
+    ? result.verses.map((verse): Verse => {
+        if (typeof (verse as Verse).verseKey === "string") {
+          return verse as Verse;
+        }
+
+        const normalized = verse as {
+          text?: string;
+          surahNumber?: number;
+          ayahNumber?: number;
+        };
+
+        return {
+          verseKey: `${normalized.surahNumber ?? 0}:${normalized.ayahNumber ?? 0}`,
+          arabicText: "",
+          translation: normalized.text || "",
+          tafsirSnippet: "",
+        };
+      })
+    : [];
+
+  const aiSummary =
+    (typeof result?.aiSummary === "string" && result.aiSummary) ||
+    (typeof (result as NewQalbStoredResult | null)?.advice === "string"
+      ? (result as NewQalbStoredResult).advice || ""
+      : "");
 
   return (
     <ScrollView
