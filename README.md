@@ -47,6 +47,19 @@ This starts:
 - **Expo** on `http://localhost:8081` (mobile) / `http://localhost:19006` (web)
 - **NestJS** on `http://localhost:3001`
 
+## Required Audio Env
+
+Tafakkur reciter playback now resolves Quran Foundation audio through the backend. These server variables must be set in `apps/server/.env` or production secrets:
+
+```bash
+QURAN_FOUNDATION_CONTENT_API_URL="https://apis.quran.foundation/content/api/v4"
+QURAN_FOUNDATION_CLIENT_ID="your_client_id"
+QURAN_FOUNDATION_AUTH_TOKEN="your_auth_token"
+QURAN_FOUNDATION_AUDIO_BASE_URL="https://audio.qurancdn.com"
+```
+
+You can verify the backend integration at `GET /sakinah/foundation-health`. The endpoint returns only configuration flags and probe status, not the secret values.
+
 ## Available Scripts
 
 | Command | Description |

@@ -25,6 +25,20 @@ interface VerseAudioResult {
   fallbackUsed: boolean;
 }
 
+interface FoundationHealthSummary {
+  healthy: boolean;
+  configured: {
+    clientId: boolean;
+    authToken: boolean;
+    contentApiUrl: string;
+    audioBaseUrl: string;
+  };
+  recitationsCount: number;
+  sampleReciters: string[];
+  checkedAt: string;
+  error?: string;
+}
+
 @Injectable()
 export class SakinahService {
   private readonly logger = new Logger(SakinahService.name);
@@ -119,6 +133,10 @@ export class SakinahService {
   async getPopularReciters(): Promise<ReciterInfo[]> {
     const reciters = await this.getReciters();
     return reciters.slice(0, 10);
+  }
+
+  async getFoundationHealth(): Promise<FoundationHealthSummary> {
+    return this.quranApiService.getFoundationHealth();
   }
 
   async getAudioUrl(

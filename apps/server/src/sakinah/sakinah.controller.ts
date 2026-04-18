@@ -6,11 +6,19 @@ import {
 } from '@nestjs/common';
 import { SakinahService } from './sakinah.service';
 import { JwtAuthGuard } from '../auth/auth.guard';
+import { Public } from '../auth/public.decorator';
 
 @Controller('sakinah')
 @UseGuards(JwtAuthGuard)
 export class SakinahController {
   constructor(private readonly sakinahService: SakinahService) {}
+
+  @Public()
+  @Get('foundation-health')
+  async getFoundationHealth() {
+    const health = await this.sakinahService.getFoundationHealth();
+    return { data: health };
+  }
 
   @Get('surahs')
   async getSurahs() {

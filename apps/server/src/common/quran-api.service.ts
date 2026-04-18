@@ -58,6 +58,20 @@ interface FoundationAudioFile {
   url?: string;
 }
 
+interface FoundationHealthResult {
+  healthy: boolean;
+  configured: {
+    clientId: boolean;
+    authToken: boolean;
+    contentApiUrl: string;
+    audioBaseUrl: string;
+  };
+  recitationsCount: number;
+  sampleReciters: string[];
+  checkedAt: string;
+  error?: string;
+}
+
 interface RandomAyahResult {
   number: number;
   text: string;
@@ -431,6 +445,58 @@ export class QuranApiService {
         `Failed to fetch Foundation ayah audio for recitation ${recitationId}, ayah ${ayahKey}: ${error instanceof Error ? error.message : error}`,
       );
       return null;
+    }
+  }
+
+  async getFoundationHealth(): Promise<FoundationHealthResult> {
+    const configured = {
+      clientId: !!this.foundationClientId,
+      authToken: !!this.foundationAuthToken,
+      contentApiUrl: this.foundationBaseUrl,
+      audioBaseUrl: this.foundationAudioBaseUrl,
+    };
+
+    if (!configured.clientId || !configured.authToken) {
+      return {
+        healthy: false,
+        configured,
+        recitationsCount: 0,
+        sampleReciters: [],
+        checkedAt: new Date().toISOString(),
+        error: "missing_foundation_credentials",
+      };
+    }
+
+    try {
+      const response = await axios.get<{ recitations?: FoundationRecitation[] }>(
+        `${this.foundationBaseUrl}/resources/recitations`,
+        {
+          headers: this.getFoundationHeaders() || undefined,
+          timeout: 9000,
+        },
+      );
+
+      const recitations = (response.data?.recitations || []).filter(
+        (recitation) => typeof recitation.id === "number" && !!recitation.reciter_name,
+      );
+
+      return {
+        healthy: recitations.length > 0,
+        configured,
+        recitationsCount: recitations.length,
+        sampleReciters: recitations.slice(0, 5).map((recitation) => recitation.reciter_name),
+        checkedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      return {
+        healthy: false,
+        configured,
+        recitationsCount: 0,
+        sampleReciters: [],
+        checkedAt: new Date().toISOString(),
+        error: status ? `foundation_request_failed_${status}` : "foundation_request_failed",
+      };
     }
   }
 
