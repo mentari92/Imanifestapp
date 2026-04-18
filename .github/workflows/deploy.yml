@@ -9,10 +9,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      QURAN_FOUNDATION_CLIENT_ID: ${{ secrets.QURAN_FOUNDATION_CLIENT_ID }}
-      QURAN_FOUNDATION_CLIENT_SECRET: ${{ secrets.QURAN_FOUNDATION_CLIENT_SECRET }}
-      QURAN_FOUNDATION_AUTH_TOKEN: ${{ secrets.QURAN_FOUNDATION_AUTH_TOKEN }}
 
     steps:
       - name: Deploy to VPS via SSH
@@ -22,8 +18,12 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          envs: QURAN_FOUNDATION_CLIENT_ID,QURAN_FOUNDATION_CLIENT_SECRET,QURAN_FOUNDATION_AUTH_TOKEN
           script: |
+            # Store secrets as local variables
+            CLIENT_ID='${{ secrets.QURAN_FOUNDATION_CLIENT_ID }}'
+            CLIENT_SECRET='${{ secrets.QURAN_FOUNDATION_CLIENT_SECRET }}'
+            AUTH_TOKEN='${{ secrets.QURAN_FOUNDATION_AUTH_TOKEN }}'
+            
             set -eu
 
             # ── Find repo directory ────────────────────────────────
@@ -58,12 +58,13 @@ jobs:
             echo "=== Creating apps/server/.env from secrets ==="
             {
               echo "# Quran Foundation API Credentials (set from GitHub Secrets)"
-              echo "QURAN_FOUNDATION_CLIENT_ID=${QURAN_FOUNDATION_CLIENT_ID}"
-              echo "QURAN_FOUNDATION_CLIENT_SECRET=${QURAN_FOUNDATION_CLIENT_SECRET}"
+              echo "QURAN_FOUNDATION_CLIENT_ID=${CLIENT_ID}"
+              echo "QURAN_FOUNDATION_CLIENT_SECRET=${CLIENT_SECRET}"
               echo "QURAN_FOUNDATION_OAUTH_BASE_URL=https://oauth2.quran.foundation"
-              echo "QURAN_FOUNDATION_AUTH_TOKEN=${QURAN_FOUNDATION_AUTH_TOKEN}"
+              echo "QURAN_FOUNDATION_AUTH_TOKEN=${AUTH_TOKEN}"
             } > "$REPO_DIR/apps/server/.env"
             echo "=== .env file created ==="
+            [ -f "$REPO_DIR/apps/server/.env" ] && echo "=== .env file verified ===" || echo "ERROR: .env file not created"
 
             # ── Rebuild API + Web containers ───────────────────────
             echo "=== Rebuilding all containers (no cache) ==="
