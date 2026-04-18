@@ -56,27 +56,24 @@ export class DuaToDoService {
 
     // Generate tasks via AI
     this.logger.log(`Generating tasks for manifestation ${manifestationId}`);
-    const taskDescriptions = await this.zhipu.generateTasks(intentText, verses);
+    const taskObjects = await this.zhipu.generateTasks(intentText, verses);
 
     // Try saving to DB, fall back to in-memory
     try {
       const tasks = await Promise.all(
-        taskDescriptions.map(async (desc) => {
+        taskObjects.map(async (taskObj) => {
           const task = await this.prisma.task.create({
             data: {
               manifestationId,
-              description: desc,
+              description: taskObj.title,
             },
           });
 
           // Attempt to post goal to Quran Foundation API
           try {
-            const quranGoalId = await this.quranApi.postGoal(quranApiKey, desc);
+            const quranGoalId = await this.quranApi.postGoal(quranApiKey, taskObj.title);
             if (quranGoalId) {
-              return this.prisma.task.update({
-                where: { id: task.id },
-                data: { quranGoalId },
-              });
+              return { ...(await this.prisma.task.update({ where: { id: task.id }, data: { quranGoalId } })), guidance: taskObj.guidance };
             }
           } catch (goalErr) {
             this.logger.warn(
@@ -85,7 +82,7 @@ export class DuaToDoService {
             );
           }
 
-          return task;
+          return { ...task, guidance: taskObj.guidance };
         }),
       );
 
@@ -96,10 +93,11 @@ export class DuaToDoService {
 
       // Create in-memory tasks
       const now = new Date().toISOString();
-      const demoTasks = taskDescriptions.map((desc, i) => ({
+      const demoTasks = taskObjects.map((taskObj, i) => ({
         id: `demo-task-${manifestationId}-${i}`,
         manifestationId,
-        description: desc,
+        description: taskObj.title,
+        guidance: taskObj.guidance,
         isCompleted: false,
         quranGoalId: null,
         createdAt: now,

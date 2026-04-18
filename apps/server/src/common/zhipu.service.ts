@@ -387,34 +387,34 @@ Return 2 short paragraphs:
   private generateTasksHeuristic(
     intentText: string,
     verses: { verseKey: string; translation: string }[],
-  ): string[] {
+  ): { title: string; guidance: string }[] {
     const source = intentText.toLowerCase();
-    const tasks: string[] = [];
+    const tasks: { title: string; guidance: string }[] = [];
 
-    tasks.push("Perform all 5 daily prayers on time and track your consistency");
+    tasks.push({ title: "Perform all 5 daily prayers on time", guidance: "Set reminders for each prayer time and pause all other activity when the adhan sounds." });
 
     if (/pekerjaan|kerja|karier|cv|lamaran|work|job|career|resume/.test(source)) {
-      tasks.push("Update your CV or portfolio and send at least 2 applications today");
+      tasks.push({ title: "Update your CV and send 2 applications", guidance: "Start with your most recent role, tailor each application to the job description, and make dua before submitting." });
     } else if (/bisnis|usaha|jualan|business|startup/.test(source)) {
-      tasks.push("Validate one business idea by speaking with 3 potential users");
+      tasks.push({ title: "Validate your idea with 3 real users", guidance: "Have one brief, honest conversation with each. Ask what problem they face, not whether they like your idea." });
     } else {
-      tasks.push("Work on your highest-priority task for 45 minutes with full focus");
+      tasks.push({ title: "Work on your top priority for 45 minutes", guidance: "Remove distractions, start with bismillah, and commit to a single task block without switching." });
     }
 
     if (/utang|cicilan|keuangan|rezeki|debt|money|finance/.test(source)) {
-      tasks.push("Create a 7-day financial plan with spending and savings limits");
+      tasks.push({ title: "Write a 7-day financial plan", guidance: "List fixed expenses first, then set a daily spending limit. Treat rizq as a trust, not a right." });
     } else {
-      tasks.push("Write 3 specific gratitude points and one lesson from today");
+      tasks.push({ title: "Write 3 gratitude points and one lesson", guidance: "Be specific — name the blessing, the person, or the moment. Gratitude rewires attention toward abundance." });
     }
 
     const verse = verses[0];
     if (verse?.verseKey) {
-      tasks.push(`Read and reflect on verse ${verse.verseKey} for 10 minutes`);
+      tasks.push({ title: `Reflect on verse ${verse.verseKey}`, guidance: `Sit quietly for 10 minutes with this verse. Ask: what is Allah inviting me to do through this?` });
     } else {
-      tasks.push("Read 2 pages of the Quran after one obligatory prayer");
+      tasks.push({ title: "Read 2 Quran pages after prayer", guidance: "Choose a consistent time — right after Fajr works best. Slow reading with reflection outweighs speed." });
     }
 
-    tasks.push("Close the day with specific dua for your intention and review progress");
+    tasks.push({ title: "Close the day with dua and review", guidance: "Ask for forgiveness first, then gratitude, then your specific intention. Review what you did and what to carry tomorrow." });
 
     return tasks.slice(0, 5);
   }
@@ -422,17 +422,21 @@ Return 2 short paragraphs:
   async generateTasks(
     intentText: string,
     verses: { verseKey: string; translation: string }[],
-  ): Promise<string[]> {
+  ): Promise<{ title: string; guidance: string }[]> {
     const versesContext = verses.map((v) => `${v.verseKey}: ${v.translation}`).join("\n");
     const targetLanguage = this.detectPreferredLanguage(intentText);
 
     const systemPrompt = `You are an Islamic life coach creating practical action plans.
-Generate exactly 5 actionable steps (Ikhtiar).
+Generate exactly 5 actionable steps (Ikhtiar) based on the user's intention and relevant Quran verses.
 Respond in ${targetLanguage}.
 If the user writes in English, use plain and natural English.
 Do not switch to Arabic unless the user explicitly writes in Arabic.
-Return ONLY a valid JSON array of 5 short action descriptions.
-Do not include explanation text.`;
+Return ONLY a valid JSON array of exactly 5 objects.
+Each object must have exactly two keys:
+- "title": short action title (max 8 words)
+- "guidance": one-sentence practical how-to tip referencing Islamic wisdom (max 20 words)
+Example: [{"title": "Perform Fajr prayer with presence", "guidance": "Wake 10 minutes early, make wudu slowly, and focus on the meaning of each ayah."}]
+Do not include any explanation outside the JSON array.`;
 
     if (!this.hasAnyAiProvider()) {
       return this.generateTasksHeuristic(intentText, verses);
@@ -440,12 +444,12 @@ Do not include explanation text.`;
 
     try {
       const response = await this.callTextAI(systemPrompt, `Intention: ${intentText}\n\nVerses:\n${versesContext}`);
-      const parsed = this.parseJSONResponse<string[]>(response);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      const parsed = this.parseJSONResponse<{ title: string; guidance: string }[]>(response);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.title) {
         return parsed.slice(0, 5).map((item) =>
           targetLanguage === "english"
-            ? this.humanizeEnglish(item)
-            : this.cleanGeneratedText(item),
+            ? { title: this.humanizeEnglish(item.title), guidance: this.humanizeEnglish(item.guidance || '') }
+            : { title: this.cleanGeneratedText(item.title), guidance: this.cleanGeneratedText(item.guidance || '') },
         );
       }
       return this.generateTasksHeuristic(intentText, verses);
