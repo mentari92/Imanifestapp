@@ -26,6 +26,11 @@ export class HeartPulseService {
         text: "The most beloved deeds to Allah are those that are consistent, even if small.",
       },
     ],
+    logicalPath: [
+      "Pause for one minute and slow your breathing before deciding anything.",
+      "Choose one practical step you can finish today and complete it.",
+      "Close your day with dua and continue tomorrow with one steady step.",
+    ],
   };
 
   constructor(
@@ -154,6 +159,7 @@ export class HeartPulseService {
         tafsir:    insight.tafsir,
         scientific: insight.scientific,
         hadith: insight.hadith,
+        logicalPath: insight.logicalPath,
       },
     };
   }
@@ -169,6 +175,7 @@ export class HeartPulseService {
     tafsir: string;
     scientific: string;
     hadith: Array<{ reference: string; text: string }>;
+    logicalPath: string[];
   }> {
     try {
       return await Promise.race([
@@ -178,6 +185,7 @@ export class HeartPulseService {
           tafsir: string;
           scientific: string;
           hadith: Array<{ reference: string; text: string }>;
+          logicalPath: string[];
         }>((resolve) => {
           setTimeout(() => {
             this.logger.warn(

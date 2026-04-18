@@ -123,6 +123,11 @@ export default function QalbScreen() {
               }))
             : [],
           hadith: Array.isArray(nextResult?.hadith) ? nextResult.hadith : [],
+          logicalPath: Array.isArray(nextResult?.logicalPath)
+            ? nextResult.logicalPath
+                .filter((step) => typeof step === 'string' && step.trim().length > 0)
+                .slice(0, 3)
+            : [],
         };
         sessionStorage.setItem('qalb_result', JSON.stringify(serialized));
       }
