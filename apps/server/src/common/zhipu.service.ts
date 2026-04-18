@@ -68,6 +68,35 @@ export class ZhipuService {
       .trim();
   }
 
+  private humanizeEnglish(text: string): string {
+    const source = this.cleanGeneratedText(text);
+    if (!source) return source;
+
+    // Skip non-English dominant text to avoid damaging Indonesian/Arabic outputs.
+    const englishHits = (source.match(/\b(the|and|you|your|with|for|that|this|will|can|may)\b/gi) || []).length;
+    if (englishHits < 2) {
+      return source;
+    }
+
+    return source
+      .replace(/\bAdditionally,?\s*/gi, "")
+      .replace(/\bMoreover,?\s*/gi, "")
+      .replace(/\bFurthermore,?\s*/gi, "")
+      .replace(/\bIt is important to note that\b/gi, "")
+      .replace(/\bIt'?s worth noting that\b/gi, "")
+      .replace(/\bserves as\b/gi, "is")
+      .replace(/\bstands as\b/gi, "is")
+      .replace(/\bcrucial\b/gi, "important")
+      .replace(/\bpivotal\b/gi, "important")
+      .replace(/\bunderscore(s|d)?\b/gi, "show$1")
+      .replace(/\bshowcasing\b/gi, "showing")
+      .replace(/\bIn order to\b/gi, "To")
+      .replace(/\bDue to the fact that\b/gi, "Because")
+      .replace(/\s{2,}/g, " ")
+      .replace(/\s+([,.!?;:])/g, "$1")
+      .trim();
+  }
+
   private extractThemesHeuristic(text: string): string[] {
     const source = text.toLowerCase();
     const bucket: string[] = [];
@@ -477,15 +506,15 @@ Writing style:
           : [];
 
         return {
-          spiritual: this.cleanGeneratedText(parsed.spiritual),
-          tafsir: this.cleanGeneratedText(parsed.tafsir),
-          scientific: this.cleanGeneratedText(parsed.scientific),
+          spiritual: this.humanizeEnglish(parsed.spiritual),
+          tafsir: this.humanizeEnglish(parsed.tafsir),
+          scientific: this.humanizeEnglish(parsed.scientific),
           hadith:
             hadith.length > 0
               ? hadith
                   .map((item) => ({
                     reference: this.cleanGeneratedText(item.reference),
-                    text: this.cleanGeneratedText(item.text),
+                    text: this.humanizeEnglish(item.text),
                   }))
               : [
                   {
@@ -499,7 +528,7 @@ Writing style:
                 ],
           logicalPath:
             logicalPath.length > 0
-              ? logicalPath
+              ? logicalPath.map((step) => this.humanizeEnglish(step))
               : [
                   "Pause and breathe slowly for one minute before making any decision.",
                   "Pick one practical action you can complete today, then do it now.",
