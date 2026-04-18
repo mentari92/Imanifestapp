@@ -19,7 +19,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            set -e
+            set -eu
 
             # ── Find repo directory ────────────────────────────────
             REPO_DIR=""
@@ -70,3 +70,28 @@ jobs:
 
             echo "=== Deploy complete ==="
             docker compose ps
+
+            # ── API health check with retry (avoids false-fail on cold start) ──
+            echo "=== Checking API health with retry ==="
+            HEALTH_CODE="000"
+            ATTEMPT=1
+            MAX_ATTEMPTS=10
+            while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+              HEALTH_CODE=$(curl -sS -o /tmp/health.out -w "%{http_code}" http://localhost:3001/health || true)
+              if [ "$HEALTH_CODE" = "200" ]; then
+                echo "=== Health check passed on attempt $ATTEMPT ==="
+                cat /tmp/health.out
+                break
+              fi
+
+              echo "=== Health check attempt $ATTEMPT/$MAX_ATTEMPTS failed (code=$HEALTH_CODE), retrying in 3s ==="
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 3
+            done
+
+            if [ "$HEALTH_CODE" != "200" ]; then
+              echo "ERROR: API health check failed after retries"
+              docker compose ps
+              docker compose logs --tail=120 api || true
+              exit 1
+            fi
