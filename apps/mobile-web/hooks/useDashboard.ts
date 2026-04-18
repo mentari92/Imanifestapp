@@ -130,7 +130,7 @@ export function useDashboard() {
         // Use demo data in offline mode
         setData(DEMO_DASHBOARD);
         setIsOfflineMode(true);
-        setError('Server offline. Showing demo data. Tap to retry.');
+          setError('Live data belum tersedia. Menampilkan preview sementara.');
       } else {
         setError(message);
       }
