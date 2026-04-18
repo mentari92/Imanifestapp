@@ -49,6 +49,17 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            # ── Create .env file from GitHub Secrets ────────────────
+            echo "=== Creating apps/server/.env from secrets ==="
+            cat > "$REPO_DIR/apps/server/.env" << 'ENVEOF'
+# Quran Foundation API Credentials (set from GitHub Secrets)
+QURAN_FOUNDATION_CLIENT_ID=${{ secrets.QURAN_FOUNDATION_CLIENT_ID }}
+QURAN_FOUNDATION_CLIENT_SECRET=${{ secrets.QURAN_FOUNDATION_CLIENT_SECRET }}
+QURAN_FOUNDATION_OAUTH_BASE_URL=https://oauth2.quran.foundation
+QURAN_FOUNDATION_AUTH_TOKEN=${{ secrets.QURAN_FOUNDATION_AUTH_TOKEN }}
+ENVEOF
+            echo "=== .env file created ==="
+
             # ── Rebuild API + Web containers ───────────────────────
             echo "=== Rebuilding all containers (no cache) ==="
             docker compose build --no-cache api web
