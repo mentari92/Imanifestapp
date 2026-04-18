@@ -97,6 +97,20 @@ export class ZhipuService {
       .trim();
   }
 
+  private detectPreferredLanguage(text: string): "english" | "indonesian" | "arabic" {
+    const source = String(text || "").trim();
+
+    if (/[\u0600-\u06FF]/.test(source)) {
+      return "arabic";
+    }
+
+    if (/\b(saya|aku|ingin|rezeki|syukur|ikhtiar|doa|niat|kerja|usaha|tenang|hati)\b/i.test(source)) {
+      return "indonesian";
+    }
+
+    return "english";
+  }
+
   private extractThemesHeuristic(text: string): string[] {
     const source = text.toLowerCase();
     const bucket: string[] = [];
@@ -334,10 +348,13 @@ Do not include any explanation or extra text.`;
     verses: { verseKey: string; translation: string }[],
   ): Promise<string> {
     const versesContext = verses.map((v) => `${v.verseKey}: ${v.translation}`).join("\n");
+    const targetLanguage = this.detectPreferredLanguage(intentText);
 
     const systemPrompt = `You are a warm, knowledgeable Islamic life coach.
 Given the user's intention and related Quranic verses, write a concise and practical guidance.
-IMPORTANT: Detect the language of the user's intention and respond in the SAME language.
+Respond in ${targetLanguage}.
+If the user writes in English, use plain and natural English.
+Do not switch to Arabic unless the user explicitly writes in Arabic.
 Return 2 short paragraphs:
 1) spiritual reassurance with a cited verse key
 2) concrete next steps for today.`;
@@ -354,7 +371,9 @@ Return 2 short paragraphs:
       const response = await this.callTextAI(systemPrompt, `Intention: ${intentText}\n\nVerses:\n${versesContext}`);
       const cleaned = response.trim();
       if (!cleaned) throw new Error("Empty summary response");
-      return this.cleanGeneratedText(cleaned);
+      return targetLanguage === "english"
+        ? this.humanizeEnglish(cleaned)
+        : this.cleanGeneratedText(cleaned);
     } catch (error) {
       this.logger.warn(`generateSummary fallback: ${error instanceof Error ? error.message : error}`);
       const verse = verses[0];
@@ -405,10 +424,13 @@ Return 2 short paragraphs:
     verses: { verseKey: string; translation: string }[],
   ): Promise<string[]> {
     const versesContext = verses.map((v) => `${v.verseKey}: ${v.translation}`).join("\n");
+    const targetLanguage = this.detectPreferredLanguage(intentText);
 
     const systemPrompt = `You are an Islamic life coach creating practical action plans.
 Generate exactly 5 actionable steps (Ikhtiar).
-IMPORTANT: Detect the language of the user's intention and respond in the SAME language.
+Respond in ${targetLanguage}.
+If the user writes in English, use plain and natural English.
+Do not switch to Arabic unless the user explicitly writes in Arabic.
 Return ONLY a valid JSON array of 5 short action descriptions.
 Do not include explanation text.`;
 
@@ -420,7 +442,11 @@ Do not include explanation text.`;
       const response = await this.callTextAI(systemPrompt, `Intention: ${intentText}\n\nVerses:\n${versesContext}`);
       const parsed = this.parseJSONResponse<string[]>(response);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.slice(0, 5);
+        return parsed.slice(0, 5).map((item) =>
+          targetLanguage === "english"
+            ? this.humanizeEnglish(item)
+            : this.cleanGeneratedText(item),
+        );
       }
       return this.generateTasksHeuristic(intentText, verses);
     } catch (error) {

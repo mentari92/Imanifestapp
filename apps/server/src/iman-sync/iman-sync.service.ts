@@ -13,11 +13,28 @@ export interface AnalyzeResult {
   tasks: string[];
 }
 
+export interface ManifestationHistoryItem {
+  id: string;
+  intentText: string;
+  aiSummary: string;
+  createdAt: string;
+  totalTasks: number;
+  completedTasks: number;
+  isAchieved: boolean;
+}
+
 export interface AnalyzeVisionResult extends AnalyzeResult {
   imagePath: string;
 }
 
 const CACHE_TTL = 3600;
+const demoManifestationStore = new Map<string, {
+  id: string;
+  userId: string;
+  intentText: string;
+  aiSummary: string;
+  createdAt: string;
+}>();
 
 @Injectable()
 export class ImanSyncService {
@@ -185,6 +202,13 @@ export class ImanSyncService {
       this.logger.log(`Saved manifestation ${manifestationId}`);
     } catch (dbErr: any) {
       manifestationId = `demo-manifest-${Date.now()}`;
+      demoManifestationStore.set(manifestationId, {
+        id: manifestationId,
+        userId,
+        intentText,
+        aiSummary,
+        createdAt: new Date().toISOString(),
+      });
       this.logger.warn(
         `DB save failed (demo mode): ${dbErr?.message}. Using in-memory ID: ${manifestationId}`,
       );
@@ -291,5 +315,53 @@ export class ImanSyncService {
     }
 
     return result;
+  }
+
+  async getHistory(userId: string): Promise<{ manifestations: ManifestationHistoryItem[] }> {
+    try {
+      const manifestations = await this.prisma.manifestation.findMany({
+        where: { userId },
+        include: {
+          tasks: {
+            select: { isCompleted: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 12,
+      });
+
+      return {
+        manifestations: manifestations.map((item) => {
+          const completedTasks = item.tasks.filter((task) => task.isCompleted).length;
+          const totalTasks = item.tasks.length;
+          return {
+            id: item.id,
+            intentText: item.intentText,
+            aiSummary: item.aiSummary || "",
+            createdAt: item.createdAt.toISOString(),
+            totalTasks,
+            completedTasks,
+            isAchieved: totalTasks > 0 && completedTasks === totalTasks,
+          };
+        }),
+      };
+    } catch (err: any) {
+      this.logger.warn(`Manifestation history fallback (demo mode): ${err?.message}`);
+      const fallback = Array.from(demoManifestationStore.values())
+        .filter((item) => item.userId === userId)
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        .slice(0, 12)
+        .map((item) => ({
+          id: item.id,
+          intentText: item.intentText,
+          aiSummary: item.aiSummary,
+          createdAt: item.createdAt,
+          totalTasks: 0,
+          completedTasks: 0,
+          isAchieved: false,
+        }));
+
+      return { manifestations: fallback };
+    }
   }
 }

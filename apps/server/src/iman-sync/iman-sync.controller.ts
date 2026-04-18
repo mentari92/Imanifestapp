@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   UseGuards,
@@ -51,6 +52,13 @@ export class ImanSyncController {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
+  }
+
+  @Public()
+  @Get("history")
+  async getHistory(@Request() req: { user?: { userId: string } }) {
+    const userId = req.user?.userId ?? "demo-user-hackathon";
+    return this.imanSyncService.getHistory(userId);
   }
 
   @Public()

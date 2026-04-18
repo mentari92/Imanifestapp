@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -58,11 +58,15 @@ const glass = {
 export default function ImanifestScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { loading, error, result, analyzeIntention } = useImanSync();
+  const { loading, error, result, history, analyzeIntention, fetchHistory } = useImanSync();
   const [intentionText, setIntentionText] = useState('');
   const [gratitude, setGratitude] = useState(['', '', '']);
   const [isRecording, setIsRecording] = useState(false);
   const [visionImage, setVisionImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchHistory().catch(() => {});
+  }, [fetchHistory]);
 
   const handleSubmit = async () => {
     if (!intentionText.trim()) {
@@ -71,6 +75,7 @@ export default function ImanifestScreen() {
     }
     try {
       await analyzeIntention(intentionText.trim());
+      fetchHistory().catch(() => {});
     } catch (_) {
       // Error is already set in the hook
     }
@@ -166,20 +171,15 @@ export default function ImanifestScreen() {
           {visionImage ? (
             <Image
               source={{ uri: visionImage }}
-              style={{ width: '100%', height: 220, borderRadius: 32 } as any}
+              style={{ width: '100%', height: 320, borderRadius: 32 } as any}
               resizeMode="cover"
             />
           ) : (
-            <ImageBackground
-              source={require('../../assets/stitch/imanifest.png')}
-              style={{ width: '100%', height: 300, alignItems: 'center', justifyContent: 'center' } as any}
-              resizeMode="cover"
-            >
-              <View style={{ alignItems: 'center', gap: 10, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.42)' }}>
-                <Text style={{ fontSize: 22 }}>📷</Text>
-                <Text style={{ fontFamily: 'Newsreader', fontStyle: 'italic', fontSize: 30, color: C.primaryDim, fontWeight: '600', textAlign: 'center' } as any}>Capture Inspiration</Text>
-              </View>
-            </ImageBackground>
+            <View style={styles.captureBoard}>
+              <Text style={styles.captureIcon}>📷</Text>
+              <Text style={styles.captureTitle}>Capture Inspiration</Text>
+              <Text style={styles.captureSubtext}>Upload a visual reminder for the goal you want to pursue.</Text>
+            </View>
           )}
         </TouchableOpacity>
 
@@ -288,10 +288,19 @@ export default function ImanifestScreen() {
                 <Text style={styles.subSectionTitle}>Relevant Quran Verses</Text>
                 {result.verses.map((verse, idx) => (
                   <View key={verse.number || idx} style={[glass, styles.verseCard]}>
+                    {verse.arabicText ? (
+                      <Text style={styles.verseArabic}>{verse.arabicText}</Text>
+                    ) : null}
                     <Text style={styles.verseText}>"{verse.text}"</Text>
                     <Text style={styles.verseRef}>
                       {verse.surahName} {verse.surahNumber}:{verse.ayahNumber}
                     </Text>
+                    {verse.tafsirSnippet ? (
+                      <View style={styles.tafsirBox}>
+                        <Text style={styles.tafsirLabel}>English explanation</Text>
+                        <Text style={styles.tafsirText}>{verse.tafsirSnippet}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 ))}
                 <Text style={styles.referenceNote}>
@@ -322,6 +331,35 @@ export default function ImanifestScreen() {
           </View>
         )}
 
+        {history.length > 0 ? (
+          <View style={styles.historySection}>
+            <Text style={styles.subSectionTitle}>Saved manifestations</Text>
+            {history.map((item) => (
+              <View key={item.id} style={[glass, styles.historyCard]}>
+                <View style={styles.historyTopRow}>
+                  <Text style={styles.historyIntent} numberOfLines={2}>{item.text}</Text>
+                  <View style={[
+                    styles.historyBadge,
+                    item.isAchieved
+                      ? { backgroundColor: 'rgba(169,247,183,0.45)' }
+                      : (item.completedTasks || 0) > 0
+                        ? { backgroundColor: 'rgba(254,243,215,0.75)' }
+                        : { backgroundColor: 'rgba(226,221,248,0.7)' },
+                  ]}>
+                    <Text style={styles.historyBadgeText}>
+                      {item.isAchieved ? 'Achieved' : (item.completedTasks || 0) > 0 ? 'In Progress' : 'Saved'}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.historySummary} numberOfLines={3}>{item.encouragement}</Text>
+                <Text style={styles.historyMeta}>
+                  {(item.completedTasks || 0)}/{item.totalTasks || 0} tasks completed
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         <View style={{ height: 120 }} />
         </View>
       </ScrollView>
@@ -340,7 +378,7 @@ const styles = StyleSheet.create({
   },
   contentWrap: {
     width: '100%',
-    maxWidth: 680,
+    maxWidth: 760,
     alignSelf: 'center',
   },
   // blobs
@@ -387,8 +425,8 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   displayHeadline: {
-    fontSize: Platform.OS === 'web' ? 64 : 52,
-    lineHeight: Platform.OS === 'web' ? 70 : 58,
+    fontSize: Platform.OS === 'web' ? 68 : 52,
+    lineHeight: Platform.OS === 'web' ? 74 : 58,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
@@ -427,6 +465,34 @@ const styles = StyleSheet.create({
     minHeight: 200,
     padding: 24,
     marginBottom: 32,
+  },
+  captureBoard: {
+    width: '100%',
+    minHeight: 320,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 28,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  captureIcon: {
+    fontSize: 22,
+  },
+  captureTitle: {
+    fontFamily: 'Newsreader',
+    fontSize: 40,
+    fontStyle: 'italic',
+    color: C.primaryDim,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  captureSubtext: {
+    fontFamily: 'Noto Serif',
+    fontSize: 14,
+    lineHeight: 24,
+    color: C.onSurfaceVariant,
+    textAlign: 'center',
+    maxWidth: 420,
   },
   intentionInput: {
     flex: 1,
@@ -546,6 +612,15 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 10,
   },
+  verseArabic: {
+    fontSize: 26,
+    lineHeight: 48,
+    color: C.onSurface,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    fontFamily: 'Amiri',
+    marginBottom: 12,
+  },
   verseText: {
     fontSize: 16,
     lineHeight: 25,
@@ -558,6 +633,26 @@ const styles = StyleSheet.create({
     color: C.primary,
     fontWeight: '600' as const,
     letterSpacing: 0.4,
+  },
+  tafsirBox: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(226,221,248,0.22)',
+  },
+  tafsirLabel: {
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    color: C.primaryDim,
+    marginBottom: 6,
+  },
+  tafsirText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: C.onSurfaceVariant,
+    fontFamily: 'Noto Serif',
   },
   actionRow: {
     flexDirection: 'row' as const,
@@ -586,13 +681,13 @@ const styles = StyleSheet.create({
   },
   secondaryCtaButton: {
     borderRadius: 9999,
-    paddingVertical: 14,
+    paddingVertical: 18,
     paddingHorizontal: 22,
     alignItems: 'center',
     marginTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(174,178,185,0.45)',
+    backgroundColor: C.tertiary,
+    borderWidth: 1.5,
+    borderColor: '#1c8d47',
   },
   secondaryCtaText: {
     fontFamily: 'Plus Jakarta Sans',
@@ -600,6 +695,52 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
+    color: '#ecfff1',
+  },
+  historySection: {
+    marginTop: 24,
+    gap: 12,
+  },
+  historyCard: {
+    padding: 18,
+    gap: 10,
+  },
+  historyTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  historyIntent: {
+    flex: 1,
+    fontSize: 18,
+    lineHeight: 26,
+    color: C.onSurface,
+    fontFamily: 'Newsreader',
+    fontStyle: 'italic',
+  },
+  historyBadge: {
+    borderRadius: 9999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  historyBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     color: C.primaryDim,
+  },
+  historySummary: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: C.onSurfaceVariant,
+    fontFamily: 'Noto Serif',
+  },
+  historyMeta: {
+    fontSize: 12,
+    color: C.tertiary,
+    fontWeight: '600',
+    fontFamily: 'Plus Jakarta Sans',
   },
 });

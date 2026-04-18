@@ -7,6 +7,8 @@ interface Verse {
   surahName: string;
   surahNumber: number;
   ayahNumber: number;
+  arabicText?: string;
+  tafsirSnippet?: string;
 }
 
 interface ImanSyncResult {
@@ -16,6 +18,16 @@ interface ImanSyncResult {
   suggestedActions: string[];
   encouragement: string;
   createdAt: string;
+}
+
+interface ManifestationHistoryItem {
+  id: string;
+  intentText: string;
+  aiSummary: string;
+  createdAt: string;
+  totalTasks: number;
+  completedTasks: number;
+  isAchieved: boolean;
 }
 
 interface RawVerse {
@@ -35,13 +47,13 @@ interface AnalyzeResponse {
 interface HistoryItem extends ImanSyncResult {
   text: string;
   type: 'text' | 'voice';
+  totalTasks?: number;
+  completedTasks?: number;
+  isAchieved?: boolean;
 }
 
 interface HistoryResponse {
-  data: HistoryItem[];
-  total: number;
-  page: number;
-  limit: number;
+  manifestations: ManifestationHistoryItem[];
 }
 
 export function useImanSync() {
@@ -61,6 +73,8 @@ export function useImanSync() {
       surahName: `Surah ${surahNumber || '?'}`,
       surahNumber,
       ayahNumber,
+      arabicText: verse.arabicText || '',
+      tafsirSnippet: verse.tafsirSnippet || '',
     };
   };
 
@@ -100,8 +114,25 @@ export function useImanSync() {
       setLoading(true);
       setError(null);
       try {
-        setHistory([]);
-        return [];
+        const response = await apiGet<HistoryResponse>('/iman-sync/history');
+        const mapped = Array.isArray(response?.manifestations)
+          ? response.manifestations.map((item) => ({
+              id: item.id,
+              text: item.intentText,
+              type: 'text' as const,
+              sentiment: (item.isAchieved ? 'positive' : item.completedTasks > 0 ? 'neutral' : 'negative') as 'positive' | 'neutral' | 'negative',
+              verses: [],
+              suggestedActions: [],
+              encouragement: item.aiSummary,
+              createdAt: item.createdAt,
+              totalTasks: item.totalTasks,
+              completedTasks: item.completedTasks,
+              isAchieved: item.isAchieved,
+            }))
+          : [];
+
+        setHistory(mapped);
+        return mapped;
       } catch (err: any) {
         const message = err.message || 'Failed to fetch history';
         setError(message);
