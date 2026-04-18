@@ -28,6 +28,7 @@ interface LegacyAnalyzeResult {
 interface NewQalbStoredResult {
   aiSummary?: string;
   advice?: string;
+  logicalPath?: string[];
   hadith?: Array<{
     reference?: string;
     text?: string;
@@ -183,10 +184,20 @@ export default function QalbResultScreen() {
         .map((h) => ({ reference: String(h.reference), text: String(h.text) }))
     : [];
 
-  const logicalPath = useMemo(
-    () => buildLogicalPath(String(userText || ''), sentiment),
-    [userText, sentiment],
-  );
+  const logicalPath = useMemo(() => {
+    const fromModel = Array.isArray((result as NewQalbStoredResult | null)?.logicalPath)
+      ? ((result as NewQalbStoredResult).logicalPath || [])
+          .filter((step) => typeof step === 'string' && step.trim().length > 0)
+          .slice(0, 3)
+          .map((step) => cleanModelText(step))
+      : [];
+
+    if (fromModel.length > 0) {
+      return fromModel;
+    }
+
+    return buildLogicalPath(String(userText || ''), sentiment);
+  }, [result, userText, sentiment]);
 
   const speakAnswer = () => {
     if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.speechSynthesis || !cleanedSummary) {

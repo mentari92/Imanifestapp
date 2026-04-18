@@ -23,6 +23,7 @@ interface HeartPulseResult {
   advice: string;
   verses: Verse[];
   hadith: HadithReference[];
+  logicalPath: string[];
   createdAt: string;
 }
 
@@ -40,6 +41,7 @@ interface HistoryItem {
   advice: string;
   verses: Verse[];
   hadith: HadithReference[];
+  logicalPath: string[];
   createdAt: string;
 }
 
@@ -113,6 +115,11 @@ export function useHeartPulse() {
         hadith: Array.isArray(aiInsight?.hadith)
           ? aiInsight.hadith.map(mapHadith).filter(Boolean) as HadithReference[]
           : [],
+        logicalPath: Array.isArray(aiInsight?.logicalPath)
+          ? aiInsight.logicalPath
+              .filter((step: unknown) => typeof step === 'string' && step.trim().length > 0)
+              .slice(0, 3)
+          : [],
         createdAt:
           reflectResponse?.reflection?.createdAt || new Date().toISOString(),
       };
@@ -170,6 +177,7 @@ export function useHeartPulse() {
               advice: '',
               verses: [],
               hadith: [],
+              logicalPath: [],
               createdAt: item.createdAt,
             }))
           : [];

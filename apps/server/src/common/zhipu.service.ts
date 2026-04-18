@@ -11,6 +11,12 @@ export class ZhipuService {
   private readonly zhipuUrl =
     process.env.ZHIPU_API_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
   private readonly zhipuModel = process.env.ZHIPU_MODEL || "glm-4-flash";
+  private readonly openRouterTextModels = [
+    "google/gemini-3-flash-preview",
+    "deepseek/deepseek-chat-v3-0324",
+    "deepseek/deepseek-chat",
+  ];
+  private readonly openRouterVisionModels = ["google/gemini-3-flash-preview"];
 
   private static readonly THEME_FALLBACK = ["patience", "gratitude", "trust in Allah"];
 
@@ -91,12 +97,7 @@ export class ZhipuService {
       throw new Error("OpenRouter key not configured");
     }
 
-    const models = [
-      "google/gemini-3-flash-preview",
-      "google/gemini-2.5-flash-preview:thinking",
-      "deepseek/deepseek-chat-v3-0324",
-      "deepseek/deepseek-chat",
-    ];
+    const models = this.openRouterTextModels;
 
     for (const model of models) {
       try {
@@ -181,6 +182,7 @@ export class ZhipuService {
     }
 
     if (this.zhipuApiKey) {
+      this.logger.warn("OpenRouter key missing, falling back to Zhipu provider");
       return this.callZhipu(systemPrompt, userMessage);
     }
 
@@ -193,7 +195,7 @@ Extract the 3 most relevant Islamic spiritual themes from the user's intention a
 Return ONLY a valid JSON array of English keywords.`;
 
     if (this.openRouterApiKey) {
-      const models = ["google/gemini-3-flash-preview", "deepseek/deepseek-chat-v3-0324"];
+      const models = this.openRouterVisionModels;
 
       for (const model of models) {
         try {
@@ -236,6 +238,7 @@ Return ONLY a valid JSON array of English keywords.`;
 
     if (this.zhipuApiKey) {
       try {
+        this.logger.warn("OpenRouter key missing for vision flow, falling back to Zhipu provider");
         const response = await axios.post(
           this.zhipuUrl,
           {
@@ -405,14 +408,22 @@ Do not include explanation text.`;
     tafsir: string;
     scientific: string;
     hadith: Array<{ reference: string; text: string }>;
+    logicalPath: string[];
   }> {
     const systemPrompt = `You are a warm Islamic counselor combining Quranic wisdom with modern science.
-Return ONLY a JSON object with keys spiritual, tafsir, scientific, hadith.
+Return ONLY a JSON object with keys spiritual, tafsir, scientific, hadith, logicalPath.
 Rules for hadith:
 - hadith must be an array of exactly 2 items
 - each item must contain: reference, text
 - reference must include source name and hadith number when possible
-IMPORTANT: Detect the language of the user's text and respond in the SAME language.`;
+Rules for logicalPath:
+- logicalPath must be an array of exactly 3 short steps
+- each step must be practical, realistic, and directly tied to the user's problem
+- each step should be one sentence, max 20 words
+Writing style:
+- use clear, natural, human-sounding English
+- avoid buzzwords, cliches, and over-formal wording
+- keep wording simple and easy to understand for non-native speakers`;
 
     if (!this.hasAnyAiProvider()) {
       const verseCitation = sentiment === "anxious" || sentiment === "struggling" ? "(94:5-6)" : "(13:28)";
@@ -430,6 +441,11 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
             text: "Be in this world as though you were a stranger or a traveler.",
           },
         ],
+        logicalPath: [
+          "Pause and breathe slowly for one minute before making any decision.",
+          "Write one action you can finish today and do it before sunset.",
+          "End the day with dua and trust Allah with what you cannot control.",
+        ],
       };
     }
 
@@ -440,6 +456,7 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
         tafsir: string;
         scientific: string;
         hadith?: Array<{ reference?: string; text?: string }>;
+        logicalPath?: string[];
       }>(response);
       if (parsed?.spiritual && parsed?.tafsir && parsed?.scientific) {
         const hadith = Array.isArray(parsed.hadith)
@@ -450,6 +467,13 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
                 reference: String(item.reference),
                 text: String(item.text),
               }))
+          : [];
+
+        const logicalPath = Array.isArray(parsed.logicalPath)
+          ? parsed.logicalPath
+              .filter((step) => typeof step === "string" && step.trim().length > 0)
+              .slice(0, 3)
+              .map((step) => this.cleanGeneratedText(String(step)))
           : [];
 
         return {
@@ -473,6 +497,14 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
                     text: "The best deeds are those done consistently, even if they are small.",
                   },
                 ],
+          logicalPath:
+            logicalPath.length > 0
+              ? logicalPath
+              : [
+                  "Pause and breathe slowly for one minute before making any decision.",
+                  "Pick one practical action you can complete today, then do it now.",
+                  "Close with dua and keep your next step small but consistent.",
+                ],
         };
       }
       throw new Error("Invalid reflection JSON");
@@ -491,6 +523,11 @@ IMPORTANT: Detect the language of the user's text and respond in the SAME langua
             reference: "Sunan Ibn Majah 4241",
             text: "The best deed is that which is done consistently, even if it is small.",
           },
+        ],
+        logicalPath: [
+          "Pause for a minute and calm your breathing before taking action.",
+          "Choose one step you can complete today and focus only on that.",
+          "Make dua tonight and continue with one steady step tomorrow.",
         ],
       };
     }
