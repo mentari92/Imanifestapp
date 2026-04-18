@@ -51,6 +51,17 @@ interface HadithItem {
   text: string;
 }
 
+function cleanModelText(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/^#+\s*/gm, '')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export default function QalbResultScreen() {
   const router = useRouter();
   const { userText, sentiment } = useLocalSearchParams<{
@@ -98,6 +109,8 @@ export default function QalbResultScreen() {
     (typeof (result as NewQalbStoredResult | null)?.advice === "string"
       ? (result as NewQalbStoredResult).advice || ""
       : "");
+
+  const cleanedSummary = cleanModelText(aiSummary);
 
   const hadith: HadithItem[] = Array.isArray((result as NewQalbStoredResult | null)?.hadith)
     ? ((result as NewQalbStoredResult).hadith || [])
@@ -193,7 +206,7 @@ export default function QalbResultScreen() {
               </Text>
             </View>
             <Text style={{ fontFamily: "Noto Serif", fontSize: 15, color: "#2f3338", lineHeight: 28 }}>
-              {aiSummary}
+                {cleanedSummary}
             </Text>
           </View>
         ) : null}
@@ -220,7 +233,7 @@ export default function QalbResultScreen() {
                 <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
                 {/* Translation */}
                 <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#524f63", textAlign: "center", lineHeight: 26 }}>
-                  "{verse.translation}"
+                  "{cleanModelText(verse.translation)}"
                 </Text>
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
                   — {verse.verseKey}
@@ -232,7 +245,7 @@ export default function QalbResultScreen() {
                       Tafsir
                     </Text>
                     <Text style={{ fontFamily: "Noto Serif", fontSize: 13, color: "#5b5f65", lineHeight: 22 }}>
-                      {verse.tafsirSnippet}
+                      {cleanModelText(verse.tafsirSnippet)}
                     </Text>
                   </View>
                 ) : null}
@@ -253,7 +266,7 @@ export default function QalbResultScreen() {
             {hadith.map((item, i) => (
               <View key={`${item.reference}-${i}`} style={[glass(24), { padding: 22, gap: 10, backgroundColor: "rgba(226,221,248,0.16)" }]}>
                 <Text style={{ fontFamily: "Noto Serif", fontSize: 15, color: "#2f3338", lineHeight: 26 }}>
-                  "{item.text}"
+                  "{cleanModelText(item.text)}"
                 </Text>
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: "#605d71", letterSpacing: 0.6 }}>
                   — {item.reference}

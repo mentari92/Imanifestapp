@@ -186,7 +186,7 @@ export default function QalbScreen() {
               {isRecording ? 'Recording...' : 'Begin'}
             </Text>
             <Text style={styles.micLabel}>
-              {isRecording ? 'Tap to Stop Recording' : 'Tap to Commence{`\n`}Reflection'}
+              {isRecording ? 'Tap to Stop Recording' : 'Tap to Commence\nReflection'}
             </Text>
           </TouchableOpacity>
 
