@@ -36,7 +36,7 @@ export class ImanSyncService {
       if (themes.length === 0) return { verses: [] };
 
       const verses = await this.quranApi.searchVerses(themes[0], 2, {
-        includeTafsir: false,
+        includeTafsir: true,
       });
       return { verses };
     } catch (err) {

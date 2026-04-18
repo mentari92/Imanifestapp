@@ -7,6 +7,13 @@ interface Verse {
   surahName: string;
   surahNumber: number;
   ayahNumber: number;
+  arabicText?: string;
+  tafsirSnippet?: string;
+}
+
+interface HadithReference {
+  reference: string;
+  text: string;
 }
 
 interface HeartPulseResult {
@@ -15,6 +22,7 @@ interface HeartPulseResult {
   emotion: string;
   advice: string;
   verses: Verse[];
+  hadith: HadithReference[];
   createdAt: string;
 }
 
@@ -31,6 +39,7 @@ interface HistoryItem {
   emotion: string;
   advice: string;
   verses: Verse[];
+  hadith: HadithReference[];
   createdAt: string;
 }
 
@@ -65,6 +74,16 @@ export function useHeartPulse() {
       surahName: `Surah ${surahNumber || '?'}`,
       surahNumber,
       ayahNumber,
+      arabicText: verse?.arabicText || '',
+      tafsirSnippet: verse?.tafsirSnippet || '',
+    };
+  };
+
+  const mapHadith = (item: any): HadithReference | null => {
+    if (!item || !item.reference || !item.text) return null;
+    return {
+      reference: String(item.reference),
+      text: String(item.text),
     };
   };
 
@@ -109,6 +128,9 @@ export function useHeartPulse() {
           'Allah hears every sincere heart. Keep your dhikr and continue with steady ikhtiar.',
         verses: Array.isArray(verseResponse?.verses)
           ? verseResponse.verses.map(mapVerse)
+          : [],
+        hadith: Array.isArray(aiInsight?.hadith)
+          ? aiInsight.hadith.map(mapHadith).filter(Boolean) as HadithReference[]
           : [],
         createdAt:
           reflectResponse?.reflection?.createdAt || new Date().toISOString(),
@@ -166,6 +188,7 @@ export function useHeartPulse() {
               emotion: item.sentiment || 'neutral',
               advice: '',
               verses: [],
+              hadith: [],
               createdAt: item.createdAt,
             }))
           : [];

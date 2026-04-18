@@ -28,6 +28,10 @@ interface LegacyAnalyzeResult {
 interface NewQalbStoredResult {
   aiSummary?: string;
   advice?: string;
+  hadith?: Array<{
+    reference?: string;
+    text?: string;
+  }>;
   verses?: Array<
     | Verse
     | {
@@ -41,6 +45,11 @@ interface NewQalbStoredResult {
 }
 
 type QalbStoredResult = LegacyAnalyzeResult | NewQalbStoredResult;
+
+interface HadithItem {
+  reference: string;
+  text: string;
+}
 
 export default function QalbResultScreen() {
   const router = useRouter();
@@ -89,6 +98,12 @@ export default function QalbResultScreen() {
     (typeof (result as NewQalbStoredResult | null)?.advice === "string"
       ? (result as NewQalbStoredResult).advice || ""
       : "");
+
+  const hadith: HadithItem[] = Array.isArray((result as NewQalbStoredResult | null)?.hadith)
+    ? ((result as NewQalbStoredResult).hadith || [])
+        .filter((h) => h?.reference && h?.text)
+        .map((h) => ({ reference: String(h.reference), text: String(h.text) }))
+    : [];
 
   return (
     <ScrollView
@@ -221,6 +236,28 @@ export default function QalbResultScreen() {
                     </Text>
                   </View>
                 ) : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* Hadith References */}
+        {hadith.length > 0 ? (
+          <View style={{ gap: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Text style={{ fontSize: 18 }}>🕊️</Text>
+              <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", color: "#2f3338" }}>
+                Hadith Guidance
+              </Text>
+            </View>
+            {hadith.map((item, i) => (
+              <View key={`${item.reference}-${i}`} style={[glass(24), { padding: 22, gap: 10, backgroundColor: "rgba(226,221,248,0.16)" }]}>
+                <Text style={{ fontFamily: "Noto Serif", fontSize: 15, color: "#2f3338", lineHeight: 26 }}>
+                  "{item.text}"
+                </Text>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: "#605d71", letterSpacing: 0.6 }}>
+                  — {item.reference}
+                </Text>
               </View>
             ))}
           </View>
