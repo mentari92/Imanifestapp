@@ -35,9 +35,7 @@ export class ImanSyncService {
       const themes = await this.zhipu.extractThemes(text.substring(0, 140));
       if (themes.length === 0) return { verses: [] };
 
-      const verses = await this.quranApi.searchVerses(themes[0], 2, {
-        includeTafsir: true,
-      });
+      const verses = await this.searchVersesForThemes(themes);
       return { verses };
     } catch (err) {
       this.logger.error("Quick search failed", err);
