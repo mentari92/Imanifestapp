@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet,
   Image,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -69,13 +70,14 @@ export default function ImanifestScreen() {
       return;
     }
     try {
-      const res = await analyzeIntention(intentionText.trim());
-      if (res) {
-        router.push('/(tabs)/dua-todo');
-      }
+      await analyzeIntention(intentionText.trim());
     } catch (_) {
       // Error is already set in the hook
     }
+  };
+
+  const handleContinueToDuaTodo = () => {
+    router.push('/(tabs)/dua-todo');
   };
 
   const startVoiceRecording = () => {
@@ -134,11 +136,10 @@ export default function ImanifestScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.contentWrap}>
         {/* ── Header ─────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <View style={styles.avatarPlaceholder} />
           <Text style={styles.brandTitle}>Imanifest</Text>
-          <View style={styles.bellPlaceholder} />
         </View>
 
         {/* ── Hero ───────────────────────────────────────────────── */}
@@ -157,7 +158,7 @@ export default function ImanifestScreen() {
             marginBottom: 28,
             padding: 0,
             overflow: 'hidden',
-            minHeight: 160,
+            minHeight: 280,
             alignItems: 'center',
             justifyContent: 'center',
           }]}
@@ -169,11 +170,16 @@ export default function ImanifestScreen() {
               resizeMode="cover"
             />
           ) : (
-            <View style={{ alignItems: 'center', gap: 10, padding: 32 }}>
-              <Text style={{ fontSize: 36 }}>🖼</Text>
-              <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 10, letterSpacing: 1.8, textTransform: 'uppercase', color: C.primaryDim, fontWeight: '700' } as any}>Visual Focus Board</Text>
-              <Text style={{ fontFamily: 'Noto Serif', fontStyle: 'italic', fontSize: 14, color: C.onSurfaceVariant, textAlign: 'center' } as any}>Tap to upload an image that represents{`\n`}your vision or intention</Text>
-            </View>
+            <ImageBackground
+              source={require('../../assets/stitch/imanifest.png')}
+              style={{ width: '100%', height: 300, alignItems: 'center', justifyContent: 'center' } as any}
+              resizeMode="cover"
+            >
+              <View style={{ alignItems: 'center', gap: 10, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.42)' }}>
+                <Text style={{ fontSize: 22 }}>📷</Text>
+                <Text style={{ fontFamily: 'Newsreader', fontStyle: 'italic', fontSize: 30, color: C.primaryDim, fontWeight: '600', textAlign: 'center' } as any}>Capture Inspiration</Text>
+              </View>
+            </ImageBackground>
           )}
         </TouchableOpacity>
 
@@ -201,7 +207,7 @@ export default function ImanifestScreen() {
         {/* ── Gratitude Journal ──────────────────────────────────── */}
         <View style={styles.gratitudeHeader}>
           <View style={styles.gratitudeLine} />
-          <Text style={styles.gratitudeTitle}>What are you grateful for today</Text>
+          <Text style={styles.gratitudeTitle}>What are you grateful for today?</Text>
           <View style={styles.gratitudeLine} />
         </View>
         {['Something I am grateful for...', 'Another blessing today...', 'A final moment of gratitude...'].map(
@@ -227,7 +233,7 @@ export default function ImanifestScreen() {
           activeOpacity={0.85}
         >
           <Text style={styles.ctaText}>
-            {loading ? 'Analyzing...' : 'Manifest & Start Dua-to-Do  →'}
+            {loading ? 'Analyzing...' : 'Manifest & Get AI Guidance  →'}
           </Text>
         </TouchableOpacity>
 
@@ -238,6 +244,7 @@ export default function ImanifestScreen() {
         {/* ── AI Result ──────────────────────────────────────────── */}
         {result && !loading && (
           <View style={styles.resultSection}>
+            <Text style={styles.subSectionTitle}>AI Guidance Rooted in Quran and Sunnah</Text>
             <View style={[glass, styles.encouragementCard]}>
               <Text style={styles.encouragementText}>{result.encouragement}</Text>
             </View>
@@ -287,12 +294,15 @@ export default function ImanifestScreen() {
                     </Text>
                   </View>
                 ))}
+                <Text style={styles.referenceNote}>
+                  References are retrieved through Quran API with MCP Quran fallback when needed.
+                </Text>
               </>
             )}
 
             {result.suggestedActions && result.suggestedActions.length > 0 && (
               <>
-                <Text style={styles.subSectionTitle}>Suggested Actions</Text>
+                <Text style={styles.subSectionTitle}>Suggested Actions You Can Start Today</Text>
                 {result.suggestedActions.map((action, idx) => (
                   <View key={idx} style={styles.actionRow}>
                     <Text style={styles.actionDot}>·</Text>
@@ -301,10 +311,19 @@ export default function ImanifestScreen() {
                 ))}
               </>
             )}
+
+            <TouchableOpacity
+              style={styles.secondaryCtaButton}
+              onPress={handleContinueToDuaTodo}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.secondaryCtaText}>Continue to Dua-to-Do</Text>
+            </TouchableOpacity>
           </View>
         )}
 
         <View style={{ height: 120 }} />
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -317,6 +336,12 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  contentWrap: {
+    width: '100%',
+    maxWidth: 680,
+    alignSelf: 'center',
   },
   // blobs
   blobTopLeft: {
@@ -343,36 +368,27 @@ const styles = StyleSheet.create({
   },
   // header
   header: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 32,
-    paddingVertical: 4,
-  },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.primaryContainer,
+    justifyContent: 'center',
+    marginBottom: 22,
+    paddingVertical: 2,
   },
   brandTitle: {
-    fontSize: 24,
+    fontSize: 17,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     fontWeight: '600' as const,
     color: '#1e2024',
-  },
-  bellPlaceholder: {
-    width: 40,
-    height: 40,
+    opacity: 0.95,
   },
   // hero
   hero: {
     marginBottom: 32,
   },
   displayHeadline: {
-    fontSize: 52,
-    lineHeight: 58,
+    fontSize: Platform.OS === 'web' ? 64 : 52,
+    lineHeight: Platform.OS === 'web' ? 70 : 58,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
@@ -436,11 +452,12 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   gratitudeTitle: {
-    fontSize: 22,
+    fontSize: 39,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     flexShrink: 1,
+    textAlign: 'center',
   },
   gratitudeRow: {
     flexDirection: 'row',
@@ -559,5 +576,30 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     color: C.onSurface,
     fontFamily: 'Noto Serif',
+  },
+  referenceNote: {
+    fontSize: 12,
+    color: C.onSurfaceVariant,
+    opacity: 0.9,
+    marginBottom: 8,
+    fontFamily: 'Plus Jakarta Sans',
+  },
+  secondaryCtaButton: {
+    borderRadius: 9999,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    alignItems: 'center',
+    marginTop: 12,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(174,178,185,0.45)',
+  },
+  secondaryCtaText: {
+    fontFamily: 'Plus Jakarta Sans',
+    fontWeight: '700',
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: C.primaryDim,
   },
 });
