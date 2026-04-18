@@ -195,7 +195,7 @@ export class QuranApiService {
         `${this.baseUrl}/verses/by_key/${verseKey}`,
         {
           params: {
-            translations: 131,
+            translations: "85,131,20",
             fields: "text_uthmani",
           },
           headers: this.getHeaders(),
@@ -208,6 +208,8 @@ export class QuranApiService {
 
       const translation =
         verse.translations?.find((t) => t.resource_id === 131)?.text ||
+        verse.translations?.find((t) => t.resource_id === 85)?.text ||
+        verse.translations?.find((t) => t.resource_id === 20)?.text ||
         verse.translations?.[0]?.text ||
         "Translation unavailable";
 
