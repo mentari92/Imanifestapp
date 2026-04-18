@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 24,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     fontWeight: '600' as const,
     color: '#1e2024',
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   displayHeadline: {
     fontSize: 52,
     lineHeight: 58,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     marginBottom: 10,
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   displaySub: {
     fontSize: 17,
     lineHeight: 26,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     fontStyle: 'italic' as const,
     color: C.onSurfaceVariant,
     opacity: 0.85,
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 22,
     lineHeight: 32,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     minHeight: 160,
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   },
   gratitudeTitle: {
     fontSize: 22,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     flexShrink: 1,
@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   gratitudeInput: {
     flex: 1,
     fontSize: 17,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     fontStyle: 'italic' as const,
     color: C.onSurface,
   },
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 27,
     color: C.onSurface,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
   },
   sentimentPill: {
     alignSelf: 'flex-start' as const,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 25,
     color: C.onSurface,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     marginBottom: 8,
   },
   verseRef: {
@@ -480,6 +480,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
     color: C.onSurface,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
   },
 });

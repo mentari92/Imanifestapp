@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 24,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     fontWeight: '600' as const,
     color: '#1e2024',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   displayHeadline: {
     fontSize: 48,
     lineHeight: 54,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
   },
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   },
   progressValue: {
     fontSize: 26,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurfaceVariant,
     lineHeight: 34,
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   intentionInput: {
     fontSize: 17,
     lineHeight: 26,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     color: C.onSurface,
     minHeight: 90,
     textAlignVertical: 'top',
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 25,
     color: C.onSurface,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     marginBottom: 8,
   },
   verseRef: {
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     fontSize: 19,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     color: C.onSurface,
     lineHeight: 27,
   },

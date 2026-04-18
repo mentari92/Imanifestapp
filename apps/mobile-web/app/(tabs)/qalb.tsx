@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 24,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     fontWeight: '600' as const,
     color: '#1e2024',
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   displayHeadline: {
     fontSize: 52,
     lineHeight: 58,
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     marginBottom: 12,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   displaySub: {
     fontSize: 16,
     lineHeight: 25,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     color: C.onSurfaceVariant,
     maxWidth: 340,
   },
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
   },
   micLabel: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     textAlign: 'center',
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   },
   sentimentHeading: {
     fontSize: 28,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
   },
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   writePanelTitle: {
     fontSize: 24,
-    fontFamily: 'PlayfairDisplay-Regular',
+    fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     marginBottom: 6,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: C.onSurfaceVariant,
     marginBottom: 16,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
   },
   textareaWrap: {
     position: 'relative',
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     fontSize: 17,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     color: C.onSurface,
     minHeight: 160,
     textAlignVertical: 'top',
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   adviceText: {
     fontSize: 17,
     lineHeight: 27,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     color: C.onSurface,
   },
   subSectionTitle: {
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 25,
     color: C.onSurface,
-    fontFamily: 'Lora-Regular',
+    fontFamily: 'Noto Serif',
     marginBottom: 8,
   },
   verseRef: {
