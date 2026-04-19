@@ -617,9 +617,28 @@ export class QuranApiService {
   }
 
   private toAbsoluteFoundationAudioUrl(pathOrUrl: string): string {
+    // Some upstream URLs are protocol-relative mirror links, e.g.
+    // //mirrors.quranicaudio.com/everyayah/Husary_64kbps/001001.mp3
+    if (/^\/\//.test(pathOrUrl)) {
+      return `https:${pathOrUrl}`;
+    }
+
     if (/^https?:\/\//i.test(pathOrUrl)) {
       try {
         const parsed = new URL(pathOrUrl);
+        // Upstream sometimes returns audio.qurancdn.com + mirror path.
+        // Rewrite to the actual mirror host to avoid 404.
+        if (
+          parsed.hostname === "audio.qurancdn.com" &&
+          parsed.pathname.startsWith("/mirrors.quranicaudio.com/")
+        ) {
+          const rewrittenPath = parsed.pathname.replace(
+            "/mirrors.quranicaudio.com",
+            "",
+          );
+          return `https://mirrors.quranicaudio.com${rewrittenPath}`;
+        }
+
         parsed.pathname = parsed.pathname.replace(/\/+/g, "/");
         return parsed.toString();
       } catch {
