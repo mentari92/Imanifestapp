@@ -1,6 +1,5 @@
 import "../global.css";
 import { Stack, Redirect, useSegments } from "expo-router";
-import Head from "expo-router/head";
 import { Component } from "react";
 import { useFonts } from "expo-font";
 import {
@@ -16,11 +15,6 @@ import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, Text } from "react-native";
 import { AuthProvider, useAuth } from "../lib/auth";
-
-const SITE_TITLE = "Imanifest";
-const SITE_DESCRIPTION = "Spiritual mindfulness, daily intentions, and tranquil audio for a peaceful heart and focused faith.";
-const SITE_URL = "https://imanifestapp.com";
-const OG_IMAGE_URL = `${SITE_URL}/og/imanifest-og.png?v=e951fab`;
 
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { error: string | null }> {
   state = { error: null };
@@ -83,28 +77,6 @@ export default function RootLayout() {
     <ErrorBoundary>
     <AuthProvider>
       <AuthGate>
-        <Head>
-          <title>{SITE_TITLE}</title>
-          <meta name="description" content={SITE_DESCRIPTION} />
-          <meta name="theme-color" content="#f9f9fd" />
-          <meta property="og:type" content="website" />
-          <meta property="og:site_name" content={SITE_TITLE} />
-          <meta property="og:title" content={SITE_TITLE} />
-          <meta property="og:description" content={SITE_DESCRIPTION} />
-          <meta property="og:url" content={SITE_URL} />
-          <meta property="og:image" content={OG_IMAGE_URL} />
-          <meta property="og:image:secure_url" content={OG_IMAGE_URL} />
-          <meta property="og:image:type" content="image/png" />
-          <meta property="og:image:width" content="1200" />
-          <meta property="og:image:height" content="630" />
-          <meta property="og:image:alt" content="Imanifest spiritual mindfulness social preview card" />
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content={SITE_TITLE} />
-          <meta name="twitter:description" content={SITE_DESCRIPTION} />
-          <meta name="twitter:image" content={OG_IMAGE_URL} />
-          <meta name="twitter:image:alt" content="Imanifest spiritual mindfulness social preview card" />
-          <link rel="canonical" href={SITE_URL} />
-        </Head>
         <StatusBar style="light" />
         <Stack
           screenOptions={{
