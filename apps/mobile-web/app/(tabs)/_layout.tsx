@@ -1,13 +1,14 @@
 import { Tabs } from 'expo-router';
 import { View, TouchableOpacity, Platform, Text } from 'react-native';
-import { LayoutDashboard, Heart, Sparkles, ListChecks, Headphones } from 'lucide-react-native';
+import { LayoutDashboard, Heart, Sparkles, ListChecks } from 'lucide-react-native';
+import { MeditationIcon } from '../../components/shared/MeditationIcon';
 
 const TABS = [
   { name: 'index', icon: LayoutDashboard, label: 'Dashboard' },
   { name: 'qalb', icon: Heart, label: 'Qalb' },
   { name: 'imanifest', icon: Sparkles, label: 'Imanifest' },
   { name: 'dua-todo', icon: ListChecks, label: 'Dua-to-Do' },
-  { name: 'tafakkur', icon: Headphones, label: 'Tafakkur' },
+  { name: 'tafakkur', icon: MeditationIcon, label: 'Tafakkur' },
 ] as const;
 
 function GlassTabBar({ state, navigation }: any) {

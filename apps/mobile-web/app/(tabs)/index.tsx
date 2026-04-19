@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useDashboard } from '../../hooks/useDashboard';
+import { MeditationIcon } from '../../components/shared/MeditationIcon';
 import {
   Heart, Sparkles, ListChecks,
   Bell, User, Sun, BookOpen, Star,
@@ -128,7 +129,7 @@ const QUICK_ACCESS: QuickAccessItem[] = [
   { label: 'Qalb', desc: 'Check-in with your spirit', route: '/(tabs)/qalb', Icon: Heart, iconBg: '#fce7f3', iconColor: '#db2777', iconFill: '#db2777' },
   { label: 'Imanifest', desc: 'Set your daily intention', route: '/(tabs)/imanifest', Icon: Sparkles, iconBg: '#ede9fe', iconColor: '#7c3aed' },
   { label: 'Dua-to-Do', desc: 'Act on your manifestations', route: '/(tabs)/dua-todo', Icon: ListChecks, iconBg: '#fef3c7', iconColor: '#b45309' },
-  { label: 'Tafakkur', desc: 'Find tranquility in Quran audio', route: '/(tabs)/tafakkur', iconEmoji: '🧘', iconBg: '#d1fae5', iconColor: '#059669' },
+  { label: 'Tafakkur', desc: 'Find tranquility in Quran audio', route: '/(tabs)/tafakkur', Icon: MeditationIcon, iconBg: '#d1fae5', iconColor: '#059669' },
 ];
 
 const RECENT_INTENTIONS = [
