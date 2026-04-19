@@ -113,11 +113,22 @@ const glass = {
     : {}),
 };
 
-const QUICK_ACCESS = [
-  { label: 'Qalb', desc: 'Check-in with your spirit', route: '/(tabs)/qalb', Icon: Heart, iconBg: '#ffe4e6', iconColor: '#e11d48' },
+type QuickAccessItem = {
+  label: string;
+  desc: string;
+  route: string;
+  Icon?: any;
+  iconEmoji?: string;
+  iconBg: string;
+  iconColor: string;
+  iconFill?: string;
+};
+
+const QUICK_ACCESS: QuickAccessItem[] = [
+  { label: 'Qalb', desc: 'Check-in with your spirit', route: '/(tabs)/qalb', Icon: Heart, iconBg: '#fce7f3', iconColor: '#db2777', iconFill: '#db2777' },
   { label: 'Imanifest', desc: 'Set your daily intention', route: '/(tabs)/imanifest', Icon: Sparkles, iconBg: '#ede9fe', iconColor: '#7c3aed' },
   { label: 'Dua-to-Do', desc: 'Act on your manifestations', route: '/(tabs)/dua-todo', Icon: ListChecks, iconBg: '#fef3c7', iconColor: '#b45309' },
-  { label: 'Tafakkur', desc: 'Find tranquility in Quran audio', route: '/(tabs)/tafakkur', iconEmoji: '🧘', iconBg: '#d1fae5', iconColor: '#065f46' },
+  { label: 'Tafakkur', desc: 'Find tranquility in Quran audio', route: '/(tabs)/tafakkur', iconEmoji: '🧘', iconBg: '#d1fae5', iconColor: '#059669' },
 ];
 
 const RECENT_INTENTIONS = [
@@ -211,6 +222,38 @@ export default function DashboardScreen() {
   const completed = data?.stats?.completedDuaTasks ?? 0;
   const total = data?.stats?.totalDuaTasks ?? 15;
   const alignPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 80;
+  const toActivityRoute = (type: string) => {
+    const normalized = type.toLowerCase();
+    if (normalized.includes('intent') || normalized.includes('imanifest')) return '/(tabs)/imanifest';
+    if (normalized.includes('dua')) return '/(tabs)/dua-todo';
+    if (normalized.includes('heart') || normalized.includes('qalb') || normalized.includes('journal')) return '/(tabs)/qalb';
+    if (normalized.includes('tafakkur') || normalized.includes('sakinah') || normalized.includes('quran')) return '/(tabs)/tafakkur';
+    return '/(tabs)/imanifest';
+  };
+
+  const recentIntentions =
+    data?.recentActivity && data.recentActivity.length > 0
+      ? data.recentActivity.slice(0, 3).map((activity, index) => {
+          const normalized = activity.type.toLowerCase();
+          const isDua = normalized.includes('dua');
+          const isQuran = normalized.includes('quran') || normalized.includes('tafakkur');
+          const isQalb = normalized.includes('qalb') || normalized.includes('heart') || normalized.includes('journal');
+          const icon = isDua ? ListChecks : isQuran ? BookOpen : isQalb ? Heart : Star;
+          const iconBg = isDua ? 'rgba(254,243,199,0.6)' : isQuran ? 'rgba(169,247,183,0.5)' : isQalb ? 'rgba(252,231,243,0.6)' : 'rgba(229,223,248,0.5)';
+          const iconColor = isDua ? '#b45309' : isQuran ? C.tertiary : isQalb ? '#db2777' : C.primaryDim;
+          const pct = isDua ? alignPct : Math.max(45, 78 - index * 14);
+
+          return {
+            title: activity.title,
+            pct,
+            icon,
+            iconBg,
+            iconColor,
+            route: toActivityRoute(activity.type),
+          };
+        })
+      : RECENT_INTENTIONS.map((item) => ({ ...item, route: '/(tabs)/imanifest' }));
+
   const prayerState = prayerTimings
     ? resolvePrayerState(prayerTimings, new Date(clockTick))
     : {
@@ -297,7 +340,7 @@ export default function DashboardScreen() {
           <Text style={s.sectionTitle}>Quick Access</Text>
         </View>
         <View style={s.quickGrid}>
-          {QUICK_ACCESS.map(({ label, desc, route, Icon, iconEmoji, iconBg, iconColor }) => (
+          {QUICK_ACCESS.map(({ label, desc, route, Icon, iconEmoji, iconBg, iconColor, iconFill }) => (
             <TouchableOpacity
               key={label}
               style={[glass, s.quickCard]}
@@ -306,7 +349,7 @@ export default function DashboardScreen() {
             >
               <View style={[s.quickIconWrap, { backgroundColor: iconBg }]}>
                 {Icon ? (
-                  <Icon size={22} color={iconColor} />
+                  <Icon size={22} color={iconColor} fill={iconFill} />
                 ) : (
                   <Text style={{ fontSize: 20 }}>{iconEmoji}</Text>
                 )}
@@ -320,7 +363,11 @@ export default function DashboardScreen() {
         {/* Bento: Daily Alignment + Streak */}
         <View style={s.bentoRow}>
           {/* Daily Alignment */}
-          <View style={[glass, s.bentoMain]}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => router.push('/(tabs)/dua-todo')}
+            style={[glass, s.bentoMain]}
+          >
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               <View style={{ position: 'absolute', top: -40, right: -40, width: 150, height: 150,
                 borderRadius: 75, backgroundColor: C.primaryContainer, opacity: 0.2,
@@ -348,10 +395,14 @@ export default function DashboardScreen() {
                 <Text style={s.bentoVerse}>"Allah does not burden a soul beyond that it can bear." (2:286)</Text>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* Reflection Streak */}
-          <View style={[glass, s.bentoSide]}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => router.push('/(tabs)/dua-todo')}
+            style={[glass, s.bentoSide]}
+          >
             <View style={s.streakIconWrap}>
               <Star size={28} color={C.tertiary} fill={C.tertiaryContainer} />
             </View>
@@ -366,17 +417,24 @@ export default function DashboardScreen() {
                 />
               ))}
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Recent Intentions */}
         <View style={[glass, { padding: 24, marginBottom: 8 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
             <Text style={s.sectionTitle}>Recent Intentions</Text>
-            <Text style={s.seeAll}>See All</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/imanifest')}>
+              <Text style={s.seeAll}>See All</Text>
+            </TouchableOpacity>
           </View>
-          {RECENT_INTENTIONS.map(({ title, pct, icon: Icon, iconBg, iconColor }, i) => (
-            <View key={i} style={s.intentionRow}>
+          {recentIntentions.map(({ title, pct, icon: Icon, iconBg, iconColor, route }, i) => (
+            <TouchableOpacity
+              key={i}
+              style={s.intentionRow}
+              onPress={() => router.push(route as any)}
+              activeOpacity={0.85}
+            >
               <View style={[s.intentionIconWrap, { backgroundColor: iconBg }]}>
                 <Icon size={20} color={iconColor} />
               </View>
@@ -389,7 +447,7 @@ export default function DashboardScreen() {
                   <View style={[s.intentionFill, { width: `${pct}%` as any, backgroundColor: iconColor, opacity: 0.7 }]} />
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
