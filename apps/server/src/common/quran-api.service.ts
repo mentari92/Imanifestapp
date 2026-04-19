@@ -618,7 +618,13 @@ export class QuranApiService {
 
   private toAbsoluteFoundationAudioUrl(pathOrUrl: string): string {
     if (/^https?:\/\//i.test(pathOrUrl)) {
-      return pathOrUrl;
+      try {
+        const parsed = new URL(pathOrUrl);
+        parsed.pathname = parsed.pathname.replace(/\/+/g, "/");
+        return parsed.toString();
+      } catch {
+        return pathOrUrl;
+      }
     }
 
     const cleanBase = this.foundationAudioBaseUrl.replace(/\/$/, "");
