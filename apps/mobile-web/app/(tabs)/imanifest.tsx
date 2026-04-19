@@ -10,9 +10,9 @@ import {
   Alert,
   StyleSheet,
   Image,
-  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Sparkles } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useImanSync } from '../../hooks/useImanSync';
@@ -61,8 +61,11 @@ export default function ImanifestScreen() {
   const { loading, error, result, history, analyzeIntention, fetchHistory } = useImanSync();
   const [intentionText, setIntentionText] = useState('');
   const [gratitude, setGratitude] = useState(['', '', '']);
-  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTarget, setRecordingTarget] = useState<'intention' | 'gratitude' | null>(null);
+  const [activeGratitudeIndex, setActiveGratitudeIndex] = useState(0);
   const [visionImage, setVisionImage] = useState<string | null>(null);
+
+  const isRecording = recordingTarget !== null;
 
   useEffect(() => {
     fetchHistory().catch(() => {});
@@ -93,28 +96,46 @@ export default function ImanifestScreen() {
     });
   };
 
-  const startVoiceRecording = () => {
+  const startVoiceRecording = (target: 'intention' | 'gratitude') => {
+    if (isRecording) {
+      return;
+    }
     if (Platform.OS !== 'web') {
-      Alert.alert('Voice input is available on web. Please type your intention.');
+      Alert.alert('Voice input is available on web. Please type your reflection.');
       return;
     }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
-      Alert.alert('Voice input not supported in this browser. Please type your intention.');
+      Alert.alert('Voice input not supported in this browser. Please type your reflection.');
       return;
     }
     const recognition = new SR();
     recognition.lang = 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-    setIsRecording(true);
+    setRecordingTarget(target);
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      setIntentionText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-      setIsRecording(false);
+      if (target === 'intention') {
+        setIntentionText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      } else {
+        setGratitude((prev) =>
+          prev.map((item, idx) => {
+            if (idx !== activeGratitudeIndex) {
+              return item;
+            }
+            return item ? `${item} ${transcript}` : transcript;
+          })
+        );
+      }
+      setRecordingTarget(null);
     };
-    recognition.onerror = () => setIsRecording(false);
-    recognition.onend = () => setIsRecording(false);
+    recognition.onerror = () => {
+      setRecordingTarget(null);
+    };
+    recognition.onend = () => {
+      setRecordingTarget(null);
+    };
     recognition.start();
   };
 
@@ -132,6 +153,8 @@ export default function ImanifestScreen() {
 
   const setGratitudeAt = (i: number, v: string) =>
     setGratitude((prev) => prev.map((x, idx) => (idx === i ? v : x)));
+
+  const hasGratitudeEntry = gratitude.some((item) => item.trim().length > 0);
 
   return (
     <KeyboardAvoidingView
@@ -152,7 +175,11 @@ export default function ImanifestScreen() {
         <View style={styles.contentWrap}>
         {/* ── Header ─────────────────────────────────────────────── */}
         <View style={styles.header}>
+          <View style={styles.headerIconWrap}>
+            <Sparkles size={18} color="#4338ca" strokeWidth={2.1} />
+          </View>
           <Text style={styles.brandTitle}>Imanifest</Text>
+          <View style={styles.headerIconSpacer} />
         </View>
 
         {/* ── Hero ───────────────────────────────────────────────── */}
@@ -194,9 +221,9 @@ export default function ImanifestScreen() {
         {/* ── Soul's Intention ───────────────────────────────────── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>Soul's Intention</Text>
-          <TouchableOpacity onPress={startVoiceRecording} disabled={isRecording}>
-            <Text style={[styles.voiceLabel, isRecording && { color: '#ac3149' }]}>
-              {isRecording ? '⏺ Recording...' : '🎙 Voice Record'}
+          <TouchableOpacity onPress={() => startVoiceRecording('intention')} disabled={isRecording}>
+            <Text style={[styles.voiceLabel, recordingTarget === 'intention' && { color: '#ac3149' }]}> 
+              {recordingTarget === 'intention' ? '⏺ Recording...' : '🎙 Voice Record'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -218,9 +245,58 @@ export default function ImanifestScreen() {
           <Text style={styles.gratitudeTitle}>What are you grateful for today?</Text>
           <View style={styles.gratitudeLine} />
         </View>
+        <View style={[glass, styles.gratitudePromptCard]}>
+          <Text style={styles.gratitudePromptText}>
+            Fill all 3 rows to train your heart in daily gratitude and mindful reflection.
+          </Text>
+          <Text style={styles.gratitudeVerseText}>
+            "If you are grateful, I will surely increase you (in favor)." (QS. Ibrahim: 7)
+          </Text>
+          <View style={styles.gratitudeControlRow}>
+            <View style={styles.gratitudeSelectorWrap}>
+              {[0, 1, 2].map((idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  onPress={() => setActiveGratitudeIndex(idx)}
+                  style={[
+                    styles.gratitudeSelectorChip,
+                    activeGratitudeIndex === idx && styles.gratitudeSelectorChipActive,
+                  ]}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={[
+                      styles.gratitudeSelectorText,
+                      activeGratitudeIndex === idx && styles.gratitudeSelectorTextActive,
+                    ]}
+                  >
+                    Row 0{idx + 1}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              onPress={() => startVoiceRecording('gratitude')}
+              disabled={isRecording}
+              style={styles.gratitudeGlobalMicButton}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.gratitudeGlobalMicText, recordingTarget === 'gratitude' && { color: '#ac3149' }]}>
+                {recordingTarget === 'gratitude'
+                  ? `⏺ Recording Row 0${activeGratitudeIndex + 1}`
+                  : `🎙 Voice to Row 0${activeGratitudeIndex + 1}`}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {hasGratitudeEntry ? (
+            <Text style={styles.gratitudeHadithText}>
+              "How wonderful is the affair of the believer... if he is blessed, he is grateful, and that is good for him." (HR. Muslim)
+            </Text>
+          ) : null}
+        </View>
         {['Something I am grateful for...', 'Another blessing today...', 'A final moment of gratitude...'].map(
           (ph, i) => (
-            <View key={i} style={[glass, styles.gratitudeRow]}>
+            <View key={i} style={[glass, styles.gratitudeRow, activeGratitudeIndex === i && styles.gratitudeRowActive]}>
               <Text style={styles.gratitudeNum}>0{i + 1}</Text>
               <TextInput
                 style={styles.gratitudeInput}
@@ -228,6 +304,7 @@ export default function ImanifestScreen() {
                 placeholderTextColor="rgba(91,95,101,0.4)"
                 value={gratitude[i]}
                 onChangeText={(v) => setGratitudeAt(i, v)}
+                onFocus={() => setActiveGratitudeIndex(i)}
               />
             </View>
           )
@@ -419,11 +496,23 @@ const styles = StyleSheet.create({
   },
   // header
   header: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginBottom: 22,
     paddingVertical: 2,
+  },
+  headerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(226,221,248,0.78)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerIconSpacer: {
+    width: 40,
+    height: 40,
   },
   brandTitle: {
     fontSize: 17,
@@ -521,7 +610,7 @@ const styles = StyleSheet.create({
   gratitudeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
     gap: 12,
   },
   gratitudeLine: {
@@ -531,12 +620,83 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   gratitudeTitle: {
-    fontSize: 39,
+    fontSize: 37,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     flexShrink: 1,
     textAlign: 'center',
+  },
+  gratitudePromptCard: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  gratitudePromptText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: C.onSurfaceVariant,
+    fontFamily: 'Plus Jakarta Sans',
+    fontWeight: '600' as const,
+  },
+  gratitudeVerseText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: C.tertiary,
+    fontFamily: 'Noto Serif',
+    fontStyle: 'italic' as const,
+  },
+  gratitudeControlRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  gratitudeSelectorWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  gratitudeSelectorChip: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(226,221,248,0.55)',
+  },
+  gratitudeSelectorChipActive: {
+    backgroundColor: 'rgba(169,247,183,0.55)',
+  },
+  gratitudeSelectorText: {
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: C.primaryDim,
+    fontFamily: 'Plus Jakarta Sans',
+    fontWeight: '700' as const,
+  },
+  gratitudeSelectorTextActive: {
+    color: C.tertiary,
+  },
+  gratitudeGlobalMicButton: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(226,221,248,0.55)',
+  },
+  gratitudeGlobalMicText: {
+    fontSize: 11,
+    letterSpacing: 0.4,
+    color: C.primaryDim,
+    fontFamily: 'Plus Jakarta Sans',
+    fontWeight: '700' as const,
+  },
+  gratitudeHadithText: {
+    fontSize: 12,
+    lineHeight: 19,
+    color: C.onSurfaceVariant,
+    fontFamily: 'Noto Serif',
+    fontStyle: 'italic' as const,
   },
   gratitudeRow: {
     flexDirection: 'row',
@@ -546,6 +706,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 16,
     gap: 16,
+  },
+  gratitudeRowActive: {
+    borderWidth: 1,
+    borderColor: 'rgba(32,108,58,0.28)',
+    backgroundColor: 'rgba(169,247,183,0.14)',
   },
   gratitudeNum: {
     fontSize: 13,

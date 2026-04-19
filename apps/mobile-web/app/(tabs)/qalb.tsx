@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
+import { Heart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeartPulse } from '../../hooks/useHeartPulse';
@@ -163,7 +164,9 @@ export default function QalbScreen() {
       >
         {/* ── Header ─────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <View style={styles.avatarPlaceholder} />
+          <View style={styles.avatarPlaceholder}>
+            <Heart size={18} color="#be123c" strokeWidth={2.1} />
+          </View>
           <Text style={styles.brandTitle}>Qalb Voice</Text>
           <View style={styles.bellPlaceholder} />
         </View>
@@ -392,6 +395,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: C.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   brandTitle: {
     fontSize: 24,
