@@ -10,7 +10,7 @@ export default function Root({ children }: PropsWithChildren) {
   const siteTitle = 'Imanifest';
   const siteDescription = 'Spiritual mindfulness, daily intentions, and tranquil audio for a peaceful heart and focused faith.';
   const siteUrl = 'https://imanifestapp.com';
-  const ogImageUrl = `${siteUrl}/og/imanifest-og.png`;
+  const ogImageUrl = `${siteUrl}/og/imanifest-og.png?v=9506731`;
 
   return (
     <html lang="en">
@@ -27,6 +27,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta property="og:description" content={siteDescription} />
         <meta property="og:url" content={siteUrl} />
         <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:secure_url" content={ogImageUrl} />
+        <meta property="og:image:type" content="image/png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="Imanifest spiritual mindfulness social preview card" />
@@ -34,6 +36,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="twitter:title" content={siteTitle} />
         <meta name="twitter:description" content={siteDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
+        <meta name="twitter:image:alt" content="Imanifest spiritual mindfulness social preview card" />
+        <link rel="canonical" href={siteUrl} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
