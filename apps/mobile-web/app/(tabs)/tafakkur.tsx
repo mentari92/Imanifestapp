@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Platform,
   ActivityIndicator, TextInput,
 } from "react-native";
-import { Headphones } from "lucide-react-native";
+import { MeditationIcon } from "../../components/shared/MeditationIcon";
 import { apiGet } from "../../lib/api";
 
 const glass = (radius = 24) => ({
@@ -445,7 +445,7 @@ export default function TafakkurHubScreen() {
         {/* Header */}
         <View style={{ paddingHorizontal: 24, paddingVertical: 16, flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.4)", ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.2)" } as any) : {}) }}>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
-            <Headphones size={20} color="#065f46" strokeWidth={1.8} />
+            <MeditationIcon size={20} color="#065f46" />
           </View>
           <Text style={{ fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e", marginLeft: 12 }}>Tafakkur Hub</Text>
         </View>
