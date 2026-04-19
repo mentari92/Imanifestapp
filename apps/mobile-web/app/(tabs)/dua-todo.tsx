@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
+import { ListChecks } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useDuaToDo } from '../../hooks/useDuaToDo';
@@ -125,7 +126,11 @@ export default function DuaTodoScreen() {
 
           {/* ── Header ─────────────────────────────────────────────── */}
           <View style={styles.header}>
+            <View style={styles.headerIconWrap}>
+              <ListChecks size={18} color="#166534" strokeWidth={2.1} />
+            </View>
             <Text style={styles.brandTitle}>Dua-to-Do</Text>
+            <View style={styles.headerIconSpacer} />
           </View>
 
           {/* ── Hero ───────────────────────────────────────────────── */}
@@ -329,11 +334,23 @@ const styles = StyleSheet.create({
   },
   // header
   header: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginBottom: 28,
     paddingVertical: 4,
+  },
+  headerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(169,247,183,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerIconSpacer: {
+    width: 40,
+    height: 40,
   },
   brandTitle: {
     fontSize: 16,
