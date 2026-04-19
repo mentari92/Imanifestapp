@@ -700,7 +700,7 @@ export default function TafakkurHubScreen() {
                 </View>
               )}
             </View>
-          ) : null}
+          )}
 
           {/* Read & Reflect — synced verse display */}
           <View style={[glass(24), { padding: 28, gap: 16, backgroundColor: "rgba(169,247,183,0.08)" }]}>
