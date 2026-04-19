@@ -608,11 +608,6 @@ export default function TafakkurHubScreen() {
                   />
                 </View>
               )}
-              {!audioError && (
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65" }}>
-                  Drag atau tap progress bar untuk lompat ke awal, tengah, atau akhir surah.
-                </Text>
-              )}
             </View>
           ) : null}
 
