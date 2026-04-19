@@ -622,7 +622,7 @@ export class QuranApiService {
     }
 
     const cleanBase = this.foundationAudioBaseUrl.replace(/\/$/, "");
-    const cleanPath = pathOrUrl.replace(/^\//, "");
+    const cleanPath = pathOrUrl.replace(/^\/+/, "");
     return `${cleanBase}/${cleanPath}`;
   }
 
