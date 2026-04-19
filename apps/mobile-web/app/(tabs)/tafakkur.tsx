@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, Platform,
+  View, Text, ScrollView, TouchableOpacity, Platform, Pressable,
   ActivityIndicator, TextInput,
 } from "react-native";
 import { Headphones } from "lucide-react-native";
@@ -62,6 +62,8 @@ const SOUND_FILES: Record<string, string> = {
   birds: "/sounds/birds.mp3",
 };
 
+const PLAYBACK_SPEEDS = [0.75, 1, 1.25, 1.5] as const;
+
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -87,12 +89,14 @@ export default function TafakkurHubScreen() {
   const [progress, setProgress]         = useState(0);
   const [duration, setDuration]         = useState(0);
   const [currentTime, setCurrentTime]   = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const [dhikrIndex, setDhikrIndex]     = useState(0);
   const [dhikrCount, setDhikrCount]     = useState(0);
   const [activeNature, setActiveNature] = useState<string | null>(null);
   const [surahVerses, setSurahVerses]   = useState<Verse[]>([]);
   const [currentVerseIdx, setCurrentVerseIdx] = useState(0);
   const [pendingPlay, setPendingPlay]   = useState(false);
+  const [progressBarWidth, setProgressBarWidth] = useState(0);
 
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const intervalRef   = useRef<any>(null);
@@ -251,7 +255,9 @@ export default function TafakkurHubScreen() {
         return;
       }
       setCurrentVerseIdx(idx);
-      setProgress(Math.round((idx / verses.length) * 100));
+      setCurrentTime(0);
+      setDuration(0);
+      setProgress(Math.round((idx / Math.max(verses.length, 1)) * 100));
 
       const verse = verses[idx];
       let resolved: { url: string; reciterIdUsed: number };
@@ -271,6 +277,7 @@ export default function TafakkurHubScreen() {
       }
 
       const audio = new Audio(resolved.url);
+      audio.playbackRate = playbackRate;
       audioRef.current = audio;
 
       audio.oncanplay = () => {
@@ -280,7 +287,14 @@ export default function TafakkurHubScreen() {
           if (thisId !== requestIdRef.current) { audio.pause(); return; }
           setIsPlaying(true);
           intervalRef.current = setInterval(() => {
-            if (audio.duration > 0) { setCurrentTime(audio.currentTime); setDuration(audio.duration); }
+            if (audio.duration > 0) {
+              setCurrentTime(audio.currentTime);
+              setDuration(audio.duration);
+              const totalVerses = Math.max(verses.length, 1);
+              const verseFraction = idx / totalVerses;
+              const inVerseFraction = (audio.currentTime / audio.duration) / totalVerses;
+              setProgress(Math.min(100, Math.max(0, Math.round((verseFraction + inVerseFraction) * 100))));
+            }
           }, 300);
         }).catch(() => {
           setIsLoadingAudio(false);
@@ -301,7 +315,28 @@ export default function TafakkurHubScreen() {
 
     playVerse(startIdx);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchVerseAudioUrl, reciters, surahVerses]);
+  }, [fetchVerseAudioUrl, playbackRate, reciters, surahVerses]);
+
+  const seekToProgressFraction = useCallback((fraction: number) => {
+    if (!activeSurah || surahVerses.length === 0) return;
+    const clamped = Math.min(1, Math.max(0, fraction));
+    const targetIdx = Math.min(
+      surahVerses.length - 1,
+      Math.floor(clamped * surahVerses.length),
+    );
+    setCurrentVerseIdx(targetIdx);
+    setProgress(Math.round(clamped * 100));
+    loadAndPlayVerses(activeReciter, activeSurah, targetIdx);
+  }, [activeReciter, activeSurah, loadAndPlayVerses, surahVerses.length]);
+
+  const cyclePlaybackRate = useCallback(() => {
+    const idx = PLAYBACK_SPEEDS.findIndex((s) => s === playbackRate);
+    const next = PLAYBACK_SPEEDS[(idx + 1) % PLAYBACK_SPEEDS.length];
+    setPlaybackRate(next);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = next;
+    }
+  }, [playbackRate]);
 
   const togglePlay = () => {
     if (reciters.length === 0) {
@@ -500,11 +535,30 @@ export default function TafakkurHubScreen() {
                   style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}>
                   <Text style={{ fontSize: 18 }}>⏹</Text>
                 </TouchableOpacity>
+                <TouchableOpacity onPress={cyclePlaybackRate}
+                  style={{ minWidth: 58, height: 36, borderRadius: 18, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: "#2f3338" }}>{playbackRate}x</Text>
+                </TouchableOpacity>
               </View>
               {!audioError && (
-                <View style={{ height: 6, backgroundColor: "#eceef3", borderRadius: 3, overflow: "hidden" }}>
-                  <View style={{ width: `${Math.min(progress, 100)}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
-                </View>
+                <Pressable
+                  onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
+                  onPress={(e) => {
+                    if (progressBarWidth <= 0) return;
+                    const x = e.nativeEvent.locationX || 0;
+                    seekToProgressFraction(x / progressBarWidth);
+                  }}
+                  style={{ height: 14, justifyContent: "center" }}
+                >
+                  <View style={{ height: 6, backgroundColor: "#eceef3", borderRadius: 3, overflow: "hidden" }}>
+                    <View style={{ width: `${Math.min(progress, 100)}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
+                  </View>
+                </Pressable>
+              )}
+              {!audioError && (
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65" }}>
+                  Tap progress bar to jump to middle/end of surah.
+                </Text>
               )}
             </View>
           ) : null}
