@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  View, Text, ScrollView, TouchableOpacity, Platform, Pressable,
+  View, Text, ScrollView, TouchableOpacity, Platform,
   ActivityIndicator, TextInput,
 } from "react-native";
 import { Headphones } from "lucide-react-native";
@@ -97,12 +97,14 @@ export default function TafakkurHubScreen() {
   const [currentVerseIdx, setCurrentVerseIdx] = useState(0);
   const [pendingPlay, setPendingPlay]   = useState(false);
   const [progressBarWidth, setProgressBarWidth] = useState(0);
+  const [scrubProgress, setScrubProgress] = useState<number | null>(null);
 
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const intervalRef   = useRef<any>(null);
   const ambientStopRef = useRef<(() => void) | null>(null);
   const requestIdRef  = useRef(0); // cancels stale loadAndPlay calls
   const audioUrlCacheRef = useRef<Record<string, { url: string; reciterIdUsed: number }>>({});
+  const scrubProgressRef = useRef<number | null>(null);
 
   const toInitials = (name: string) => {
     const words = name
@@ -329,6 +331,26 @@ export default function TafakkurHubScreen() {
     loadAndPlayVerses(activeReciter, activeSurah, targetIdx);
   }, [activeReciter, activeSurah, loadAndPlayVerses, surahVerses.length]);
 
+  const clampSeekFraction = useCallback((x: number) => {
+    if (progressBarWidth <= 0) return 0;
+    return Math.min(1, Math.max(0, x / progressBarWidth));
+  }, [progressBarWidth]);
+
+  const previewSeekFraction = useCallback((x: number) => {
+    const nextFraction = clampSeekFraction(x);
+    const nextProgress = Math.round(nextFraction * 100);
+    scrubProgressRef.current = nextProgress;
+    setScrubProgress(nextProgress);
+    return nextFraction;
+  }, [clampSeekFraction]);
+
+  const commitSeekFromX = useCallback((x: number) => {
+    const nextFraction = previewSeekFraction(x);
+    scrubProgressRef.current = null;
+    setScrubProgress(null);
+    seekToProgressFraction(nextFraction);
+  }, [previewSeekFraction, seekToProgressFraction]);
+
   const cyclePlaybackRate = useCallback(() => {
     const idx = PLAYBACK_SPEEDS.findIndex((s) => s === playbackRate);
     const next = PLAYBACK_SPEEDS[(idx + 1) % PLAYBACK_SPEEDS.length];
@@ -390,6 +412,7 @@ export default function TafakkurHubScreen() {
   const dhikr = DHIKR_LIST[dhikrIndex];
   const showPlayer = isPlaying || isLoadingAudio || progress > 0 || !!audioError;
   const currentVerse = surahVerses[currentVerseIdx];
+  const visibleProgress = scrubProgress ?? progress;
 
   return (
     <View style={{ flex: 1 }}>
@@ -541,23 +564,53 @@ export default function TafakkurHubScreen() {
                 </TouchableOpacity>
               </View>
               {!audioError && (
-                <Pressable
+                <View
                   onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
-                  onPress={(e) => {
-                    if (progressBarWidth <= 0) return;
-                    const x = e.nativeEvent.locationX || 0;
-                    seekToProgressFraction(x / progressBarWidth);
+                  onStartShouldSetResponder={() => true}
+                  onMoveShouldSetResponder={() => true}
+                  onResponderGrant={(e) => {
+                    previewSeekFraction(e.nativeEvent.locationX || 0);
                   }}
-                  style={{ height: 14, justifyContent: "center" }}
+                  onResponderMove={(e) => {
+                    previewSeekFraction(e.nativeEvent.locationX || 0);
+                  }}
+                  onResponderRelease={(e) => {
+                    commitSeekFromX(e.nativeEvent.locationX || 0);
+                  }}
+                  onResponderTerminate={() => {
+                    scrubProgressRef.current = null;
+                    setScrubProgress(null);
+                  }}
+                  style={{ height: 28, justifyContent: "center" }}
                 >
                   <View style={{ height: 6, backgroundColor: "#eceef3", borderRadius: 3, overflow: "hidden" }}>
-                    <View style={{ width: `${Math.min(progress, 100)}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
+                    <View style={{ width: `${Math.min(visibleProgress, 100)}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
                   </View>
-                </Pressable>
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: "absolute",
+                      left: `${Math.min(visibleProgress, 100)}%` as any,
+                      marginLeft: -9,
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      backgroundColor: "#ffffff",
+                      borderWidth: 2,
+                      borderColor: "#166534",
+                      top: 5,
+                      shadowColor: "#166534",
+                      shadowOpacity: 0.15,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 2,
+                    }}
+                  />
+                </View>
               )}
               {!audioError && (
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65" }}>
-                  Tap progress bar to jump to middle/end of surah.
+                  Drag atau tap progress bar untuk lompat ke awal, tengah, atau akhir surah.
                 </Text>
               )}
             </View>
