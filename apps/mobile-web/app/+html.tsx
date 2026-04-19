@@ -7,12 +7,33 @@ import type { PropsWithChildren } from 'react';
  * to match the Stitch Celestial Ether design system.
  */
 export default function Root({ children }: PropsWithChildren) {
+  const siteTitle = 'Imanifest';
+  const siteDescription = 'Spiritual mindfulness, daily intentions, and tranquil audio for a peaceful heart and focused faith.';
+  const siteUrl = 'https://imanifestapp.com';
+  const ogImageUrl = `${siteUrl}/og/imanifest-og.png`;
+
   return (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <title>{siteTitle}</title>
+        <meta name="description" content={siteDescription} />
+        <meta name="theme-color" content="#f9f9fd" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={siteTitle} />
+        <meta property="og:title" content={siteTitle} />
+        <meta property="og:description" content={siteDescription} />
+        <meta property="og:url" content={siteUrl} />
+        <meta property="og:image" content={ogImageUrl} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Imanifest spiritual mindfulness social preview card" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={siteTitle} />
+        <meta name="twitter:description" content={siteDescription} />
+        <meta name="twitter:image" content={ogImageUrl} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
