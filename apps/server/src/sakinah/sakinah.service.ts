@@ -173,7 +173,18 @@ export class SakinahService {
     try {
       const cached = await this.redis.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached) as VerseAudioResult;
+        const parsed = JSON.parse(cached) as VerseAudioResult;
+        const normalized = this.normalizeCachedAudioUrl(parsed);
+
+        if (normalized.url !== parsed.url) {
+          try {
+            await this.redis.set(cacheKey, JSON.stringify(normalized), 3600);
+          } catch {
+            // non-critical cache write failure
+          }
+        }
+
+        return normalized;
       }
     } catch {
       // non-critical cache read failure
@@ -278,5 +289,17 @@ export class SakinahService {
       englishName: `Surah ${i + 1}`,
       versesCount: 0,
     }));
+  }
+
+  private normalizeCachedAudioUrl(result: VerseAudioResult): VerseAudioResult {
+    const badPrefix = "https://audio.qurancdn.com//mirrors.quranicaudio.com";
+    if (!result.url.startsWith(badPrefix)) {
+      return result;
+    }
+
+    return {
+      ...result,
+      url: result.url.replace(badPrefix, "https://mirrors.quranicaudio.com"),
+    };
   }
 }
