@@ -14,16 +14,29 @@ export class PrismaService
   }
 
   async onModuleInit() {
-    try {
-      await this.$connect();
-      this._connected = true;
-      this.logger.log("✅ Database connected successfully");
-    } catch (err: any) {
-      this._connected = false;
-      this.logger.warn(
-        `⚠️ Database connection failed — running in demo mode without persistence: ${err?.message || err}`,
-      );
+    const maxAttempts = 10;
+    const delayMs = 3000;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        await this.$connect();
+        this._connected = true;
+        this.logger.log("✅ Database connected successfully");
+        return;
+      } catch (err: any) {
+        this.logger.warn(
+          `⚠️ DB connect attempt ${attempt}/${maxAttempts} failed: ${err?.message || err}`,
+        );
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
     }
+
+    this._connected = false;
+    this.logger.error(
+      "❌ Database connection permanently failed after all retries — running without persistence",
+    );
   }
 
   async onModuleDestroy() {
