@@ -9,11 +9,11 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { useAuthStore } from '../lib/auth';
+import { useAuth } from '../lib/auth';
 import { colors } from '../constants/theme';
 
 export default function AuthScreen() {
-  const { login, register, isLoading } = useAuthStore();
+  const { login, register, loading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -101,12 +101,12 @@ export default function AuthScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSubmit}
-            disabled={isLoading}
+            disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {isLoading
+              {loading
                 ? 'Please wait...'
                 : isLogin
                   ? 'Sign In'
@@ -137,7 +137,7 @@ const styles = {
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: 'center' as const,
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
@@ -162,7 +162,7 @@ const styles = {
     fontFamily: 'Inter-Regular',
   },
   form: {
-    width: '100%',
+    width: '100%' as const,
   },
   inputGroup: {
     marginBottom: 16,
