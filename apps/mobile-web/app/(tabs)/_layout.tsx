@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
-import { View, TouchableOpacity, Platform, Text } from 'react-native';
-import { LayoutDashboard, Heart, Sparkles, ListChecks } from 'lucide-react-native';
+import { View, TouchableOpacity, Platform, Text, Alert } from 'react-native';
+import { LayoutDashboard, Heart, Sparkles, ListChecks, LogOut } from 'lucide-react-native';
 import { MeditationIcon } from '../../components/shared/MeditationIcon';
+import { useAuth } from '../../lib/auth';
 
 const TABS = [
   { name: 'index', icon: LayoutDashboard, label: 'Dashboard' },
@@ -96,19 +97,88 @@ function GlassTabBar({ state, navigation }: any) {
 }
 
 export default function TabLayout() {
+  const { logout } = useAuth();
+
+  const onPressSignOut = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const confirmed = window.confirm('Sign out from ImanifestApp?');
+      if (!confirmed) return;
+      void logout();
+      return;
+    }
+
+    Alert.alert('Sign Out', 'Sign out from ImanifestApp?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  };
+
   return (
-    <Tabs
-      initialRouteName='index'
-      tabBar={(props) => <GlassTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-    >
-      {TABS.map((tab) => (
-        <Tabs.Screen
-          key={tab.name}
-          name={tab.name}
-          options={{ title: tab.label }}
-        />
-      ))}
-    </Tabs>
+    <>
+      <Tabs
+        initialRouteName='index'
+        tabBar={(props) => <GlassTabBar {...props} />}
+        screenOptions={{ headerShown: false }}
+      >
+        {TABS.map((tab) => (
+          <Tabs.Screen
+            key={tab.name}
+            name={tab.name}
+            options={{ title: tab.label }}
+          />
+        ))}
+      </Tabs>
+
+      {Platform.OS === 'web' ? (
+        <TouchableOpacity
+          onPress={onPressSignOut}
+          activeOpacity={0.85}
+          style={{
+            position: 'absolute',
+            top: 18,
+            right: 18,
+            zIndex: 80,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 999,
+            backgroundColor: 'rgba(255,255,255,0.86)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.35)',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.1,
+            shadowRadius: 20,
+            elevation: 6,
+            ...(Platform.OS === 'web'
+              ? ({
+                  backdropFilter: 'blur(20px) saturate(120%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(120%)',
+                } as any)
+              : {}),
+          }}
+        >
+          <LogOut size={15} color='#334155' />
+          <Text
+            style={{
+              fontSize: 12,
+              fontFamily: 'Plus Jakarta Sans',
+              color: '#334155',
+              fontWeight: '700',
+            }}
+          >
+            Sign out
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+    </>
   );
 }
