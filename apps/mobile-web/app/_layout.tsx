@@ -67,6 +67,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const demoAuthMode =
+    typeof process !== "undefined" &&
+    process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === "true";
   const [fontsLoaded] = useFonts({
     "PlayfairDisplay-Bold":    PlayfairDisplay_700Bold,
     "PlayfairDisplay-Regular": PlayfairDisplay_400Regular,
@@ -100,7 +103,7 @@ export default function RootLayout() {
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="qalb-result" options={{ headerShown: false }} />
-          <Stack.Screen name="api-proof" options={{ title: "API Proof" }} />
+          {demoAuthMode ? <Stack.Screen name="api-proof" options={{ title: "API Proof" }} /> : null}
           <Stack.Screen
             name="auth"
             options={{ title: "Sign In", presentation: "modal" }}

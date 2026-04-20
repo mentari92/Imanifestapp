@@ -141,6 +141,9 @@ const RECENT_INTENTIONS = [
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const demoAuthMode =
+    typeof process !== 'undefined' &&
+    process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === 'true';
   const { data, fetchDashboard, isOfflineMode } = useDashboard();
   const [refreshing, setRefreshing] = useState(false);
   const [prayerTimings, setPrayerTimings] = useState<Record<PrayerKey, string> | null>(null);
@@ -405,9 +408,11 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             ))}
           </View>
-          <TouchableOpacity onPress={() => router.push('/api-proof')} activeOpacity={0.85}>
-            <Text style={s.funnelProofLink}>Open API proof</Text>
-          </TouchableOpacity>
+          {demoAuthMode ? (
+            <TouchableOpacity onPress={() => router.push('/api-proof')} activeOpacity={0.85}>
+              <Text style={s.funnelProofLink}>Open API proof</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Bento: Daily Alignment + Streak */}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Platform, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { apiGet } from "../lib/api";
 
 type ProbeStatus = "ok" | "fail" | "pending";
@@ -39,6 +39,9 @@ function statusColors(status: ProbeStatus) {
 
 export default function ApiProofScreen() {
   const router = useRouter();
+  const demoAuthMode =
+    typeof process !== "undefined" &&
+    process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === "true";
   const [loading, setLoading] = useState(true);
   const [probes, setProbes] = useState<ProbeItem[]>(
     endpointMap.map((item) => ({ ...item, status: "pending", detail: "Checking..." })),
@@ -50,6 +53,8 @@ export default function ApiProofScreen() {
   }, [probes]);
 
   useEffect(() => {
+    if (!demoAuthMode) return;
+
     let active = true;
 
     const runChecks = async () => {
@@ -94,6 +99,10 @@ export default function ApiProofScreen() {
       active = false;
     };
   }, []);
+
+  if (!demoAuthMode) {
+    return <Redirect href="/" />;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#f9f9fd" }}>
