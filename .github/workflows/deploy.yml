@@ -77,8 +77,26 @@ jobs:
             upsert_env "QURAN_FOUNDATION_OAUTH_BASE_URL" "https://oauth2.quran.foundation"
             upsert_env "QURAN_FOUNDATION_AUTH_TOKEN" "$AUTH_TOKEN"
 
+            # Build a safe DATABASE_URL (query-params form) so special chars in
+            # password (e.g. @) don't break host parsing.
+            POSTGRES_USER_VALUE=$(grep -E '^POSTGRES_USER=' "$ENV_FILE" | tail -1 | cut -d= -f2-)
+            POSTGRES_DB_VALUE=$(grep -E '^POSTGRES_DB=' "$ENV_FILE" | tail -1 | cut -d= -f2-)
+            POSTGRES_PASSWORD_VALUE=$(grep -E '^POSTGRES_PASSWORD=' "$ENV_FILE" | tail -1 | cut -d= -f2-)
+
+            [ -n "$POSTGRES_USER_VALUE" ] || POSTGRES_USER_VALUE="imanifest"
+            [ -n "$POSTGRES_DB_VALUE" ] || POSTGRES_DB_VALUE="imanifest"
+
+            if [ -z "$POSTGRES_PASSWORD_VALUE" ]; then
+              echo "ERROR: POSTGRES_PASSWORD is missing in $ENV_FILE"
+              exit 1
+            fi
+
+            DATABASE_URL_VALUE="postgresql://db:5432/${POSTGRES_DB_VALUE}?schema=public&user=${POSTGRES_USER_VALUE}&password=${POSTGRES_PASSWORD_VALUE}"
+            upsert_env "DATABASE_URL" "$DATABASE_URL_VALUE"
+
             echo "=== .env updated ==="
             grep -E '^QURAN_FOUNDATION_(CLIENT_ID|CLIENT_SECRET|OAUTH_BASE_URL|AUTH_TOKEN)=' "$ENV_FILE" | sed 's/=.*$/=<set>/'
+            grep -E '^DATABASE_URL=' "$ENV_FILE" | sed 's/=.*$/=<set>/'
 
             # ── Ensure stateful services are up first ───────────────
             echo "=== Ensuring db and redis are running ==="
