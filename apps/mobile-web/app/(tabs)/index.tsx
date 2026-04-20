@@ -134,11 +134,6 @@ const QUICK_ACCESS: QuickAccessItem[] = [
   { label: 'Tafakkur', desc: 'Reconnect through Quran reflection', route: '/(tabs)/tafakkur', Icon: MeditationIcon, iconBg: '#d1fae5', iconColor: '#059669' },
 ];
 
-const RECENT_INTENTIONS = [
-  { title: 'Morning Dhikr', pct: 85, icon: Heart, iconBg: 'rgba(255,228,242,0.5)', iconColor: C.secondaryDim },
-  { title: 'Surah Ar-Rahman', pct: 40, icon: BookOpen, iconBg: 'rgba(169,247,183,0.5)', iconColor: C.tertiary },
-  { title: 'Tahajjud', pct: 62, icon: Star, iconBg: 'rgba(229,223,248,0.5)', iconColor: C.primaryDim },
-];
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
@@ -292,7 +287,7 @@ export default function DashboardScreen() {
             route: toActivityRoute(activity.type),
           };
         })
-      : RECENT_INTENTIONS.map((item) => ({ ...item, route: '/(tabs)/imanifest' }));
+      : [];
 
   const prayerState = prayerTimings
     ? resolvePrayerState(prayerTimings, new Date(clockTick))
@@ -495,15 +490,15 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Recent Intentions */}
+        {/* Recent Activity */}
         <View style={[glass, { padding: 24, marginBottom: 8 }]}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
-            <Text style={s.sectionTitle}>Recent Intentions</Text>
+            <Text style={s.sectionTitle}>Recent Activity</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/imanifest')}>
               <Text style={s.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
-          {recentIntentions.map(({ title, pct, icon: Icon, iconBg, iconColor, route }, i) => (
+          {recentIntentions.length > 0 ? recentIntentions.map(({ title, pct, icon: Icon, iconBg, iconColor, route }, i) => (
             <TouchableOpacity
               key={i}
               style={s.intentionRow}
@@ -523,7 +518,20 @@ export default function DashboardScreen() {
                 </View>
               </View>
             </TouchableOpacity>
-          ))}
+          )) : (
+            <View style={s.emptyState}>
+              <Sparkles size={32} color={C.primary} style={{ opacity: 0.5, marginBottom: 12 }} />
+              <Text style={s.emptyStateTitle}>Begin your journey</Text>
+              <Text style={s.emptyStateSub}>Write your first intention or reflect on your heart to see activity here.</Text>
+              <TouchableOpacity
+                style={s.emptyStateCta}
+                onPress={() => router.push('/(tabs)/imanifest')}
+                activeOpacity={0.85}
+              >
+                <Text style={s.emptyStateCtaText}>Start with Imanifest →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={{ height: 120 }} />
@@ -843,5 +851,34 @@ const s = StyleSheet.create({
   },
   intentionFill: {
     height: '100%', borderRadius: 3,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: C.onSurface,
+    marginBottom: 6,
+  },
+  emptyStateSub: {
+    fontSize: 13,
+    color: C.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  emptyStateCta: {
+    backgroundColor: C.primaryContainer,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  emptyStateCtaText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: C.primaryDim,
   },
 });
