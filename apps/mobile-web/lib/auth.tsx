@@ -111,6 +111,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
+    const activeToken = token ?? (await storageGet(TOKEN_KEY));
+
+    if (activeToken) {
+      try {
+        await api.post(
+          "/auth/logout",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${activeToken}`,
+            },
+          },
+        );
+      } catch (err: any) {
+        // Client state must still be cleared even if revoke fails.
+        console.warn("Logout revoke request failed", err?.message || err);
+      }
+    }
+
     await storageDelete(TOKEN_KEY);
     await storageDelete(USER_KEY);
     setToken(null);

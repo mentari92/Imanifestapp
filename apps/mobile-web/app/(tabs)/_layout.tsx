@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, TouchableOpacity, Platform, Text, Alert } from 'react-native';
+import { useState } from 'react';
 import { LayoutDashboard, Heart, Sparkles, ListChecks, LogOut } from 'lucide-react-native';
 import { MeditationIcon } from '../../components/shared/MeditationIcon';
 import { useAuth } from '../../lib/auth';
@@ -98,12 +99,24 @@ function GlassTabBar({ state, navigation }: any) {
 
 export default function TabLayout() {
   const { logout } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
 
   const onPressSignOut = () => {
+    if (signingOut) return;
+
+    const runSignOut = async () => {
+      try {
+        setSigningOut(true);
+        await logout();
+      } finally {
+        setSigningOut(false);
+      }
+    };
+
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const confirmed = window.confirm('Sign out from ImanifestApp?');
       if (!confirmed) return;
-      void logout();
+      void runSignOut();
       return;
     }
 
@@ -113,7 +126,7 @@ export default function TabLayout() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: () => {
-          void logout();
+          void runSignOut();
         },
       },
     ]);
@@ -138,6 +151,7 @@ export default function TabLayout() {
       {Platform.OS === 'web' ? (
         <TouchableOpacity
           onPress={onPressSignOut}
+          disabled={signingOut}
           activeOpacity={0.85}
           style={{
             position: 'absolute',
@@ -158,6 +172,7 @@ export default function TabLayout() {
             shadowOpacity: 0.1,
             shadowRadius: 20,
             elevation: 6,
+            opacity: signingOut ? 0.7 : 1,
             ...(Platform.OS === 'web'
               ? ({
                   backdropFilter: 'blur(20px) saturate(120%)',
@@ -175,7 +190,7 @@ export default function TabLayout() {
               fontWeight: '700',
             }}
           >
-            Sign out
+            {signingOut ? 'Signing out...' : 'Sign out'}
           </Text>
         </TouchableOpacity>
       ) : null}
