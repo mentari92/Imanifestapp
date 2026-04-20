@@ -76,7 +76,7 @@ jobs:
             upsert_env "QURAN_FOUNDATION_CLIENT_SECRET" "$CLIENT_SECRET"
             upsert_env "QURAN_FOUNDATION_OAUTH_BASE_URL" "https://oauth2.quran.foundation"
             upsert_env "QURAN_FOUNDATION_AUTH_TOKEN" "$AUTH_TOKEN"
-            upsert_env "DEMO_AUTH_FALLBACK_ENABLED" "true"
+            upsert_env "DEMO_AUTH_FALLBACK_ENABLED" "false"
 
             # Build a safe DATABASE_URL with URL-encoded credentials so special
             # chars in username/password (e.g. @, :, /) don't break parsing.
