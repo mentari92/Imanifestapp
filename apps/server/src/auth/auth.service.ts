@@ -16,8 +16,6 @@ type DemoAuthUser = {
   passwordHash: string;
 };
 
-const demoUsers = new Map<string, DemoAuthUser>();
-
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -147,7 +145,10 @@ export class AuthService {
     }
 
     const key = email.toLowerCase();
-    if (demoUsers.has(key)) {
+    // Check if already registered in Redis
+    const existingKey = `auth:fallback:${key}`;
+    const existing = await this.redis.get(existingKey);
+    if (existing) {
       throw new ConflictException("Email already registered");
     }
 
@@ -158,7 +159,10 @@ export class AuthService {
       name: name || email.split("@")[0],
       passwordHash,
     };
-    demoUsers.set(key, demoUser);
+
+    // Store in Redis (30-day TTL so it persists across restarts)
+    await this.redis.set(existingKey, JSON.stringify(demoUser), 30 * 24 * 60 * 60);
+    this.logger.log(`Fallback user registered: ${email} (will persist for 30 days)`);
 
     const token = this.generateToken(demoUser.id, demoUser.email);
     return {
@@ -174,11 +178,13 @@ export class AuthService {
     }
 
     const key = email.toLowerCase();
-    const demoUser = demoUsers.get(key);
-    if (!demoUser) {
+    const existingKey = `auth:fallback:${key}`;
+    const stored = await this.redis.get(existingKey);
+    if (!stored) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
+    const demoUser = JSON.parse(stored) as DemoAuthUser;
     const valid = await bcrypt.compare(password, demoUser.passwordHash);
     if (!valid) {
       throw new UnauthorizedException("Invalid credentials");
