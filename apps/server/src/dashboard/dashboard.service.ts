@@ -12,6 +12,12 @@ export class DashboardService {
   ) {}
 
   async getOverview(userId: string) {
+    if (!this.prisma.isConnected) {
+      this.logger.warn('Database disconnected. Returning fallback dashboard payload.');
+      return this.buildFallbackOverview(userId);
+    }
+
+    try {
     // Fetch user info
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -120,6 +126,44 @@ export class DashboardService {
         longestStreak: streakCount,
       },
       recentActivity,
+      verseOfTheDay,
+    };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to build dashboard from DB. Returning fallback payload: ${error instanceof Error ? error.message : error}`,
+      );
+      return this.buildFallbackOverview(userId);
+    }
+  }
+
+  private async buildFallbackOverview(userId: string) {
+    let verseOfTheDay = null;
+    try {
+      const randomVerse = await this.quranApiService.getRandomAyah();
+      if (randomVerse) {
+        verseOfTheDay = {
+          number: randomVerse.number,
+          text: randomVerse.text,
+          surahName: randomVerse.surah?.englishName || '',
+          surahNumber: randomVerse.surah?.number || 0,
+          ayahNumber: randomVerse.numberInSurah || 0,
+        };
+      }
+    } catch {
+      // Non-critical in fallback mode.
+    }
+
+    return {
+      user: { id: userId, name: 'Muslim', email: '' },
+      stats: {
+        totalIntentions: 0,
+        totalJournalEntries: 0,
+        totalDuaTasks: 0,
+        completedDuaTasks: 0,
+        currentStreak: 0,
+        longestStreak: 0,
+      },
+      recentActivity: [],
       verseOfTheDay,
     };
   }
