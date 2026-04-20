@@ -106,7 +106,13 @@ export default function RootLayout() {
           {demoAuthMode ? <Stack.Screen name="api-proof" options={{ title: "API Proof" }} /> : null}
           <Stack.Screen
             name="auth"
-            options={{ title: "Sign In", presentation: "modal" }}
+            options={{
+              title: "Sign In",
+              presentation: "modal",
+              headerStyle: { backgroundColor: "rgba(255,255,255,0.92)" },
+              headerTintColor: "#2f3338",
+              headerTitleStyle: { fontFamily: "PlayfairDisplay-Bold", color: "#2f3338" },
+            }}
           />
         </Stack>
       </AuthGate>
