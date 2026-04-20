@@ -1,4 +1,4 @@
-import { Controller, Get, HttpException, HttpStatus } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 import { PrismaService } from "@imanifest/database";
 import { Public } from "./auth/public.decorator";
 import { RedisService } from "./common/redis.service";
@@ -29,20 +29,8 @@ export class AppController {
     const database = this.prisma.isConnected ? "connected" : "disconnected";
     const redis = this.redis.isAvailable() ? "connected" : "degraded";
 
-    if (database !== "connected") {
-      throw new HttpException(
-        {
-          status: "degraded",
-          timestamp: new Date().toISOString(),
-          uptime: process.uptime(),
-          dependencies: { database, redis },
-        },
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-
     return {
-      status: "ok",
+      status: database === "connected" ? "ok" : "degraded",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       dependencies: { database, redis },
