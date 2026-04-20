@@ -8,10 +8,28 @@ import { LoginDto } from "./dto/login.dto";
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  private getClientIp(req: any): string | undefined {
+    const cfIp = req.headers?.["cf-connecting-ip"];
+    if (typeof cfIp === "string" && cfIp.trim()) return cfIp.trim();
+
+    const xff = req.headers?.["x-forwarded-for"];
+    if (typeof xff === "string" && xff.trim()) {
+      const firstIp = xff.split(",")[0]?.trim();
+      if (firstIp) return firstIp;
+    }
+
+    const ip = req.ip || req.socket?.remoteAddress;
+    if (typeof ip === "string" && ip.startsWith("::ffff:")) {
+      return ip.slice(7);
+    }
+
+    return ip;
+  }
+
   @Public()
   @Post("register")
   async register(@Body() dto: RegisterDto, @Req() req: any) {
-    const ip = req.ip || req.socket?.remoteAddress;
+    const ip = this.getClientIp(req);
     return this.authService.register(dto.email, dto.password, dto.name, ip);
   }
 
@@ -19,7 +37,7 @@ export class AuthController {
   @Post("login")
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: any) {
-    const ip = req.ip || req.socket?.remoteAddress;
+    const ip = this.getClientIp(req);
     return this.authService.login(dto.email, dto.password, ip);
   }
 
