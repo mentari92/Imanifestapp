@@ -80,6 +80,10 @@ jobs:
             echo "=== .env updated ==="
             grep -E '^QURAN_FOUNDATION_(CLIENT_ID|CLIENT_SECRET|OAUTH_BASE_URL|AUTH_TOKEN)=' "$ENV_FILE" | sed 's/=.*$/=<set>/'
 
+            # ── Ensure stateful services are up first ───────────────
+            echo "=== Ensuring db and redis are running ==="
+            docker compose up -d db redis
+
             # ── Rebuild API + Web containers ───────────────────────
             echo "=== Rebuilding all containers (no cache) ==="
             docker compose build --no-cache api web
