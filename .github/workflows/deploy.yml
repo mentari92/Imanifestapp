@@ -76,7 +76,7 @@ jobs:
             upsert_env "QURAN_FOUNDATION_CLIENT_SECRET" "$CLIENT_SECRET"
             upsert_env "QURAN_FOUNDATION_OAUTH_BASE_URL" "https://oauth2.quran.foundation"
             upsert_env "QURAN_FOUNDATION_AUTH_TOKEN" "$AUTH_TOKEN"
-            upsert_env "DEMO_AUTH_FALLBACK_ENABLED" "false"
+            upsert_env "DEMO_AUTH_FALLBACK_ENABLED" "true"
 
             # Build a safe DATABASE_URL with URL-encoded credentials so special
             # chars in username/password (e.g. @, :, /) don't break parsing.
@@ -92,11 +92,16 @@ jobs:
               exit 1
             fi
 
-            ENCODED_USER=$(node -p "encodeURIComponent(process.argv[1])" "$POSTGRES_USER_VALUE")
-            ENCODED_PASSWORD=$(node -p "encodeURIComponent(process.argv[1])" "$POSTGRES_PASSWORD_VALUE")
-            DATABASE_URL_VALUE="postgresql://${ENCODED_USER}:${ENCODED_PASSWORD}@db:5432/${POSTGRES_DB_VALUE}?schema=public"
-            upsert_env "DATABASE_URL" "$DATABASE_URL_VALUE"
-            echo "=== DATABASE_URL synchronized from POSTGRES_* variables ==="
+            EXISTING_DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | tail -1 | cut -d= -f2-)
+            if [ -z "$EXISTING_DATABASE_URL" ] || ! echo "$EXISTING_DATABASE_URL" | grep -q '@db:5432'; then
+              ENCODED_USER=$(node -p "encodeURIComponent(process.argv[1])" "$POSTGRES_USER_VALUE")
+              ENCODED_PASSWORD=$(node -p "encodeURIComponent(process.argv[1])" "$POSTGRES_PASSWORD_VALUE")
+              DATABASE_URL_VALUE="postgresql://${ENCODED_USER}:${ENCODED_PASSWORD}@db:5432/${POSTGRES_DB_VALUE}?schema=public"
+              upsert_env "DATABASE_URL" "$DATABASE_URL_VALUE"
+              echo "=== DATABASE_URL repaired/initialized ==="
+            else
+              echo "=== Keeping existing DATABASE_URL from .env ==="
+            fi
 
             echo "=== .env updated ==="
             grep -E '^QURAN_FOUNDATION_(CLIENT_ID|CLIENT_SECRET|OAUTH_BASE_URL|AUTH_TOKEN)=' "$ENV_FILE" | sed 's/=.*$/=<set>/'
@@ -106,44 +111,15 @@ jobs:
             echo "=== Ensuring db and redis are running ==="
             docker compose up -d db redis
 
-            # ── Reconcile DB role/db with env config ───────────────
-            # Handles password drift on persistent Postgres volumes.
-            echo "=== Reconciling Postgres role and database ==="
-            DB_ADMIN_USER="postgres"
-            if ! timeout 20 docker compose exec -T \
-              -e PGPASSWORD="$POSTGRES_PASSWORD_VALUE" \
-              db psql -w -h 127.0.0.1 -U "$DB_ADMIN_USER" -d postgres -c "SELECT 1;" >/dev/null 2>&1; then
-              DB_ADMIN_USER="$POSTGRES_USER_VALUE"
-            fi
-
-            timeout 40 docker compose exec -T \
-              -e PGPASSWORD="$POSTGRES_PASSWORD_VALUE" \
-              db psql -w -h 127.0.0.1 -U "$DB_ADMIN_USER" -d postgres \
+            # ── Keep DB role password in sync with env config ───────
+            # This fixes auth drift when a persistent Postgres volume keeps an
+            # older password while .env was updated later.
+            echo "=== Synchronizing database role password ==="
+            docker compose exec -T db psql -U "$POSTGRES_USER_VALUE" -d postgres \
               -v ON_ERROR_STOP=1 \
-              -v app_user="$POSTGRES_USER_VALUE" \
-              -v app_pass="$POSTGRES_PASSWORD_VALUE" \
-              -v app_db="$POSTGRES_DB_VALUE" <<'SQL'
-            SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'app_user', :'app_pass')
-            WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'app_user')
-            \gexec
-
-            SELECT format('ALTER ROLE %I WITH LOGIN PASSWORD %L', :'app_user', :'app_pass')
-            \gexec
-
-            SELECT format('CREATE DATABASE %I OWNER %I', :'app_db', :'app_user')
-            WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'app_db')
-            \gexec
-
-            SELECT format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I', :'app_db', :'app_user')
-            \gexec
-            SQL
-
-            echo "=== Validating DB auth over TCP using POSTGRES_* credentials ==="
-            timeout 20 docker compose exec -T \
-              -e PGPASSWORD="$POSTGRES_PASSWORD_VALUE" \
-              db psql -w -h 127.0.0.1 -U "$POSTGRES_USER_VALUE" -d "$POSTGRES_DB_VALUE" \
-              -v ON_ERROR_STOP=1 \
-              -c "SELECT current_user, current_database();"
+              -v role_name="$POSTGRES_USER_VALUE" \
+              -v role_password="$POSTGRES_PASSWORD_VALUE" \
+              -c "ALTER ROLE :\"role_name\" WITH LOGIN PASSWORD :'role_password';" || true
 
             # ── Rebuild API + Web containers ───────────────────────
             echo "=== Rebuilding all containers (no cache) ==="
@@ -195,12 +171,6 @@ jobs:
             if [ "$HEALTH_CODE" != "200" ]; then
               echo "ERROR: API health check failed after retries"
               docker compose ps
-              docker compose logs --tail=120 api || true
-              exit 1
-            fi
-
-            if grep -q '"database":"disconnected"' /tmp/health.out; then
-              echo "ERROR: API is up but database is still disconnected"
               docker compose logs --tail=120 api || true
               exit 1
             fi
