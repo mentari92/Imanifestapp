@@ -92,11 +92,12 @@ jobs:
             fi
 
             EXISTING_DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | tail -1 | cut -d= -f2-)
-            if [ -z "$EXISTING_DATABASE_URL" ]; then
+            if [ -z "$EXISTING_DATABASE_URL" ] || ! echo "$EXISTING_DATABASE_URL" | grep -q '@db:5432'; then
               ENCODED_USER=$(node -p "encodeURIComponent(process.argv[1])" "$POSTGRES_USER_VALUE")
               ENCODED_PASSWORD=$(node -p "encodeURIComponent(process.argv[1])" "$POSTGRES_PASSWORD_VALUE")
               DATABASE_URL_VALUE="postgresql://${ENCODED_USER}:${ENCODED_PASSWORD}@db:5432/${POSTGRES_DB_VALUE}?schema=public"
               upsert_env "DATABASE_URL" "$DATABASE_URL_VALUE"
+              echo "=== DATABASE_URL repaired/initialized ==="
             else
               echo "=== Keeping existing DATABASE_URL from .env ==="
             fi
