@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // App is behind reverse proxies (Cloudflare/nginx/Caddy), so trust forwarded IP headers.
-  app.set("trust proxy", true);
+  app.getHttpAdapter().getInstance().set("trust proxy", true);
 
   // Enable DTO validation globally (class-validator + class-transformer)
   app.useGlobalPipes(
