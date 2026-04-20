@@ -138,12 +138,15 @@ const styles = {
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center' as const,
-    paddingHorizontal: 24,
-    paddingVertical: 40,
+    alignItems: 'center' as const,
+    paddingHorizontal: 20,
+    paddingVertical: 32,
   },
   brandSection: {
     alignItems: 'center' as const,
-    marginBottom: 40,
+    marginBottom: 28,
+    width: '100%' as const,
+    maxWidth: 420,
   },
   logo: {
     fontSize: 64,
@@ -163,6 +166,7 @@ const styles = {
   },
   form: {
     width: '100%' as const,
+    maxWidth: 420,
   },
   inputGroup: {
     marginBottom: 16,
