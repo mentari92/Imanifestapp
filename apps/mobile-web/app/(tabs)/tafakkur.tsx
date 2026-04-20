@@ -63,7 +63,7 @@ const SOUND_FILES: Record<string, string> = {
 };
 
 const PLAYBACK_SPEEDS = [0.75, 1, 1.25, 1.5] as const;
-
+const MAX_VISIBLE_RECITERS = 6;
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -99,7 +99,7 @@ export default function TafakkurHubScreen() {
   const [progressBarWidth, setProgressBarWidth] = useState(0);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
   const [autoPlayMode, setAutoPlayMode] = useState<'stop' | 'loop'>('stop');
-  const [autoPlaySurahIdx, setAutoPlaySurahIdx] = useState<number | null>(null);
+  const [showAllReciters, setShowAllReciters] = useState(false);
 
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const intervalRef   = useRef<any>(null);
@@ -153,6 +153,7 @@ export default function TafakkurHubScreen() {
 
       setReciters(mapped);
       setActiveReciter(0);
+      setShowAllReciters(false);
     } catch {
       setReciters([]);
       setAudioError("Unable to load reciters right now.");
@@ -468,6 +469,10 @@ export default function TafakkurHubScreen() {
   const showPlayer = isPlaying || isLoadingAudio || progress > 0 || !!audioError;
   const currentVerse = surahVerses[currentVerseIdx];
   const visibleProgress = scrubProgress ?? progress;
+  const reciterItems = reciters.map((reciter, index) => ({ reciter, index }));
+  const visibleReciterItems = showAllReciters
+    ? reciterItems
+    : reciterItems.slice(0, MAX_VISIBLE_RECITERS);
 
   return (
     <View style={{ flex: 1 }}>
@@ -486,7 +491,7 @@ export default function TafakkurHubScreen() {
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
             <MeditationIcon size={20} color="#065f46" />
           </View>
-          <Text style={{ position: "absolute", left: 0, right: 0, textAlign: "center", fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>Tafakkur Hub</Text>
+          <Text style={{ position: "absolute", left: 0, right: 0, textAlign: "center", fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>Tafakkur</Text>
           <View style={{ width: 40, height: 40 }} />
         </View>
 
@@ -494,7 +499,7 @@ export default function TafakkurHubScreen() {
 
           {/* Hero */}
           <View style={{ gap: 4 }}>
-            <Text style={{ fontFamily: "Newsreader", fontSize: 36, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 44 }}>Tafakkur Hub</Text>
+            <Text style={{ fontFamily: "Newsreader", fontSize: 36, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 44 }}>Tafakkur</Text>
             <Text style={{ fontFamily: "Noto Serif", fontSize: 14, fontStyle: "italic", color: "#5b5f65", lineHeight: 22 }}>
               Contemplate the divine through recitation, reflection, and remembrance.
             </Text>
@@ -512,7 +517,7 @@ export default function TafakkurHubScreen() {
               </View>
               <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 16, fontWeight: "800", color: "#166534" }}>2</Text>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#2f3338", flex: 1, lineHeight: 18 }}>Choose a Surah to begin meditation</Text>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#2f3338", flex: 1, lineHeight: 18 }}>Choose a Surah to begin reflection</Text>
               </View>
               <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 16, fontWeight: "800", color: "#166534" }}>3</Text>
@@ -540,27 +545,42 @@ export default function TafakkurHubScreen() {
                 </Text>
               </View>
             ) : (
-              reciters.map((r, i) => (
-                <TouchableOpacity
-                  key={r.id}
-                  onPress={() => { setActiveReciter(i); if (activeSurah && surahVerses.length > 0) loadAndPlayVerses(i, activeSurah, 0); }}
-                  activeOpacity={0.85}
-                  style={[glass(20), { flexDirection: "row", alignItems: "center", gap: 16, padding: 18, ...(activeReciter === i ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" } : {}) }]}
-                >
-                  <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: r.bg, alignItems: "center", justifyContent: "center" }}>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "800", color: "#fff" }}>{r.initials}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 14, fontWeight: "700", color: "#2f3338" }}>{r.name}</Text>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.subtitle}</Text>
-                  </View>
-                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: activeReciter === i ? "#166534" : "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}>
-                    <Text style={{ fontSize: 18, color: activeReciter === i ? "#fff" : "#2f3338" }}>
-                      {activeReciter === i && isPlaying ? "⏸" : "▶"}
+              <>
+                {visibleReciterItems.map(({ reciter: r, index: i }) => (
+                  <TouchableOpacity
+                    key={r.id}
+                    onPress={() => { setActiveReciter(i); if (activeSurah && surahVerses.length > 0) loadAndPlayVerses(i, activeSurah, 0); }}
+                    activeOpacity={0.85}
+                    style={[glass(20), { flexDirection: "row", alignItems: "center", gap: 16, padding: 18, ...(activeReciter === i ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" } : {}) }]}
+                  >
+                    <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: r.bg, alignItems: "center", justifyContent: "center" }}>
+                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "800", color: "#fff" }}>{r.initials}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 14, fontWeight: "700", color: "#2f3338" }}>{r.name}</Text>
+                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.subtitle}</Text>
+                    </View>
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: activeReciter === i ? "#166534" : "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}>
+                      <Text style={{ fontSize: 18, color: activeReciter === i ? "#fff" : "#2f3338" }}>
+                        {activeReciter === i && isPlaying ? "⏸" : "▶"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+                {reciters.length > MAX_VISIBLE_RECITERS ? (
+                  <TouchableOpacity
+                    onPress={() => setShowAllReciters((prev) => !prev)}
+                    activeOpacity={0.85}
+                    style={[glass(14), { paddingVertical: 10, alignItems: "center", justifyContent: "center" }]}
+                  >
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: "#166534" }}>
+                      {showAllReciters
+                        ? "Hide reciters"
+                        : `View all reciters (${reciters.length - MAX_VISIBLE_RECITERS} more)`}
                     </Text>
-                  </View>
-                </TouchableOpacity>
-              ))
+                  </TouchableOpacity>
+                ) : null}
+              </>
             )}
           </View>
 
