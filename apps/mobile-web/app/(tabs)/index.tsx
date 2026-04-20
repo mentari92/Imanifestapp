@@ -7,10 +7,12 @@ import {
   RefreshControl,
   StyleSheet,
   Platform,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useDashboard } from '../../hooks/useDashboard';
+import { useAuth } from '../../lib/auth';
 import { MeditationIcon } from '../../components/shared/MeditationIcon';
 import {
   Heart, Sparkles, ListChecks,
@@ -141,6 +143,7 @@ const RECENT_INTENTIONS = [
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { logout } = useAuth();
   const demoAuthMode =
     typeof process !== 'undefined' &&
     process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === 'true';
@@ -221,6 +224,23 @@ export default function DashboardScreen() {
     setRefreshing(false);
   };
 
+  const onPressBell = () => {
+    Alert.alert('Notifications', 'Notification center is coming soon.');
+  };
+
+  const onPressProfile = () => {
+    Alert.alert('Account', 'Do you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: () => {
+          void logout();
+        },
+      },
+    ]);
+  };
+
   const userName = data?.user?.name || 'Mentari';
   const streak = data?.stats?.currentStreak ?? 7;
   const completed = data?.stats?.completedDuaTasks ?? 0;
@@ -298,11 +318,11 @@ export default function DashboardScreen() {
 
       {/* ── Fixed glass top app bar ─────────────────────────────────── */}
       <View style={[s.header, { paddingTop: insets.top + 8 }]}>
-        <View style={s.avatarCircle}>
+        <TouchableOpacity style={s.avatarCircle} onPress={onPressProfile} activeOpacity={0.8}>
           <User size={18} color={C.primary} />
-        </View>
+        </TouchableOpacity>
         <Text style={s.headerBrand}>Imanifest</Text>
-        <TouchableOpacity style={s.iconBtn}>
+        <TouchableOpacity style={s.iconBtn} onPress={onPressBell} activeOpacity={0.8}>
           <Bell size={22} color={C.onSurface} />
         </TouchableOpacity>
       </View>
