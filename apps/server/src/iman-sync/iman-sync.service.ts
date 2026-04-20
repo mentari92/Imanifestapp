@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
 import { QuranApiService, VerseResult } from "../common/quran-api.service";
@@ -30,13 +30,6 @@ export interface AnalyzeVisionResult extends AnalyzeResult {
 type SuggestedAction = { title: string; guidance?: string };
 
 const CACHE_TTL = 3600;
-const demoManifestationStore = new Map<string, {
-  id: string;
-  userId: string;
-  intentText: string;
-  aiSummary: string;
-  createdAt: string;
-}>();
 
 @Injectable()
 export class ImanSyncService {
@@ -221,17 +214,10 @@ export class ImanSyncService {
       manifestationId = manifestation.id;
       this.logger.log(`Saved manifestation ${manifestationId}`);
     } catch (dbErr: any) {
-      manifestationId = `demo-manifest-${Date.now()}`;
-      demoManifestationStore.set(manifestationId, {
-        id: manifestationId,
-        userId,
-        intentText,
-        aiSummary,
-        createdAt: new Date().toISOString(),
-      });
       this.logger.warn(
-        `DB save failed (demo mode): ${dbErr?.message}. Using in-memory ID: ${manifestationId}`,
+        `DB save failed in Imanifest write path: ${dbErr?.message}`,
       );
+      throw new ServiceUnavailableException("Imanifest is temporarily unavailable. Please try again in a moment.");
     }
 
     return { manifestationId, verses, aiSummary, tasks };
@@ -394,22 +380,8 @@ export class ImanSyncService {
         }),
       };
     } catch (err: any) {
-      this.logger.warn(`Manifestation history fallback (demo mode): ${err?.message}`);
-      const fallback = Array.from(demoManifestationStore.values())
-        .filter((item) => item.userId === userId)
-        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-        .slice(0, 12)
-        .map((item) => ({
-          id: item.id,
-          intentText: item.intentText,
-          aiSummary: item.aiSummary,
-          createdAt: item.createdAt,
-          totalTasks: 0,
-          completedTasks: 0,
-          isAchieved: false,
-        }));
-
-      return { manifestations: fallback };
+      this.logger.warn(`Manifestation history DB read failed: ${err?.message}`);
+      throw new ServiceUnavailableException("Imanifest history is temporarily unavailable. Please try again in a moment.");
     }
   }
 }

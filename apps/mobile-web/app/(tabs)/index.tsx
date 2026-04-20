@@ -251,7 +251,7 @@ export default function DashboardScreen() {
   const hasDuaStep = (data?.stats?.completedDuaTasks ?? 0) > 0;
   const hasTafakkurStep = (data?.recentActivity ?? []).some((activity) => {
     const type = activity.type.toLowerCase();
-    return type.includes('tafakkur') || type.includes('sakinah') || type.includes('quran');
+    return type.includes('tafakkur') || type.includes('quran');
   });
 
   const funnelSteps = [
@@ -267,7 +267,7 @@ export default function DashboardScreen() {
     if (normalized.includes('intent') || normalized.includes('imanifest')) return '/(tabs)/imanifest';
     if (normalized.includes('dua')) return '/(tabs)/dua-todo';
     if (normalized.includes('heart') || normalized.includes('qalb') || normalized.includes('journal')) return '/(tabs)/qalb';
-    if (normalized.includes('tafakkur') || normalized.includes('sakinah') || normalized.includes('quran')) return '/(tabs)/tafakkur';
+    if (normalized.includes('tafakkur') || normalized.includes('quran')) return '/(tabs)/tafakkur';
     return '/(tabs)/imanifest';
   };
 

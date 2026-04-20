@@ -49,7 +49,7 @@ interface Surah { number: number; name: string; englishName: string; versesCount
 interface Verse  { verseKey: string; arabic: string; translation: string; }
 
 const NATURE_SOUNDS = [
-  { id: "rain",  label: "Rain of Sakinah",  emoji: "🌧️" },
+  { id: "rain",  label: "Rain of Calm",  emoji: "🌧️" },
   { id: "ocean", label: "Ocean Waves",      emoji: "🌊" },
   { id: "river", label: "Zamzam Flow",      emoji: "💧" },
   { id: "birds", label: "Dawn Garden",      emoji: "🐦" },

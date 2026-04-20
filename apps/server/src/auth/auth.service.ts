@@ -7,7 +7,8 @@ import { createHash } from "crypto";
 
 const RATE_LIMIT_WINDOW = 15 * 60; // 15 minutes in seconds
 const RATE_LIMIT_MAX = 5; // max 5 attempts per window per IP
-const DEMO_AUTH_FALLBACK_ENABLED = process.env.DEMO_AUTH_FALLBACK_ENABLED !== "false";
+// Default to DB-first auth. Fallback is only enabled when explicitly set true.
+const DEMO_AUTH_FALLBACK_ENABLED = process.env.DEMO_AUTH_FALLBACK_ENABLED === "true";
 
 type DemoAuthUser = {
   id: string;
@@ -29,7 +30,7 @@ export class AuthService {
   async register(email: string, password: string, name?: string, ip?: string) {
     if (ip) await this.checkRateLimit(ip);
 
-    // DB down? use an in-memory fallback so auth still works for demo traffic.
+    // DB down? optionally use fallback only when explicitly enabled.
     if (!this.prisma.isConnected) {
       return this.registerDemoUser(email, password, name);
     }
