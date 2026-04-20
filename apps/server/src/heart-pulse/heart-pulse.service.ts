@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
 import { calculateReflectionStreak } from "../common/streak.util";
@@ -111,24 +111,13 @@ export class HeartPulseService {
           audioPath: data.audioPath ?? null,
           sentiment: label,
           sentimentScore: score,
-          // If schema supports it, save the insight. For now (demo), we return it dynamically.
+          // If schema supports it, save the insight. For now, we return it dynamically.
         },
       });
       streakCount = await calculateReflectionStreak(this.prisma, userId);
     } catch (dbErr: any) {
-      this.logger.warn(`DB save failed (demo mode): ${dbErr?.message}`);
-      // Create in-memory reflection for demo
-      reflection = {
-        id: `demo-reflection-${Date.now()}`,
-        userId,
-        audioPath: data.audioPath ?? null,
-        transcriptText: data.transcriptText,
-        sentiment: label,
-        sentimentScore: score,
-        streakDate: new Date(),
-        createdAt: new Date(),
-      };
-      streakCount = 1;
+      this.logger.warn(`DB save failed in Qalb write path: ${dbErr?.message}`);
+      throw new ServiceUnavailableException("Qalb reflection is temporarily unavailable. Please try again in a moment.");
     }
 
     // Fire-and-forget sync to Quran Foundation (don't block response)
@@ -215,8 +204,8 @@ export class HeartPulseService {
       const streakCount = await calculateReflectionStreak(this.prisma, userId);
       return { reflections, streakCount };
     } catch (err: any) {
-      this.logger.warn(`DB history fetch failed (demo mode): ${err?.message}`);
-      return { reflections: [], streakCount: 0 };
+      this.logger.warn(`Qalb history DB read failed: ${err?.message}`);
+      throw new ServiceUnavailableException("Qalb history is temporarily unavailable. Please try again in a moment.");
     }
   }
 }

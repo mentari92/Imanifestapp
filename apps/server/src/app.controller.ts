@@ -35,10 +35,10 @@ export class AppController {
       status: "running",
       endpoints: {
         auth: { register: "POST /auth/register", login: "POST /auth/login" },
-        imanSync: "POST /iman-sync/analyze",
+        imanifest: "POST /iman-sync/analyze",
         duaTodo: "POST /dua-to-do/generate",
-        heartPulse: "POST /heart-pulse/reflect",
-        sakinah: {
+        qalb: "POST /heart-pulse/reflect",
+        tafakkur: {
           reciters: "GET /sakinah/reciters",
           surahs: "GET /sakinah/surahs",
           audio: "GET /sakinah/audio",

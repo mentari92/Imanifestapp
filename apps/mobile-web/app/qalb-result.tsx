@@ -91,7 +91,7 @@ function buildLogicalPath(text: string, sentiment?: string) {
 
   if (/anxious|cemas|takut|gelisah|heavy|sedih/.test(source)) {
     return [
-      'Slow the moment down with dhikr and breathing so your next decision comes from sakinah instead of panic.',
+      'Slow the moment down with dhikr and breathing so your next decision comes from calm instead of panic.',
       'Name the problem clearly, then separate what you can act on today from what must be left to tawakkul.',
       'Take one small step before the day ends so your heart feels movement, not helplessness.',
     ];

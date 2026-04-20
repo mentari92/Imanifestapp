@@ -69,7 +69,7 @@ export class DashboardService {
     const recentActivity = [
       ...recentImanSync.map((r: any) => ({
         id: r.id,
-        type: 'iman-sync',
+        type: 'imanifest',
         title:
           (r.intentText || '').substring(0, 50) +
           ((r.intentText || '').length > 50 ? '...' : ''),
@@ -77,7 +77,7 @@ export class DashboardService {
       })),
       ...recentHeartPulse.map((r: any) => ({
         id: r.id,
-        type: 'heart-pulse',
+        type: 'qalb',
         title:
           (r.transcriptText || '').substring(0, 50) +
           ((r.transcriptText || '').length > 50 ? '...' : ''),
