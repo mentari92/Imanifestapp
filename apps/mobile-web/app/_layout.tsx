@@ -33,21 +33,33 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { error: st
 }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { loading } = useAuth();
+  const { loading, user, token } = useAuth();
   const segments = useSegments();
   const inAuthGroup = segments[0] === "auth";
+  const isAuthenticated = Boolean(user && token);
+  const demoAuthMode =
+    typeof process !== "undefined" &&
+    process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === "true";
 
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" color="#D4AF37" />
-        <Text className="mt-2 text-ink-secondary font-sans">Connecting to Divine wisdom...</Text>
+        <Text className="mt-2 text-ink-secondary font-sans">Loading your workspace...</Text>
       </View>
     );
   }
 
-  // Completely bypass auth screen for Demo
-  if (inAuthGroup) {
+  // Optional bypass for demo mode only.
+  if (demoAuthMode && inAuthGroup) {
+    return <Redirect href="/" />;
+  }
+
+  if (!demoAuthMode && !isAuthenticated && !inAuthGroup) {
+    return <Redirect href="/auth" />;
+  }
+
+  if (!demoAuthMode && isAuthenticated && inAuthGroup) {
     return <Redirect href="/" />;
   }
 
@@ -88,6 +100,7 @@ export default function RootLayout() {
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="qalb-result" options={{ headerShown: false }} />
+          <Stack.Screen name="api-proof" options={{ title: "API Proof" }} />
           <Stack.Screen
             name="auth"
             options={{ title: "Sign In", presentation: "modal" }}

@@ -81,7 +81,7 @@ export function TaskChecklist({ tasks, onToggle }: TaskChecklistProps) {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
             <Text className="font-display text-display-sm text-primary mt-2 mb-2">
-              Your Daily Ikhtiar (Action Plan)
+              Your Daily Action Plan
             </Text>
           )}
           renderItem={({ item, index }) => (

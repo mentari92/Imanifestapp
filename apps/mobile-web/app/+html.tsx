@@ -8,7 +8,7 @@ import type { PropsWithChildren } from 'react';
  */
 export default function Root({ children }: PropsWithChildren) {
   const siteTitle = 'Imanifest';
-  const siteDescription = 'Spiritual mindfulness, daily intentions, and tranquil audio for a peaceful heart and focused faith.';
+  const siteDescription = 'Build better daily habits through reflection, intention, and Quran-based guidance.';
   const siteUrl = 'https://imanifestapp.com';
   const ogImageUrl = `${siteUrl}/og/imanifest-og.png?v=9506731`;
 
@@ -31,12 +31,12 @@ export default function Root({ children }: PropsWithChildren) {
         <meta property="og:image:type" content="image/png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:image:alt" content="Imanifest spiritual mindfulness social preview card" />
+        <meta property="og:image:alt" content="Imanifest app preview card" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={siteTitle} />
         <meta name="twitter:description" content={siteDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <meta name="twitter:image:alt" content="Imanifest spiritual mindfulness social preview card" />
+        <meta name="twitter:image:alt" content="Imanifest app preview card" />
         <link rel="canonical" href={siteUrl} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />

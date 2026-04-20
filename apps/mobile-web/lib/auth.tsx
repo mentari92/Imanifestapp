@@ -22,6 +22,9 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const TOKEN_KEY = "imanifest_jwt_token";
 const USER_KEY = "imanifest_user";
+const DEMO_AUTH_MODE =
+  typeof process !== "undefined" &&
+  process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === "true";
 
 // Web falls back to localStorage since SecureStore is native-only
 async function storageGet(key: string): Promise<string | null> {
@@ -60,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedToken && savedUser) {
         setToken(savedToken);
         setUser(JSON.parse(savedUser));
-      } else if (Platform.OS === "web") {
-        // AUTO-LOGIN for Hackathon Demo Experience
+      } else if (Platform.OS === "web" && DEMO_AUTH_MODE) {
+        // Optional demo-only auto-login (explicitly enabled by env)
         const demoUser = { id: "demo-user-123", email: "mentari@imanifestapp.com", name: "Mentari" };
         const demoToken = "demo_token_high_vibration_888";
         setToken(demoToken);
@@ -79,8 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { access_token, user: userData } = res.data;
       await saveAuth(access_token, userData);
     } catch (err: any) {
-      console.warn("Backend auth failed, using demo fallback account.");
-      await saveAuth("demo_token_123", { id: "demo-user", email, name: "Spiritual Demo User" });
+      if (DEMO_AUTH_MODE) {
+        console.warn("Backend auth failed, using demo fallback account.");
+        await saveAuth("demo_token_123", { id: "demo-user", email, name: "Demo User" });
+        return;
+      }
+
+      const message = err?.response?.data?.message || err?.message || "Login failed";
+      throw new Error(message);
     }
   }
 
@@ -90,8 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { access_token, user: userData } = res.data;
       await saveAuth(access_token, userData);
     } catch (err: any) {
-      console.warn("Backend auth failed, using demo fallback account.");
-      await saveAuth("demo_token_123", { id: "demo-user", email, name: name || "Spiritual Demo User" });
+      if (DEMO_AUTH_MODE) {
+        console.warn("Backend auth failed, using demo fallback account.");
+        await saveAuth("demo_token_123", { id: "demo-user", email, name: name || "Demo User" });
+        return;
+      }
+
+      const message = err?.response?.data?.message || err?.message || "Registration failed";
+      throw new Error(message);
     }
   }
 

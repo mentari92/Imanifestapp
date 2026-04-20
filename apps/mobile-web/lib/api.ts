@@ -31,6 +31,9 @@ function getApiBaseUrl(): string {
 }
 
 const API_BASE_URL = getApiBaseUrl();
+const DEMO_AUTH_MODE =
+  typeof process !== 'undefined' &&
+  process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === 'true';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -51,7 +54,7 @@ api.interceptors.request.use(async (config) => {
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (Platform.OS === 'web') {
+    } else if (Platform.OS === 'web' && DEMO_AUTH_MODE) {
       config.headers.Authorization = 'Bearer demo_token_high_vibration_888';
     }
   } catch {
@@ -185,30 +188,19 @@ export async function apiPatch<T = any>(path: string, body?: any): Promise<T> {
 
 async function getAuthToken(): Promise<string | null> {
   try {
-    // Dynamic import to avoid circular dependency
-    const { useAuthStore } = require('./auth');
-    const authState = useAuthStore.getState?.();
-    const storeToken = authState?.token || null;
-    if (storeToken) {
-      return storeToken;
-    }
-  } catch {
-    // ignore store lookup failure and continue to platform fallbacks
-  }
-
-  try {
     if (Platform.OS === 'web') {
       const localStorageToken =
         typeof localStorage !== 'undefined'
           ? localStorage.getItem('imanifest_jwt_token')
           : null;
 
-      return localStorageToken || 'demo_token_high_vibration_888';
+      if (localStorageToken) return localStorageToken;
+      return DEMO_AUTH_MODE ? 'demo_token_high_vibration_888' : null;
     }
 
     const secureToken = await SecureStore.getItemAsync('imanifest_jwt_token');
     return secureToken || null;
   } catch {
-    return Platform.OS === 'web' ? 'demo_token_high_vibration_888' : null;
+    return Platform.OS === 'web' && DEMO_AUTH_MODE ? 'demo_token_high_vibration_888' : null;
   }
 }

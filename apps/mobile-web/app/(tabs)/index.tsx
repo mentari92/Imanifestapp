@@ -126,10 +126,10 @@ type QuickAccessItem = {
 };
 
 const QUICK_ACCESS: QuickAccessItem[] = [
-  { label: 'Qalb', desc: 'Check-in with your spirit', route: '/(tabs)/qalb', Icon: Heart, iconBg: '#fce7f3', iconColor: '#db2777', iconFill: '#db2777' },
-  { label: 'Imanifest', desc: 'Set your daily intention', route: '/(tabs)/imanifest', Icon: Sparkles, iconBg: '#ede9fe', iconColor: '#7c3aed' },
-  { label: 'Dua-to-Do', desc: 'Act on your manifestations', route: '/(tabs)/dua-todo', Icon: ListChecks, iconBg: '#fef3c7', iconColor: '#b45309' },
-  { label: 'Tafakkur', desc: 'Find tranquility in Quran audio', route: '/(tabs)/tafakkur', Icon: MeditationIcon, iconBg: '#d1fae5', iconColor: '#059669' },
+  { label: 'Qalb', desc: 'Calm your heart and reset your focus', route: '/(tabs)/qalb', Icon: Heart, iconBg: '#fce7f3', iconColor: '#db2777', iconFill: '#db2777' },
+  { label: 'Imanifest', desc: 'Write a clear intention and direction', route: '/(tabs)/imanifest', Icon: Sparkles, iconBg: '#ede9fe', iconColor: '#7c3aed' },
+  { label: 'Dua-to-Do', desc: 'Turn intention into daily action', route: '/(tabs)/dua-todo', Icon: ListChecks, iconBg: '#fef3c7', iconColor: '#b45309' },
+  { label: 'Tafakkur', desc: 'Reconnect through Quran reflection', route: '/(tabs)/tafakkur', Icon: MeditationIcon, iconBg: '#d1fae5', iconColor: '#059669' },
 ];
 
 const RECENT_INTENTIONS = [
@@ -223,6 +223,22 @@ export default function DashboardScreen() {
   const completed = data?.stats?.completedDuaTasks ?? 0;
   const total = data?.stats?.totalDuaTasks ?? 15;
   const alignPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 80;
+  const hasQalbStep = (data?.stats?.totalJournalEntries ?? 0) > 0;
+  const hasImanifestStep = (data?.stats?.totalIntentions ?? 0) > 0;
+  const hasDuaStep = (data?.stats?.completedDuaTasks ?? 0) > 0;
+  const hasTafakkurStep = (data?.recentActivity ?? []).some((activity) => {
+    const type = activity.type.toLowerCase();
+    return type.includes('tafakkur') || type.includes('sakinah') || type.includes('quran');
+  });
+
+  const funnelSteps = [
+    { key: 'qalb', label: 'Qalb Reflection', done: hasQalbStep, route: '/(tabs)/qalb' },
+    { key: 'imanifest', label: 'Imanifest Intention', done: hasImanifestStep, route: '/(tabs)/imanifest' },
+    { key: 'dua', label: 'Dua-to-Do Action', done: hasDuaStep, route: '/(tabs)/dua-todo' },
+    { key: 'tafakkur', label: 'Tafakkur Session', done: hasTafakkurStep, route: '/(tabs)/tafakkur' },
+  ];
+  const completedFunnelSteps = funnelSteps.filter((step) => step.done).length;
+  const funnelPct = Math.round((completedFunnelSteps / funnelSteps.length) * 100);
   const toActivityRoute = (type: string) => {
     const normalized = type.toLowerCase();
     if (normalized.includes('intent') || normalized.includes('imanifest')) return '/(tabs)/imanifest';
@@ -297,16 +313,16 @@ export default function DashboardScreen() {
         {/* Welcome */}
         <View style={s.welcomeSection}>
           <Text style={s.welcomeHeadline}>Assalamu'alaikum, {userName}.</Text>
-          <Text style={s.welcomeSub}>May your heart find peace in today's intentions.</Text>
+          <Text style={s.welcomeSub}>Build your dreams through intention, action, and consistency.</Text>
         </View>
 
         {/* Offline notice */}
         {isOfflineMode && (
           <View style={[glass, s.offlineCard]}>
             <Text style={s.offlineLabel}>Preview Mode</Text>
-            <Text style={s.offlineText}>Server sedang tidak tersedia. Data demo ditampilkan sementara.</Text>
+            <Text style={s.offlineText}>Server is currently unavailable. Showing preview data for now.</Text>
             <TouchableOpacity onPress={() => void fetchDashboard().catch(() => undefined)} style={s.retryPill}>
-              <Text style={s.retryText}>Coba Lagi</Text>
+              <Text style={s.retryText}>Try Again</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -361,9 +377,42 @@ export default function DashboardScreen() {
           ))}
         </View>
 
+        {/* Recovery Funnel */}
+        <View style={[glass, s.funnelCard]}>
+          <View style={s.funnelHeadRow}>
+            <View>
+              <Text style={s.funnelTitle}>Progress Funnel</Text>
+              <Text style={s.funnelSub}>Track movement from reflection to action</Text>
+            </View>
+            <Text style={s.funnelStat}>{completedFunnelSteps}/4</Text>
+          </View>
+          <View style={s.funnelTrack}>
+            <View style={[s.funnelFill, { width: `${funnelPct}%` as any }]} />
+          </View>
+          <View style={s.funnelStepsWrap}>
+            {funnelSteps.map((step) => (
+              <TouchableOpacity
+                key={step.key}
+                style={s.funnelStepRow}
+                onPress={() => router.push(step.route as any)}
+                activeOpacity={0.8}
+              >
+                <View style={[s.funnelDot, step.done ? s.funnelDotDone : s.funnelDotPending]} />
+                <Text style={[s.funnelStepLabel, step.done && s.funnelStepLabelDone]}>{step.label}</Text>
+                <Text style={[s.funnelStepStatus, step.done ? s.funnelStepStatusDone : s.funnelStepStatusPending]}>
+                  {step.done ? 'Done' : 'Pending'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity onPress={() => router.push('/api-proof')} activeOpacity={0.85}>
+            <Text style={s.funnelProofLink}>Open API proof</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Bento: Daily Alignment + Streak */}
         <View style={s.bentoRow}>
-          {/* Daily Alignment */}
+          {/* Dream Realization */}
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => router.push('/(tabs)/dua-todo')}
@@ -376,12 +425,12 @@ export default function DashboardScreen() {
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <View>
-                <Text style={s.bentoTitle}>Daily Alignment</Text>
-                <Text style={s.bentoSubtitle}>Spiritual Momentum</Text>
+                <Text style={s.bentoTitle}>Dream Realization</Text>
+                <Text style={s.bentoSubtitle}>Intention to daily action</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={s.bentoStat}>{completed}/{total}</Text>
-                <Text style={s.bentoStatLabel}>NEARLY THERE</Text>
+                <Text style={s.bentoStatLabel}>TASKS DONE</Text>
               </View>
             </View>
             <View style={s.progressTrack}>
@@ -398,7 +447,7 @@ export default function DashboardScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Reflection Streak */}
+          {/* Istiqamah Streak */}
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => router.push('/(tabs)/dua-todo')}
@@ -407,8 +456,8 @@ export default function DashboardScreen() {
             <View style={s.streakIconWrap}>
               <Star size={28} color={C.tertiary} fill={C.tertiaryContainer} />
             </View>
-            <Text style={s.streakTitle}>{streak}-Day Streak</Text>
-            <Text style={s.streakSub}>Consistency is the bridge to light.</Text>
+            <Text style={s.streakTitle}>{streak}-Day Consistency</Text>
+            <Text style={s.streakSub}>Small daily steps create lasting growth.</Text>
             <View style={s.streakDots}>
               {Array.from({ length: 7 }, (_, i) => (
                 <View
@@ -586,6 +635,96 @@ const s = StyleSheet.create({
   },
   quickGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginBottom: 24,
+  },
+  funnelCard: {
+    padding: 20,
+    marginBottom: 22,
+  },
+  funnelHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  funnelTitle: {
+    fontSize: 20,
+    fontFamily: 'Newsreader',
+    fontWeight: '600',
+    color: C.onSurface,
+  },
+  funnelSub: {
+    fontSize: 11,
+    color: C.onSurfaceVariant,
+    fontFamily: 'Plus Jakarta Sans',
+  },
+  funnelStat: {
+    fontSize: 22,
+    fontFamily: 'Newsreader',
+    color: C.tertiary,
+    fontWeight: '700',
+  },
+  funnelTrack: {
+    height: 8,
+    backgroundColor: C.surfaceContainer,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 14,
+  },
+  funnelFill: {
+    height: '100%',
+    backgroundColor: C.tertiary,
+    borderRadius: 4,
+  },
+  funnelStepsWrap: {
+    gap: 10,
+  },
+  funnelStepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  funnelDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  funnelDotDone: {
+    backgroundColor: C.tertiary,
+  },
+  funnelDotPending: {
+    backgroundColor: C.outlineVariant,
+    opacity: 0.6,
+  },
+  funnelStepLabel: {
+    flex: 1,
+    fontSize: 12,
+    color: C.onSurface,
+    fontFamily: 'Plus Jakarta Sans',
+  },
+  funnelStepLabelDone: {
+    color: C.tertiary,
+    fontWeight: '700',
+  },
+  funnelStepStatus: {
+    fontSize: 10,
+    fontFamily: 'Plus Jakarta Sans',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  funnelStepStatusDone: {
+    color: C.tertiary,
+    fontWeight: '700',
+  },
+  funnelStepStatusPending: {
+    color: C.onSurfaceVariant,
+  },
+  funnelProofLink: {
+    marginTop: 12,
+    fontSize: 12,
+    color: C.primaryDim,
+    textDecorationLine: 'underline',
+    fontFamily: 'Plus Jakarta Sans',
+    fontWeight: '600',
   },
   quickCard: {
     width: '47%' as any,
