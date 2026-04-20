@@ -110,11 +110,15 @@ jobs:
             # Handles password drift on persistent Postgres volumes.
             echo "=== Reconciling Postgres role and database ==="
             DB_ADMIN_USER="postgres"
-            if ! docker compose exec -T db psql -U "$DB_ADMIN_USER" -d postgres -c "SELECT 1;" >/dev/null 2>&1; then
+            if ! timeout 20 docker compose exec -T \
+              -e PGPASSWORD="$POSTGRES_PASSWORD_VALUE" \
+              db psql -w -h 127.0.0.1 -U "$DB_ADMIN_USER" -d postgres -c "SELECT 1;" >/dev/null 2>&1; then
               DB_ADMIN_USER="$POSTGRES_USER_VALUE"
             fi
 
-            docker compose exec -T db psql -U "$DB_ADMIN_USER" -d postgres \
+            timeout 40 docker compose exec -T \
+              -e PGPASSWORD="$POSTGRES_PASSWORD_VALUE" \
+              db psql -w -h 127.0.0.1 -U "$DB_ADMIN_USER" -d postgres \
               -v ON_ERROR_STOP=1 \
               -v app_user="$POSTGRES_USER_VALUE" \
               -v app_pass="$POSTGRES_PASSWORD_VALUE" \
@@ -135,9 +139,9 @@ jobs:
             SQL
 
             echo "=== Validating DB auth over TCP using POSTGRES_* credentials ==="
-            docker compose exec -T \
+            timeout 20 docker compose exec -T \
               -e PGPASSWORD="$POSTGRES_PASSWORD_VALUE" \
-              db psql -h 127.0.0.1 -U "$POSTGRES_USER_VALUE" -d "$POSTGRES_DB_VALUE" \
+              db psql -w -h 127.0.0.1 -U "$POSTGRES_USER_VALUE" -d "$POSTGRES_DB_VALUE" \
               -v ON_ERROR_STOP=1 \
               -c "SELECT current_user, current_database();"
 
