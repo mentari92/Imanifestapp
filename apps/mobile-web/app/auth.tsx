@@ -18,28 +18,36 @@ export default function AuthScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
+    if (submitting) return;
+
     if (!email.trim() || !password.trim()) {
       Alert.alert('Please fill in all fields');
       return;
     }
 
     try {
+      setSubmitting(true);
+
       if (isLogin) {
         await login(email.trim(), password.trim());
       } else {
         if (!name.trim()) {
           Alert.alert('Please enter your name');
+          setSubmitting(false);
           return;
         }
-        await register(name.trim(), email.trim(), password.trim());
+        await register(email.trim(), password.trim(), name.trim());
       }
     } catch (error: any) {
       Alert.alert(
         isLogin ? 'Login Failed' : 'Registration Failed',
         error.message || 'Something went wrong',
       );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -101,12 +109,12 @@ export default function AuthScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, (loading || submitting) && styles.buttonDisabled]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || submitting}
           >
             <Text style={styles.buttonText}>
-              {loading
+              {loading || submitting
                 ? 'Please wait...'
                 : isLogin
                   ? 'Sign In'
