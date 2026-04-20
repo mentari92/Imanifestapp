@@ -30,11 +30,6 @@ export class AuthService {
   async register(email: string, password: string, name?: string, ip?: string) {
     if (ip) await this.checkRateLimit(ip);
 
-    // DB down? optionally use fallback only when explicitly enabled.
-    if (!this.prisma.isConnected) {
-      return this.registerDemoUser(email, password, name);
-    }
-
     try {
       const existing = await this.prisma.user.findUnique({ where: { email } });
       if (existing) {
@@ -62,10 +57,6 @@ export class AuthService {
   async login(email: string, password: string, ip?: string) {
     this.logger.log(`Login attempt for: ${email}`);
     if (ip) await this.checkRateLimit(ip);
-
-    if (!this.prisma.isConnected) {
-      return this.loginDemoUser(email, password);
-    }
 
     try {
       const user = await this.prisma.user.findUnique({ where: { email } });
