@@ -100,7 +100,7 @@ export default function TafakkurHubScreen() {
   const [pendingPlay, setPendingPlay]   = useState(false);
   const [progressBarWidth, setProgressBarWidth] = useState(0);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
-  const [autoPlayMode, setAutoPlayMode] = useState<'stop' | 'loop'>('stop');
+  const [autoPlayMode, setAutoPlayMode] = useState<'stop' | 'loop'>('loop');
   const [showAllReciters, setShowAllReciters] = useState(false);
 
   const audioRef      = useRef<HTMLAudioElement | null>(null);

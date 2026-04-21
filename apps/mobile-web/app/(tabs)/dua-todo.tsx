@@ -300,8 +300,8 @@ export default function DuaTodoScreen() {
                 onPress={() => router.push('/(tabs)/tafakkur')}
                 activeOpacity={0.85}
               >
-                <Text style={styles.ctaIcon}>✓</Text>
-                <Text style={styles.ctaText}>Add to Daily Tasks</Text>
+                <Text style={styles.ctaIcon}>🎧</Text>
+                <Text style={styles.ctaText}>Open Tafakkur</Text>
               </TouchableOpacity>
             </View>
           )}
