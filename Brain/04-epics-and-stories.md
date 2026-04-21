@@ -11,10 +11,10 @@
 | Epic | Name | Stories | Priority | Status |
 |------|------|---------|----------|--------|
 | Epic 1 | Foundation & Auth | 1.1 – 1.3 | Must Have | ☐ Pending |
-| Epic 2 | ImanSync — AI Validation Engine | 2.1 – 2.3 | Must Have | ☐ Pending |
+| Epic 2 | Imanifest — AI Validation Engine | 2.1 – 2.3 | Must Have | ☐ Pending |
 | Epic 3 | Dua-to-Do — Actionable Roadmap | 3.1 – 3.2 | Must Have | ☐ Pending |
-| Epic 4 | HeartPulse — Voice Journaling | 4.1 – 4.3 | Must Have | ☐ Pending |
-| Epic 5 | SakinahStream — Audio Experience | 5.1 – 5.2 | Must Have | ☐ Pending |
+| Epic 4 | Qalb — Voice Journaling | 4.1 – 4.3 | Must Have | ☐ Pending |
+| Epic 5 | Tafakkur — Audio Experience | 5.1 – 5.2 | Must Have | ☐ Pending |
 | Epic 6 | Dashboard & History | 6.1 | Should Have | ☐ Pending |
 
 **Build order:** Epic 1 → Epic 2 → Epic 3 → Epic 4 → Epic 5 → Epic 6
@@ -79,16 +79,16 @@
 - [ ] OAuth2 flow configured with Quran.com as provider (via Supabase Auth or Clerk)
 - [ ] On successful registration: `User` created in DB with bcrypt-hashed `password`
 - [ ] JWT token returned to Expo app, stored in SecureStore
-- [ ] `AuthGuard` on NestJS protects all routes except `/sakinah/*`
+- [ ] `AuthGuard` on NestJS protects all routes except `/tafakkur/*`
 - [ ] Login screen in Expo app with "Login with Quran.com" button
 - [ ] Fallback: email/password auth if OAuth2 not available
 - [ ] Logout clears token from SecureStore and invalidates session
 
 ---
 
-## Epic 2: ImanSync — AI Validation Engine
+## Epic 2: Imanifest — AI Validation Engine
 
-### Story 2.1: ImanSync Text Analysis
+### Story 2.1: Imanifest Text Analysis
 
 **As a** logged-in user  
 **I want to** type my intention and receive 3 relevant Quranic verses  
@@ -96,19 +96,19 @@
 
 **Acceptance Criteria:**
 - [ ] `IntentionForm.tsx` renders text area (max 500 chars) with submit button
-- [ ] `POST /iman-sync/analyze` endpoint live on NestJS
+- [ ] `POST /imanifest/analyze` endpoint live on NestJS
 - [ ] GLM-5 extracts 3 spiritual themes from intent text
 - [ ] Quran Foundation Content API queried for 3 matching verses
 - [ ] Tafsir snippet fetched for each verse (max 300 chars)
 - [ ] GLM-5 generates 2-sentence validation summary
 - [ ] Result saved to `Manifestation` table
 - [ ] Response returned to Expo app within 8 seconds
-- [ ] `ImanSyncResult.tsx` renders 3 `VerseCard` components + summary
+- [ ] `ImanifestResult.tsx` renders 3 `VerseCard` components + summary
 - [ ] Each `VerseCard` shows: Arabic text, translation, tafsir snippet
 
 ---
 
-### Story 2.2: ImanSync Vision (Image Upload)
+### Story 2.2: Imanifest Vision (Image Upload)
 
 **As a** logged-in user  
 **I want to** upload an image alongside my intention  
@@ -117,7 +117,7 @@
 **Acceptance Criteria:**
 - [ ] `IntentionForm.tsx` includes optional image picker (Expo ImagePicker)
 - [ ] Image preview shown before submission
-- [ ] `POST /iman-sync/analyze-vision` endpoint accepts multipart/form-data
+- [ ] `POST /imanifest/analyze-vision` endpoint accepts multipart/form-data
 - [ ] File validated: JPG/PNG only, max 5MB
 - [ ] GLM-5V receives image (base64) + intentText in one call
 - [ ] Returns same structure as Story 2.1 (3 verses + summary)
@@ -127,10 +127,10 @@
 
 ---
 
-### Story 2.3: ImanSync Rate Limiting & Caching
+### Story 2.3: Imanifest Rate Limiting & Caching
 
 **As a** developer  
-**I want to** cache ImanSync results and rate-limit requests  
+**I want to** cache Imanifest results and rate-limit requests  
 **So that** Zhipu AI and Quran API costs are controlled
 
 **Acceptance Criteria:**
@@ -148,11 +148,11 @@
 ### Story 3.1: Checklist Generation
 
 **As a** logged-in user  
-**I want to** get a 5-step action plan from my ImanSync result  
+**I want to** get a 5-step action plan from my Imanifest result  
 **So that** I have concrete steps to act on my intention
 
 **Acceptance Criteria:**
-- [ ] "Generate Action Plan" button on ImanSync result screen
+- [ ] "Generate Action Plan" button on Imanifest result screen
 - [ ] `POST /dua-to-do/generate` accepts `{ manifestationId }`
 - [ ] Loads manifestation + verses from DB
 - [ ] GLM-5 generates 5 Ikhtiar steps as JSON
@@ -179,7 +179,7 @@
 
 ---
 
-## Epic 4: HeartPulse — Voice Journaling & Retention
+## Epic 4: Qalb — Voice Journaling & Retention
 
 ### Story 4.1: Voice Recording & Transcription
 
@@ -191,7 +191,7 @@
 - [ ] `VoiceRecorder.tsx` uses Expo Audio API
 - [ ] Record button starts/stops recording (max 2 minutes)
 - [ ] Recording duration shown in real time
-- [ ] Audio file sent to `POST /heart-pulse/reflect` as multipart/form-data
+- [ ] Audio file sent to `POST /qalb/reflect` as multipart/form-data
 - [ ] GLM-5 processes audio → transcript text
 - [ ] Transcript shown to user before sentiment result
 - [ ] `Reflection.audioPath` and `Reflection.transcriptText` saved to DB
@@ -230,7 +230,7 @@
 
 ---
 
-## Epic 5: SakinahStream — Audio Experience
+## Epic 5: Tafakkur — Audio Experience
 
 ### Story 5.1: Reciter & Surah Browser
 
@@ -239,12 +239,12 @@
 **So that** I can find the recitation style I prefer
 
 **Acceptance Criteria:**
-- [ ] `GET /sakinah/reciters` returns list from Quran Foundation Audio API
+- [ ] `GET /tafakkur/reciters` returns list from Quran Foundation Audio API
 - [ ] `ReciterList.tsx` renders reciter options
 - [ ] `SurahList.tsx` renders 114 surahs
 - [ ] Selecting a reciter + surah loads audio
 - [ ] Reciter list cached in Redis (TTL 24 hours)
-- [ ] Screen accessible without login (no AuthGuard on `/sakinah/*`)
+- [ ] Screen accessible without login (no AuthGuard on `/tafakkur/*`)
 
 ---
 
@@ -279,7 +279,7 @@
 - [ ] 7-day sentiment chart rendered (bar or line chart)
 - [ ] Manifestation history list: title (first 50 chars of intentText), date, task completion %
 - [ ] Each manifestation card is tappable → navigates to `/manifestation/[id]`
-- [ ] Quick action buttons: "New Intention", "New Reflection", "Open SakinahStream"
+- [ ] Quick action buttons: "New Intention", "New Reflection", "Open Tafakkur"
 - [ ] Empty state shown if user has no data yet
 
 ---
@@ -292,7 +292,7 @@ Epic 1: Foundation
 ☐ Story 1.2 — DB schema + Prisma migration
 ☐ Story 1.3 — Auth (OAuth2 Quran.com + JWT guard)
 
-Epic 2: ImanSync
+Epic 2: Imanifest
 ☐ Story 2.1 — Text analysis (GLM-5 + Quran API + DB)
 ☐ Story 2.2 — Vision analysis (GLM-5V multimodal)
 ☐ Story 2.3 — Rate limiting + caching
@@ -301,12 +301,12 @@ Epic 3: Dua-to-Do
 ☐ Story 3.1 — Checklist generation (GLM-5 + Quran Goals API)
 ☐ Story 3.2 — Task completion tracking
 
-Epic 4: HeartPulse
+Epic 4: Qalb
 ☐ Story 4.1 — Voice recording + transcription
 ☐ Story 4.2 — Sentiment analysis display
 ☐ Story 4.3 — Streak tracking + text fallback
 
-Epic 5: SakinahStream
+Epic 5: Tafakkur
 ☐ Story 5.1 — Reciter + surah browser
 ☐ Story 5.2 — Audio player
 

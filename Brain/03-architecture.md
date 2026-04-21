@@ -40,8 +40,8 @@
 │                                                             │
 │   ┌──────────────┐  ┌──────────┐  ┌──────────────────────┐ │
 │   │ Auth Guard   │  │ Rate     │  │ Feature Modules:     │ │
-│   │ (JWT)        │  │ Limiter  │  │ ImanSync, DuaToDo,   │ │
-│   │              │  │ (Redis)  │  │ HeartPulse, Sakinah  │ │
+│   │ (JWT)        │  │ Limiter  │  │ Imanifest, DuaToDo,   │ │
+│   │              │  │ (Redis)  │  │ Qalb, Tafakkur  │ │
 │   └──────────────┘  └──────────┘  └──────────────────────┘ │
 │                       │                                     │
 └───────────────────────┼─────────────────────────────────────┘
@@ -57,11 +57,11 @@
    └────────────┘ └──────────┘ └──────────┘ └──────────────┘
 
 Data Flows:
-1. ImanSync (text):  Form → NestJS → GLM-5 → Quran Content API → DB → Response
-2. ImanSync (image): Form + File → NestJS → GLM-5V multimodal → Quran Content API → DB
+1. Imanifest (text):  Form → NestJS → GLM-5 → Quran Content API → DB → Response
+2. Imanifest (image): Form + File → NestJS → GLM-5V multimodal → Quran Content API → DB
 3. Dua-to-Do:        ManifestationId → NestJS → GLM-5 → Quran User API (Goals) → DB
-4. HeartPulse:       Audio/Text → NestJS → GLM-5 STT + Sentiment → Quran User API → DB
-5. SakinahStream:    Client → NestJS proxy → Quran Audio API → Audio stream
+4. Qalb:       Audio/Text → NestJS → GLM-5 STT + Sentiment → Quran User API → DB
+5. Tafakkur:    Client → NestJS proxy → Quran Audio API → Audio stream
 ```
 
 ### Tech Stack by Layer
@@ -90,28 +90,28 @@ imanifestapp/
 │   ├── mobile-web/                          # Expo (iOS + Android + Web)
 │   │   ├── app/
 │   │   │   ├── (tabs)/
-│   │   │   │   ├── index.tsx                # ImanSync screen
+│   │   │   │   ├── index.tsx                # Imanifest screen
 │   │   │   │   ├── dua-to-do.tsx            # Dua-to-Do screen
-│   │   │   │   ├── heart-pulse.tsx          # HeartPulse screen
-│   │   │   │   └── sakinah.tsx              # SakinahStream screen
+│   │   │   │   ├── qalb.tsx          # Qalb screen
+│   │   │   │   └── tafakkur.tsx              # Tafakkur screen
 │   │   │   ├── manifestation/
 │   │   │   │   └── [id].tsx                 # Manifestation detail + task list
 │   │   │   ├── dashboard.tsx                # User dashboard overview
 │   │   │   ├── _layout.tsx                  # Root layout + tab navigator
 │   │   │   └── auth.tsx                     # Login screen
 │   │   ├── components/
-│   │   │   ├── iman-sync/
+│   │   │   ├── imanifest/
 │   │   │   │   ├── IntentionForm.tsx         # Text + image upload form
 │   │   │   │   ├── VerseCard.tsx             # Displays one Quranic verse
-│   │   │   │   └── ImanSyncResult.tsx        # 3 verses + AI summary
+│   │   │   │   └── ImanifestResult.tsx        # 3 verses + AI summary
 │   │   │   ├── dua-to-do/
 │   │   │   │   ├── TaskChecklist.tsx         # 5-step checklist
 │   │   │   │   └── TaskItem.tsx              # Single task row
-│   │   │   ├── heart-pulse/
+│   │   │   ├── qalb/
 │   │   │   │   ├── VoiceRecorder.tsx         # Audio recording UI
 │   │   │   │   ├── SentimentBadge.tsx        # Sentiment label + score
 │   │   │   │   └── StreakCard.tsx            # Streak count display
-│   │   │   ├── sakinah/
+│   │   │   ├── tafakkur/
 │   │   │   │   ├── AudioPlayer.tsx           # Play/pause/seek player
 │   │   │   │   ├── ReciterList.tsx           # Reciter selector
 │   │   │   │   └── SurahList.tsx             # Surah selector
@@ -119,10 +119,10 @@ imanifestapp/
 │   │   │       ├── LoadingSpinner.tsx
 │   │   │       └── ErrorMessage.tsx
 │   │   ├── hooks/
-│   │   │   ├── useImanSync.ts               # ImanSync API calls + state
+│   │   │   ├── useImanifest.ts               # Imanifest API calls + state
 │   │   │   ├── useDuaToDo.ts                # Task generation + update
-│   │   │   ├── useHeartPulse.ts             # Voice + sentiment calls
-│   │   │   └── useSakinah.ts                # Audio API calls
+│   │   │   ├── useQalb.ts             # Voice + sentiment calls
+│   │   │   └── useTafakkur.ts                # Audio API calls
 │   │   ├── lib/
 │   │   │   └── api.ts                       # Axios client (points to NestJS)
 │   │   ├── constants/
@@ -139,10 +139,10 @@ imanifestapp/
 │       │   ├── main.ts
 │       │   ├── app.module.ts
 │       │   │
-│       │   ├── iman-sync/
-│       │   │   ├── iman-sync.module.ts
-│       │   │   ├── iman-sync.controller.ts  # POST /iman-sync/analyze
-│       │   │   ├── iman-sync.service.ts     # GLM-5 → Quran API → DB
+│       │   ├── imanifest/
+│       │   │   ├── imanifest.module.ts
+│       │   │   ├── imanifest.controller.ts  # POST /imanifest/analyze
+│       │   │   ├── imanifest.service.ts     # GLM-5 → Quran API → DB
 │       │   │   └── dto/
 │       │   │       └── analyze.dto.ts
 │       │   │
@@ -153,17 +153,17 @@ imanifestapp/
 │       │   │   └── dto/
 │       │   │       └── generate.dto.ts
 │       │   │
-│       │   ├── heart-pulse/
-│       │   │   ├── heart-pulse.module.ts
-│       │   │   ├── heart-pulse.controller.ts # POST /heart-pulse/reflect
-│       │   │   ├── heart-pulse.service.ts    # GLM-5 STT + Sentiment → Quran API
+│       │   ├── qalb/
+│       │   │   ├── qalb.module.ts
+│       │   │   ├── qalb.controller.ts # POST /qalb/reflect
+│       │   │   ├── qalb.service.ts    # GLM-5 STT + Sentiment → Quran API
 │       │   │   └── dto/
 │       │   │       └── reflect.dto.ts
 │       │   │
-│       │   ├── sakinah/
-│       │   │   ├── sakinah.module.ts
-│       │   │   ├── sakinah.controller.ts    # GET /sakinah/reciters, /sakinah/audio
-│       │   │   └── sakinah.service.ts       # Proxies Quran Audio API
+│       │   ├── tafakkur/
+│       │   │   ├── tafakkur.module.ts
+│       │   │   ├── tafakkur.controller.ts    # GET /tafakkur/reciters, /tafakkur/audio
+│       │   │   └── tafakkur.service.ts       # Proxies Quran Audio API
 │       │   │
 │       │   ├── auth/
 │       │   │   ├── auth.module.ts
@@ -277,8 +277,8 @@ packages:
 | `@expo-google-fonts/amiri` | ^0.2.x | Quranic Arabic font |
 | `@expo-google-fonts/jetbrains-mono` | ^0.2.x | Verse keys, metadata font |
 | `expo-font` | ~52.x | Font loading |
-| `expo-audio` | ~52.x | Voice recording — HeartPulse feature |
-| `expo-image-picker` | ~52.x | Image upload — ImanSync Vision feature |
+| `expo-audio` | ~52.x | Voice recording — Qalb feature |
+| `expo-image-picker` | ~52.x | Image upload — Imanifest Vision feature |
 | `expo-secure-store` | ~52.x | JWT token storage (native secure storage) |
 
 ### Backend — `apps/server` (NestJS REST API)
@@ -449,7 +449,7 @@ model Reflection {
 
 ## 4. API Design (NestJS Controllers)
 
-### POST `/iman-sync/analyze`
+### POST `/imanifest/analyze`
 **Auth:** Required  
 **Body:** `{ intentText: string, userId: string }`
 
@@ -461,7 +461,7 @@ Server logic:
 5. Save to `Manifestation` table
 6. Return: `{ manifestationId, verses, aiSummary }`
 
-### POST `/iman-sync/analyze-vision`
+### POST `/imanifest/analyze-vision`
 **Auth:** Required  
 **Body:** multipart/form-data — `intentText: string` + `image: File`
 
@@ -491,7 +491,7 @@ Server logic:
 2. Update `Task.isCompleted` in DB
 3. Return updated task
 
-### POST `/heart-pulse/reflect`
+### POST `/qalb/reflect`
 **Auth:** Required  
 **Body:** multipart/form-data — optional `audio: File` OR `text: string`
 
@@ -502,15 +502,15 @@ Server logic:
 4. POST to Quran Foundation User API: streak + reflection
 5. Return: `{ reflection, sentiment, sentimentScore, streakCount }`
 
-### GET `/sakinah/reciters`
+### GET `/tafakkur/reciters`
 **Auth:** None  
 Proxy to Quran Foundation Audio API → `/resources/recitations`  
-Redis cache key: `sakinah:reciters` TTL: 24 hours
+Redis cache key: `tafakkur:reciters` TTL: 24 hours
 
-### GET `/sakinah/audio?recitationId={id}&chapterId={id}`
+### GET `/tafakkur/audio?recitationId={id}&chapterId={id}`
 **Auth:** None  
 Proxy to Quran Foundation Audio API → `/quran/recitations/{id}`  
-Redis cache key: `sakinah:audio:{recitationId}:{chapterId}` TTL: 1 hour
+Redis cache key: `tafakkur:audio:{recitationId}:{chapterId}` TTL: 1 hour
 
 ---
 
@@ -518,12 +518,12 @@ Redis cache key: `sakinah:audio:{recitationId}:{chapterId}` TTL: 1 hour
 
 | Key Pattern | TTL | Content |
 |-------------|-----|---------|
-| `iman:predict:{userId}:{hash}` | 3600s | ImanSync result for same input |
-| `sakinah:reciters` | 86400s | Reciter list from Quran Audio API |
-| `sakinah:audio:{r}:{c}` | 3600s | Audio chapter response |
+| `iman:predict:{userId}:{hash}` | 3600s | Imanifest result for same input |
+| `tafakkur:reciters` | 86400s | Reciter list from Quran Audio API |
+| `tafakkur:audio:{r}:{c}` | 3600s | Audio chapter response |
 | `quran:search:{query}` | 3600s | Quran search results |
 | `quran:tafsir:{verseKey}` | 86400s | Tafsir for a specific verse |
-| `ratelimit:imansync:{userId}` | 3600s | Rate limiting counter |
+| `ratelimit:imanifest:{userId}` | 3600s | Rate limiting counter |
 
 ---
 
@@ -606,7 +606,7 @@ JWT_SECRET=your_jwt_secret
 Reason: Shared types and Prisma client between NestJS server and Expo app. Single `pnpm install`. Single CI pipeline for hackathon speed.
 
 ### ADR-02: NestJS over Next.js API routes
-Reason: Feature modules (ImanSync, DuaToDo, HeartPulse, Sakinah) map cleanly to NestJS modules. Guards, interceptors, and pipes are better supported for a structured backend. The Expo app needs a dedicated REST API, not Next.js server components.
+Reason: Feature modules (Imanifest, DuaToDo, Qalb, Tafakkur) map cleanly to NestJS modules. Guards, interceptors, and pipes are better supported for a structured backend. The Expo app needs a dedicated REST API, not Next.js server components.
 
 ### ADR-03: Expo over React Native CLI
 Reason: Web export in one command (`npx expo export --platform web`). Expo Router gives file-based routing identical to Next.js. NativeWind (Tailwind) works natively. Faster hackathon setup.
@@ -618,7 +618,7 @@ Reason: Zhipu AI is the mandated provider for the hackathon. GLM-5V handles mult
 Reason: The hackathon specifically integrates Quran Foundation APIs. Using it for both content (tafsir, translation, search) and user data (goals, streaks, reflections) keeps data in sync with the user's existing Quran.com account.
 
 ### ADR-06: Redis for Quran API caching
-Reason: Quran Foundation API has rate limits. Tafsir and audio data are static — safe to cache for 24 hours. ImanSync results for the same input cached for 1 hour to reduce GLM-5 costs.
+Reason: Quran Foundation API has rate limits. Tafsir and audio data are static — safe to cache for 24 hours. Imanifest results for the same input cached for 1 hour to reduce GLM-5 costs.
 
 ### ADR-07: Self-hosted NestJS JWT Auth (email/password)
 Reason: App runs on VPS Contabo (self-hosted). No need for external auth services (Supabase/Clerk). NestJS + Passport + JWT + bcrypt handles email/password auth natively. Quran.com Content API uses API key authentication (x-api-key header), not OAuth2 — no client_id/client_secret needed. Per-user API keys stored in `quranApiKey` field if needed.
@@ -630,4 +630,4 @@ Reason: Relational structure — User → Manifestation → Task, User → Refle
 Reason: Founder's Bazi profile has strong Water energy. Wood absorbs excess Water — Forest Green (#064E3B) channels Water constructively and also aligns with Islamic green tradition. Rosewood (#54161B, Fire) balances cold Water with warmth. Champagne Gold (#E3C567, Metal) resonates with Monkey Shio. Bright emerald/green (#10B981 range) is excluded — clashes with the deep Forest Green brand. Full specification in `05-design-system.md`.
 
 ### ADR-10: No paywall in hackathon MVP
-Reason: Maximizes demo impact. All features accessible after OAuth2 login. SakinahStream accessible without any login. Monetization strategy documented separately in project brief for post-hackathon planning.
+Reason: Maximizes demo impact. All features accessible after OAuth2 login. Tafakkur accessible without any login. Monetization strategy documented separately in project brief for post-hackathon planning.

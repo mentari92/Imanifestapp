@@ -8,8 +8,8 @@ const QF_USER_API_URL = process.env.QURAN_FOUNDATION_USER_API_URL || "";
 const QF_API_KEY = process.env.QURAN_FOUNDATION_API_KEY || "";
 
 @Injectable()
-export class HeartPulseService {
-  private readonly logger = new Logger(HeartPulseService.name);
+export class QalbService {
+  private readonly logger = new Logger(QalbService.name);
   private static readonly INSIGHT_TIMEOUT_MS = 5500;
   private static readonly INSIGHT_FALLBACK = {
     spiritual: "May Allah grant your heart peace.",
@@ -178,17 +178,17 @@ export class HeartPulseService {
         }>((resolve) => {
           setTimeout(() => {
             this.logger.warn(
-              `Reflection insight timed out after ${HeartPulseService.INSIGHT_TIMEOUT_MS}ms, using fallback`,
+              `Reflection insight timed out after ${QalbService.INSIGHT_TIMEOUT_MS}ms, using fallback`,
             );
-            resolve(HeartPulseService.INSIGHT_FALLBACK);
-          }, HeartPulseService.INSIGHT_TIMEOUT_MS);
+            resolve(QalbService.INSIGHT_FALLBACK);
+          }, QalbService.INSIGHT_TIMEOUT_MS);
         }),
       ]);
     } catch (err) {
       this.logger.warn(
         `Reflection insight failed, using fallback: ${err instanceof Error ? err.message : err}`,
       );
-      return HeartPulseService.INSIGHT_FALLBACK;
+      return QalbService.INSIGHT_FALLBACK;
     }
   }
 

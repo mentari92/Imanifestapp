@@ -5,13 +5,13 @@ import { VerseCard } from "./VerseCard";
 import { colors } from "../../constants/theme";
 import type { QuranVerse } from "@imanifest/shared";
 
-interface ImanSyncResultProps {
+interface ImanifestResultProps {
   verses: QuranVerse[];
   aiSummary: string;
   manifestationId: string;
 }
 
-export function ImanSyncResult({ verses, aiSummary, manifestationId }: ImanSyncResultProps) {
+export function ImanifestResult({ verses, aiSummary, manifestationId }: ImanifestResultProps) {
   const router = useRouter();
 
   if (verses.length === 0) return null;

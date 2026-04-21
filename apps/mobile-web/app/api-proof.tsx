@@ -27,7 +27,7 @@ const glass = {
 const endpointMap = [
   { key: "health", title: "Backend Health", endpoint: "/health", category: "Platform" as const },
   { key: "dashboard", title: "Dashboard Overview", endpoint: "/dashboard/overview", category: "User API" as const },
-  { key: "sakinahReciters", title: "Reciter List", endpoint: "/tafakkur/reciters", category: "Audio API" as const },
+  { key: "tafakkurReciters", title: "Reciter List", endpoint: "/tafakkur/reciters", category: "Audio API" as const },
   { key: "foundationHealth", title: "Foundation API Health", endpoint: "/tafakkur/foundation-health", category: "Content API" as const },
 ];
 

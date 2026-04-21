@@ -1,12 +1,12 @@
 import { Test } from "@nestjs/testing";
-import { ImanSyncService, AnalyzeResult } from "./iman-sync.service";
+import { ImanifestService, AnalyzeResult } from "./imanifest.service";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
 import { QuranApiService } from "../common/quran-api.service";
 import { RedisService } from "../common/redis.service";
 
-describe("ImanSyncService", () => {
-  let service: ImanSyncService;
+describe("ImanifestService", () => {
+  let service: ImanifestService;
   let prisma: PrismaService;
   let zhipu: ZhipuService;
   let quranApi: QuranApiService;
@@ -37,7 +37,7 @@ describe("ImanSyncService", () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        ImanSyncService,
+        ImanifestService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: ZhipuService, useValue: mockZhipu },
         { provide: QuranApiService, useValue: mockQuranApi },
@@ -45,7 +45,7 @@ describe("ImanSyncService", () => {
       ],
     }).compile();
 
-    service = module.get<ImanSyncService>(ImanSyncService);
+    service = module.get<ImanifestService>(ImanifestService);
     prisma = module.get<PrismaService>(PrismaService);
     zhipu = module.get<ZhipuService>(ZhipuService);
     quranApi = module.get<QuranApiService>(QuranApiService);
@@ -114,7 +114,7 @@ describe("ImanSyncService", () => {
       expect(prisma.manifestation.create).toHaveBeenCalled();
       // Should cache the result with userId in key (data isolation)
       expect(redis.set).toHaveBeenCalledWith(
-        expect.stringContaining("iman-sync:cache:user-1:"),
+        expect.stringContaining("imanifest:cache:user-1:"),
         expect.any(String),
         3600,
       );

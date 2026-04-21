@@ -1,10 +1,10 @@
 import { Test } from "@nestjs/testing";
-import { HeartPulseService } from "./heart-pulse.service";
+import { QalbService } from "./qalb.service";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
 
-describe("HeartPulseService", () => {
-  let service: HeartPulseService;
+describe("QalbService", () => {
+  let service: QalbService;
   let prisma: PrismaService;
   let zhipu: ZhipuService;
 
@@ -23,13 +23,13 @@ describe("HeartPulseService", () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        HeartPulseService,
+        QalbService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: ZhipuService, useValue: mockZhipu },
       ],
     }).compile();
 
-    service = module.get<HeartPulseService>(HeartPulseService);
+    service = module.get<QalbService>(QalbService);
     prisma = module.get<PrismaService>(PrismaService);
     zhipu = module.get<ZhipuService>(ZhipuService);
     jest.clearAllMocks();

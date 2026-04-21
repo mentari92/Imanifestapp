@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MulterModule } from "@nestjs/platform-express";
-import { ImanSyncController } from "./iman-sync.controller";
-import { ImanSyncService } from "./iman-sync.service";
+import { ImanifestController } from "./imanifest.controller";
+import { ImanifestService } from "./imanifest.service";
 import { ZhipuService } from "../common/zhipu.service";
 import { QuranApiService } from "../common/quran-api.service";
 import { QuranMcpService } from "../common/quran-mcp.service";
@@ -14,7 +14,7 @@ import { QuranMcpService } from "../common/quran-mcp.service";
       },
     }),
   ],
-  controllers: [ImanSyncController],
-  providers: [ImanSyncService, ZhipuService, QuranApiService, QuranMcpService],
+  controllers: [ImanifestController],
+  providers: [ImanifestService, ZhipuService, QuranApiService, QuranMcpService],
 })
-export class ImanSyncModule {}
+export class ImanifestModule {}

@@ -17,7 +17,7 @@ interface Reciter {
   language: string;
 }
 
-export function useSakinah() {
+export function useTafakkur() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [surahs, setSurahs] = useState<Surah[]>([]);

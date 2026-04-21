@@ -31,8 +31,8 @@ export class DashboardService {
       totalDuaTasks,
       completedDuaTasks,
       streak,
-      recentImanSync,
-      recentHeartPulse,
+      recentImanifest,
+      recentQalb,
     ] = await Promise.all([
       this.prisma.manifestation.count({ where: { userId } }),
       this.prisma.reflection.count({ where: { userId } }),
@@ -73,7 +73,7 @@ export class DashboardService {
 
     // Build recent activity list
     const recentActivity = [
-      ...recentImanSync.map((r: any) => ({
+      ...recentImanifest.map((r: any) => ({
         id: r.id,
         type: 'imanifest',
         title:
@@ -81,7 +81,7 @@ export class DashboardService {
           ((r.intentText || '').length > 50 ? '...' : ''),
         createdAt: r.createdAt,
       })),
-      ...recentHeartPulse.map((r: any) => ({
+      ...recentQalb.map((r: any) => ({
         id: r.id,
         type: 'qalb',
         title:

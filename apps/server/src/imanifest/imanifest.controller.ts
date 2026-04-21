@@ -12,7 +12,7 @@ import {
   HttpStatus,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ImanSyncService } from "./iman-sync.service";
+import { ImanifestService } from "./imanifest.service";
 import { AnalyzeDto } from "./dto/analyze.dto";
 import { JwtAuthGuard } from "../auth/auth.guard";
 import { Public } from "../auth/public.decorator";
@@ -25,11 +25,11 @@ const TEXT_RATE_LIMIT = 10;
 const VISION_RATE_LIMIT = 5;
 const RATE_WINDOW_SECONDS = 3600;
 
-@Controller(["iman-sync", "imanifest"])
+@Controller("imanifest")
 @UseGuards(JwtAuthGuard)
-export class ImanSyncController {
+export class ImanifestController {
   constructor(
-    private readonly imanSyncService: ImanSyncService,
+    private readonly imanifestService: ImanifestService,
     private readonly redis: RedisService,
   ) {}
 
@@ -38,7 +38,7 @@ export class ImanSyncController {
     endpoint: string,
     maxRequests: number,
   ): Promise<void> {
-    const key = `rate:iman-sync:${endpoint}:${userId}`;
+    const key = `rate:imanifest:${endpoint}:${userId}`;
     const count = await this.redis.incr(key, RATE_WINDOW_SECONDS);
 
     if (count === 0) return;
@@ -58,7 +58,7 @@ export class ImanSyncController {
   @Get("history")
   async getHistory(@Request() req: { user?: { userId: string } }) {
     const userId = req.user?.userId ?? "demo-user-hackathon";
-    return this.imanSyncService.getHistory(userId);
+    return this.imanifestService.getHistory(userId);
   }
 
   @Public()
@@ -67,7 +67,7 @@ export class ImanSyncController {
     @Body("text") text: string,
   ) {
     if (!text?.trim()) return { verses: [] };
-    return this.imanSyncService.quickSearch(text);
+    return this.imanifestService.quickSearch(text);
   }
 
   @Public()
@@ -78,7 +78,7 @@ export class ImanSyncController {
   ) {
     const userId = req.user?.userId ?? "demo-user-hackathon";
     await this.checkRateLimit(userId, "text", TEXT_RATE_LIMIT);
-    return this.imanSyncService.analyze(userId, dto);
+    return this.imanifestService.analyze(userId, dto);
   }
 
   @Public()
@@ -119,7 +119,7 @@ export class ImanSyncController {
     const imageBase64 = file.buffer.toString("base64");
     const imagePath = `vision:${Date.now()}`;
 
-    return this.imanSyncService.analyzeVision(
+    return this.imanifestService.analyzeVision(
       userId,
       intentText.trim(),
       imageBase64,

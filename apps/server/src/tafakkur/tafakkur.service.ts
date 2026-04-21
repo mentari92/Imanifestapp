@@ -40,8 +40,8 @@ interface FoundationHealthSummary {
 }
 
 @Injectable()
-export class SakinahService {
-  private readonly logger = new Logger(SakinahService.name);
+export class TafakkurService {
+  private readonly logger = new Logger(TafakkurService.name);
 
   private readonly reciterSubtitleHints: Record<string, string> = {
     "mishary rashid alafasy": "Kuwait · Murattal",
@@ -86,7 +86,7 @@ export class SakinahService {
   }
 
   async getReciters(): Promise<ReciterInfo[]> {
-    const cacheKey = "sakinah:reciters:v2";
+    const cacheKey = "tafakkur:reciters:v2";
 
     try {
       const cached = await this.redis.get(cacheKey);
@@ -168,7 +168,7 @@ export class SakinahService {
       throw new BadRequestException("Invalid ayah key");
     }
 
-    const cacheKey = `sakinah:verse-audio:${reciterId}:${ayahKey}`;
+    const cacheKey = `tafakkur:verse-audio:${reciterId}:${ayahKey}`;
 
     try {
       const cached = await this.redis.get(cacheKey);

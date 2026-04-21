@@ -7,13 +7,13 @@
     "png": "apps/mobile-web/assets/stitch/dashboard.png",
     "html": "apps/mobile-web/assets/stitch/dashboard.html"
   },
-  "heartpulse": {
+  "qalb": {
     "id": "d1e7611e2566492cb237d762ba31e3d0",
-    "title": "HeartPulse Journal",
+    "title": "Qalb Journal",
     "screenshotUrl": "https://lh3.googleusercontent.com/aida/ADBb0uh7zcOoVYmkGU4GqO19JIR-dY5bxOa22-WaD1k7WYzaFVJaNA7FKNtKfLa5rgUWeI7YmyWxt2TvVPOPcV53nqv_hbYWk3v3WyUzjxPshVR7ftRdxsO4znLGUb_Cg-56DhcG-CDOngqIZve1pTJLaVwI2IWijtDPtsyudCFvzRLg03jYow3t-mv8Aljub9fSXludKbLgMmF0th7xJpAs4K0W1ugLyErdkN0Et0HLO81mNbKtHLi-Z5bovw",
     "htmlUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2ZkNmRhMDQxMTFmODQwOWVhYzlkMjg2OTZlZDhjMjJkEgsSBxDJ7aTFyQgYAZIBIwoKcHJvamVjdF9pZBIVQhMxMTcwNzAxMjkyMDg1MzUyOTkx&filename=&opi=89354086",
-    "png": "apps/mobile-web/assets/stitch/heartpulse.png",
-    "html": "apps/mobile-web/assets/stitch/heartpulse.html"
+    "png": "apps/mobile-web/assets/stitch/qalb.png",
+    "html": "apps/mobile-web/assets/stitch/qalb.html"
   },
   "soul-curhat": {
     "id": "1831a529823d4baeae752e457c651f33",

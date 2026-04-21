@@ -33,7 +33,7 @@ function unloadActiveSound() {
 }
 
 /**
- * Call when the entire Sakinah feature is abandoned (e.g., app backgrounds
+ * Call when the entire Tafakkur feature is abandoned (e.g., app backgrounds
  * or user logs out). Stops and releases the module-level audio singleton.
  */
 export function stopAndReleaseAudio() {

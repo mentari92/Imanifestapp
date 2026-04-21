@@ -6,7 +6,7 @@ const STREAK_LOOKBACK_DAYS = 35;
 
 /**
  * Calculate consecutive-day streak from reflections.
- * Shared utility used by both HeartPulse and Dashboard services.
+ * Shared utility used by both Qalb and Dashboard services.
  *
  * Uses `streakDate` field with a 36h tolerance between days
  * for timezone flexibility.

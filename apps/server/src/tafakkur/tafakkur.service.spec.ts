@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { BadRequestException } from "@nestjs/common";
-import { SakinahService } from "./sakinah.service";
+import { TafakkurService } from "./tafakkur.service";
 import { RedisService } from "../common/redis.service";
 import { QuranApiService } from "../common/quran-api.service";
 import axios from "axios";
@@ -8,8 +8,8 @@ import axios from "axios";
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-describe("SakinahService", () => {
-  let service: SakinahService;
+describe("TafakkurService", () => {
+  let service: TafakkurService;
   let redis: RedisService;
 
   const mockRedis = {
@@ -24,13 +24,13 @@ describe("SakinahService", () => {
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
-        SakinahService,
+        TafakkurService,
         { provide: RedisService, useValue: mockRedis },
         { provide: QuranApiService, useValue: mockQuranApi },
       ],
     }).compile();
 
-    service = module.get<SakinahService>(SakinahService);
+    service = module.get<TafakkurService>(TafakkurService);
     redis = module.get<RedisService>(RedisService);
     jest.clearAllMocks();
   });
@@ -56,7 +56,7 @@ describe("SakinahService", () => {
       const result = await service.getReciters();
 
       expect(result).toEqual(cachedReciters);
-      expect(redis.get).toHaveBeenCalledWith("sakinah:reciters");
+      expect(redis.get).toHaveBeenCalledWith("tafakkur:reciters");
       expect(mockedAxios.get).not.toHaveBeenCalled();
     });
 
@@ -72,7 +72,7 @@ describe("SakinahService", () => {
       expect(result[0].name).toBe("Mishary Rashid Alafasy");
       expect(result[1].name).toBe("Abdul Basit");
       expect(redis.set).toHaveBeenCalledWith(
-        "sakinah:reciters",
+        "tafakkur:reciters",
         expect.any(String),
         86400,
       );
@@ -109,7 +109,7 @@ describe("SakinahService", () => {
 
       // Fire-and-forget set — still called
       expect(redis.set).toHaveBeenCalledWith(
-        "sakinah:reciters",
+        "tafakkur:reciters",
         expect.any(String),
         86400,
       );
@@ -140,7 +140,7 @@ describe("SakinahService", () => {
       const result = await service.getAudioUrl(7, 1);
 
       expect(result.url).toBe(cachedUrl.url);
-      expect(redis.get).toHaveBeenCalledWith("sakinah:audio:7:1");
+      expect(redis.get).toHaveBeenCalledWith("tafakkur:audio:7:1");
     });
 
     it("should generate and cache audio URL when Redis is empty", async () => {
@@ -150,7 +150,7 @@ describe("SakinahService", () => {
 
       expect(result.url).toBe("https://cdn.islamic.network/quran/audio/128/ar.alafasy/001.mp3");
       expect(redis.set).toHaveBeenCalledWith(
-        "sakinah:audio:7:1",
+        "tafakkur:audio:7:1",
         JSON.stringify({ url: "https://cdn.islamic.network/quran/audio/128/ar.alafasy/001.mp3" }),
         3600,
       );
@@ -206,7 +206,7 @@ describe("SakinahService", () => {
       const result = await service.getSurahs();
 
       expect(result).toEqual(cachedSurahs);
-      expect(redis.get).toHaveBeenCalledWith("sakinah:surahs");
+      expect(redis.get).toHaveBeenCalledWith("tafakkur:surahs");
       expect(mockedAxios.get).not.toHaveBeenCalled();
     });
 
@@ -224,7 +224,7 @@ describe("SakinahService", () => {
       expect(result[0].name).toBe("الفاتحة");
       expect(result[0].versesCount).toBe(7);
       expect(redis.set).toHaveBeenCalledWith(
-        "sakinah:surahs",
+        "tafakkur:surahs",
         expect.any(String),
         86400,
       );
@@ -248,7 +248,7 @@ describe("SakinahService", () => {
       await service.getSurahs();
 
       expect(redis.set).toHaveBeenCalledWith(
-        "sakinah:surahs",
+        "tafakkur:surahs",
         expect.any(String),
         86400,
       );

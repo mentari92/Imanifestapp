@@ -13,7 +13,7 @@ import {
 import { Heart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHeartPulse } from '../../hooks/useHeartPulse';
+import { useQalb } from '../../hooks/useQalb';
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../../components/shared/ErrorMessage';
 
@@ -58,7 +58,7 @@ export default function QalbScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { loading, error, result, streak, analyzeEntry, fetchStreak } =
-    useHeartPulse();
+    useQalb();
   const [journalText, setJournalText] = useState('');
   const [activeSentiment, setActiveSentiment] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);

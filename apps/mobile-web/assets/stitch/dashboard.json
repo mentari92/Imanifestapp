@@ -13,7 +13,7 @@
   "width": "780",
   "height": "4294",
   "title": "User Dashboard (Final Nav)",
-  "prompt": "Replace all occurrences of the text \"ImanSync\" with \"Imanifest\" and \"HeartPulse\" with \"Qalb\". This includes labels in the quick access hub, the bottom navigation bar, and any section headers. Maintain the existing \"Celestial Ether\" styling.",
+  "prompt": "Replace all occurrences of the text \"Imanifest\" with \"Imanifest\" and \"Qalb\" with \"Qalb\". This includes labels in the quick access hub, the bottom navigation bar, and any section headers. Maintain the existing \"Celestial Ether\" styling.",
   "name": "projects/1170701292085352991/screens/491c3c60750d4490a6a48545d3a771c2",
   "theme": {
     "colorMode": "LIGHT",

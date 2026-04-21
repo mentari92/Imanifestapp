@@ -1,15 +1,15 @@
 import { Test } from "@nestjs/testing";
 import { HttpException, HttpStatus } from "@nestjs/common";
-import { ImanSyncController } from "./iman-sync.controller";
-import { ImanSyncService } from "./iman-sync.service";
+import { ImanifestController } from "./imanifest.controller";
+import { ImanifestService } from "./imanifest.service";
 import { RedisService } from "../common/redis.service";
 
-describe("ImanSyncController", () => {
-  let controller: ImanSyncController;
-  let service: ImanSyncService;
+describe("ImanifestController", () => {
+  let controller: ImanifestController;
+  let service: ImanifestService;
   let redis: RedisService;
 
-  const mockImanSyncService = {
+  const mockImanifestService = {
     analyze: jest.fn(),
     analyzeVision: jest.fn(),
   };
@@ -22,15 +22,15 @@ describe("ImanSyncController", () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      controllers: [ImanSyncController],
+      controllers: [ImanifestController],
       providers: [
-        { provide: ImanSyncService, useValue: mockImanSyncService },
+        { provide: ImanifestService, useValue: mockImanifestService },
         { provide: RedisService, useValue: mockRedisService },
       ],
     }).compile();
 
-    controller = module.get<ImanSyncController>(ImanSyncController);
-    service = module.get<ImanSyncService>(ImanSyncService);
+    controller = module.get<ImanifestController>(ImanifestController);
+    service = module.get<ImanifestService>(ImanifestService);
     redis = module.get<RedisService>(RedisService);
     jest.clearAllMocks();
   });
@@ -39,7 +39,7 @@ describe("ImanSyncController", () => {
     expect(controller).toBeDefined();
   });
 
-  describe("POST /iman-sync/analyze", () => {
+  describe("POST /imanifest/analyze", () => {
     const mockResult = {
       manifestationId: "test-id",
       verses: [],
@@ -48,7 +48,7 @@ describe("ImanSyncController", () => {
 
     it("should return analysis result when within rate limit", async () => {
       mockRedisService.incr.mockResolvedValue(1);
-      mockImanSyncService.analyze.mockResolvedValue(mockResult);
+      mockImanifestService.analyze.mockResolvedValue(mockResult);
 
       const result = await controller.analyze(
         { user: { userId: "user-1" } } as any,
@@ -57,7 +57,7 @@ describe("ImanSyncController", () => {
 
       expect(result).toEqual(mockResult);
       expect(redis.incr).toHaveBeenCalledWith(
-        "rate:iman-sync:text:user-1",
+        "rate:imanifest:text:user-1",
         3600,
       );
       expect(service.analyze).toHaveBeenCalledWith("user-1", {
@@ -87,7 +87,7 @@ describe("ImanSyncController", () => {
 
     it("should allow request when Redis is unavailable (count=0)", async () => {
       mockRedisService.incr.mockResolvedValue(0);
-      mockImanSyncService.analyze.mockResolvedValue(mockResult);
+      mockImanifestService.analyze.mockResolvedValue(mockResult);
 
       const result = await controller.analyze(
         { user: { userId: "user-1" } } as any,
@@ -99,7 +99,7 @@ describe("ImanSyncController", () => {
 
     it("should allow 10th request (boundary)", async () => {
       mockRedisService.incr.mockResolvedValue(10);
-      mockImanSyncService.analyze.mockResolvedValue(mockResult);
+      mockImanifestService.analyze.mockResolvedValue(mockResult);
 
       const result = await controller.analyze(
         { user: { userId: "user-1" } } as any,
@@ -110,7 +110,7 @@ describe("ImanSyncController", () => {
     });
   });
 
-  describe("POST /iman-sync/analyze-vision", () => {
+  describe("POST /imanifest/analyze-vision", () => {
     const mockFile = {
       buffer: Buffer.from("fake-image"),
       mimetype: "image/jpeg",

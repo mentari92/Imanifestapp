@@ -4,37 +4,37 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { SakinahService } from './sakinah.service';
+import { TafakkurService } from './tafakkur.service';
 import { JwtAuthGuard } from '../auth/auth.guard';
 import { Public } from '../auth/public.decorator';
 
-@Controller(['sakinah', 'tafakkur'])
+@Controller('tafakkur')
 @UseGuards(JwtAuthGuard)
-export class SakinahController {
-  constructor(private readonly sakinahService: SakinahService) {}
+export class TafakkurController {
+  constructor(private readonly tafakkurService: TafakkurService) {}
 
   @Public()
   @Get('foundation-health')
   async getFoundationHealth() {
-    const health = await this.sakinahService.getFoundationHealth();
+    const health = await this.tafakkurService.getFoundationHealth();
     return { data: health };
   }
 
   @Get('surahs')
   async getSurahs() {
-    const surahs = await this.sakinahService.getSurahs();
+    const surahs = await this.tafakkurService.getSurahs();
     return { data: surahs };
   }
 
   @Get('reciters')
   async getReciters() {
-    const reciters = await this.sakinahService.getReciters();
+    const reciters = await this.tafakkurService.getReciters();
     return { data: reciters };
   }
 
   @Get('popular-reciters')
   async getPopularReciters() {
-    const reciters = await this.sakinahService.getPopularReciters();
+    const reciters = await this.tafakkurService.getPopularReciters();
     return { data: reciters };
   }
 
@@ -47,7 +47,7 @@ export class SakinahController {
     const reciterValue = /^\d+$/.test(reciter)
       ? parseInt(reciter, 10)
       : reciter;
-    const result = await this.sakinahService.getAudioUrl(reciterValue, surahNumber);
+    const result = await this.tafakkurService.getAudioUrl(reciterValue, surahNumber);
     return result;
   }
 
@@ -57,7 +57,7 @@ export class SakinahController {
     @Query('reciterId') reciterId: string,
   ) {
     const parsedReciterId = parseInt(reciterId, 10);
-    const result = await this.sakinahService.getVerseAudioUrl(parsedReciterId, ayahKey);
+    const result = await this.tafakkurService.getVerseAudioUrl(parsedReciterId, ayahKey);
     return result;
   }
 }

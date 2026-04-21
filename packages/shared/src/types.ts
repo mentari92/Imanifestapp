@@ -68,18 +68,18 @@ export type SentimentLabel =
 
 // === API Request/Response Types ===
 
-export interface ImanSyncAnalyzeRequest {
+export interface ImanifestAnalyzeRequest {
   intentText: string;
   userId: string;
 }
 
-export interface ImanSyncAnalyzeResponse {
+export interface ImanifestAnalyzeResponse {
   manifestationId: string;
   verses: QuranVerse[];
   aiSummary: string;
 }
 
-export interface ImanSyncVisionResponse extends ImanSyncAnalyzeResponse {
+export interface ImanifestVisionResponse extends ImanifestAnalyzeResponse {
   imagePath: string;
 }
 
@@ -91,7 +91,7 @@ export interface DuaToDoGenerateResponse {
   tasks: Task[];
 }
 
-export interface HeartPulseReflectResponse {
+export interface QalbReflectResponse {
   reflection: Reflection;
   sentiment: SentimentLabel;
   sentimentScore: number;

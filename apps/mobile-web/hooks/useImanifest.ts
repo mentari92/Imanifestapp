@@ -11,7 +11,7 @@ interface Verse {
   tafsirSnippet?: string;
 }
 
-interface ImanSyncResult {
+interface ImanifestResult {
   id: string;
   sentiment: 'positive' | 'neutral' | 'negative';
   verses: Verse[];
@@ -44,7 +44,7 @@ interface AnalyzeResponse {
   tasks: Array<string | { title?: string; guidance?: string }>;
 }
 
-interface HistoryItem extends ImanSyncResult {
+interface HistoryItem extends ImanifestResult {
   text: string;
   type: 'text' | 'voice';
   totalTasks?: number;
@@ -56,10 +56,10 @@ interface HistoryResponse {
   manifestations: ManifestationHistoryItem[];
 }
 
-export function useImanSync() {
+export function useImanifest() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ImanSyncResult | null>(null);
+  const [result, setResult] = useState<ImanifestResult | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   const mapVerse = (verse: RawVerse): Verse => {
@@ -103,7 +103,7 @@ export function useImanSync() {
         { intentText: text },
       );
 
-      const mapped: ImanSyncResult = {
+      const mapped: ImanifestResult = {
         id: response.manifestationId,
         sentiment: 'neutral',
         verses: Array.isArray(response.verses)

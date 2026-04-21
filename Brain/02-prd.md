@@ -10,10 +10,10 @@
 
 ImanifestApp is a spiritual productivity platform with 4 core features:
 
-1. **ImanSync** — User submits intention (text or image) → GLM-5 returns 3 relevant Quranic verses with tafsir
-2. **Dua-to-Do** — GLM-5 converts ImanSync verses into a 5-step Ikhtiar checklist, saved to Quran Foundation Goals API
-3. **HeartPulse** — Voice or text journaling → GLM-5 sentiment analysis → streak tracking via Quran Foundation User API
-4. **SakinahStream** — Recitation audio player streaming from Quran Foundation Audio API
+1. **Imanifest** — User submits intention (text or image) → GLM-5 returns 3 relevant Quranic verses with tafsir
+2. **Dua-to-Do** — GLM-5 converts Imanifest verses into a 5-step Ikhtiar checklist, saved to Quran Foundation Goals API
+3. **Qalb** — Voice or text journaling → GLM-5 sentiment analysis → streak tracking via Quran Foundation User API
+4. **Tafakkur** — Recitation audio player streaming from Quran Foundation Audio API
 
 All features are free for registered users in the hackathon MVP.
 
@@ -33,7 +33,7 @@ All features are free for registered users in the hackathon MVP.
 - Listens to Quran during commute
 - Pain: wants to listen in a calm UI without ads or distractions
 - Goal: focused recitation experience with curated reciters
-- Behavior: uses SakinahStream as entry point, discovers ImanSync later
+- Behavior: uses Tafakkur as entry point, discovers Imanifest later
 
 ---
 
@@ -44,10 +44,10 @@ All features are free for registered users in the hackathon MVP.
 - Email/password fallback (if OAuth2 not ready in hackathon timeframe)
 - `quranApiKey` stored in User table for per-user Quran API access (optional)
 - Session managed via Supabase Auth or Clerk JWT
-- Protected routes: `/dashboard`, `/iman-sync`, `/dua-to-do`, `/heart-pulse`
-- SakinahStream: publicly accessible, no login required
+- Protected routes: `/dashboard`, `/imanifest`, `/dua-to-do`, `/qalb`
+- Tafakkur: publicly accessible, no login required
 
-### FR-02: ImanSync — Text Input
+### FR-02: Imanifest — Text Input
 - Free text field: max 500 characters
 - Optional image upload: max 5MB, JPG/PNG
 - On submission:
@@ -58,7 +58,7 @@ All features are free for registered users in the hackathon MVP.
 - Result saved to `Manifestation` table
 - Response time target: < 8 seconds
 
-### FR-03: ImanSync — Image Upload (Vision)
+### FR-03: Imanifest — Image Upload (Vision)
 - User uploads image alongside intention text
 - GLM-5V processes image + text in one multimodal prompt
 - Returns same structure as FR-02 (3 verses + summary)
@@ -67,7 +67,7 @@ All features are free for registered users in the hackathon MVP.
 - Image stored as path reference in `Manifestation.imagePath`
 
 ### FR-04: Dua-to-Do — Checklist Generation
-- Triggered from ImanSync result page (or re-triggered from dashboard)
+- Triggered from Imanifest result page (or re-triggered from dashboard)
 - Input: `manifestationId` → load verses from DB
 - GLM-5 parses the 3 verses and generates a 5-step Ikhtiar checklist
 - Each step is a concrete, actionable task (not vague advice)
@@ -75,7 +75,7 @@ All features are free for registered users in the hackathon MVP.
 - Steps also posted to Quran Foundation User API (Goals endpoint)
 - User can check off tasks in the UI (updates `Task.isCompleted`)
 
-### FR-05: HeartPulse — Voice Journal
+### FR-05: Qalb — Voice Journal
 - User records voice (max 2 minutes) OR types reflection text
 - Voice input: GLM-5 processes speech-to-text
 - Both paths: GLM-5 runs sentiment analysis → returns label (e.g. "hopeful", "anxious", "grateful") + score (0.0–1.0)
@@ -83,7 +83,7 @@ All features are free for registered users in the hackathon MVP.
 - Posted to Quran Foundation User API: Streak Tracking + Post a Reflection
 - User dashboard shows: last 7-day sentiment trend, current streak count
 
-### FR-06: SakinahStream — Audio Player
+### FR-06: Tafakkur — Audio Player
 - Audio player UI with play/pause/seek/volume
 - Data from Quran Foundation Audio API: list of reciters + surah audio URLs
 - Filter by: reciter, surah number
@@ -96,15 +96,15 @@ All features are free for registered users in the hackathon MVP.
   - Total manifestations created
   - Tasks completed vs pending
   - Current reflection streak (from Quran Foundation)
-  - 7-day HeartPulse sentiment chart
-  - Quick access buttons: New Intention, New Reflection, Open SakinahStream
+  - 7-day Qalb sentiment chart
+  - Quick access buttons: New Intention, New Reflection, Open Tafakkur
 - History: list of past Manifestations with creation date + task completion %
 - Each Manifestation card links to full result + task list
 
 ### FR-08: API Rate Limiting
-- `/iman-sync/analyze`: max 10 requests per user per hour (Redis)
-- `/iman-sync/analyze-vision`: max 5 requests per user per hour (Redis)
-- `/heart-pulse`: max 20 requests per user per hour (Redis)
+- `/imanifest/analyze`: max 10 requests per user per hour (Redis)
+- `/imanifest/analyze-vision`: max 5 requests per user per hour (Redis)
+- `/qalb`: max 20 requests per user per hour (Redis)
 - Exceeded → 429 response with message in Bahasa Indonesia or English based on user locale
 
 ---
@@ -112,10 +112,10 @@ All features are free for registered users in the hackathon MVP.
 ## 4. Non-Functional Requirements
 
 ### NFR-01: Performance
-- ImanSync text API: < 8 seconds
-- ImanSync vision API: < 12 seconds
+- Imanifest text API: < 8 seconds
+- Imanifest vision API: < 12 seconds
 - Dua-to-Do generation: < 6 seconds
-- HeartPulse voice processing: < 10 seconds
+- Qalb voice processing: < 10 seconds
 - Audio stream start: < 2 seconds
 - All Quran Foundation API responses: cached in Redis (TTL 1 hour)
 
@@ -124,10 +124,10 @@ All features are free for registered users in the hackathon MVP.
 - All screens responsive: minimum 320px wide
 - Voice recording uses Expo Audio API
 - Image upload uses Expo ImagePicker
-- Bottom tab navigation: ImanSync | Dua-to-Do | HeartPulse | SakinahStream
+- Bottom tab navigation: Imanifest | Dua-to-Do | Qalb | Tafakkur
 
 ### NFR-03: Security
-- All `/api/*` routes on NestJS backend behind JWT guard (except SakinahStream audio proxy)
+- All `/api/*` routes on NestJS backend behind JWT guard (except Tafakkur audio proxy)
 - GLM-5 API key stored server-side only, never exposed to client
 - Quran Foundation API key stored server-side only
 - File uploads validated: type + size before processing
@@ -152,7 +152,7 @@ All features are free for registered users in the hackathon MVP.
 | US-01 | Visitor | Log in with my Quran.com account | I can use ImanifestApp without creating a new account |
 | US-02 | Logged-in user | Type my intention and get 3 Quranic verses | I can see how my goal aligns with the Quran |
 | US-03 | Logged-in user | Upload a photo of my vision board | I can get Quranic verses relevant to what I'm visualizing |
-| US-04 | Logged-in user | Get a 5-step action plan from ImanSync | I can turn my intention into concrete steps |
+| US-04 | Logged-in user | Get a 5-step action plan from Imanifest | I can turn my intention into concrete steps |
 | US-05 | Logged-in user | Check off completed tasks | I can track my progress toward my goal |
 | US-06 | Logged-in user | Record a voice reflection | I can journal in the most natural format for me |
 | US-07 | Logged-in user | See my reflection sentiment over time | I can notice patterns in my spiritual state |
@@ -176,7 +176,7 @@ All features are free for registered users in the hackathon MVP.
 
 ## 7. Acceptance Criteria (Definition of Done)
 
-**ImanSync:**
+**Imanifest:**
 - [ ] User can submit text and receive 3 Quranic verses within 8 seconds
 - [ ] User can upload image + text and receive 3 Quranic verses within 12 seconds
 - [ ] Each verse shows: Arabic text, translation, tafsir snippet (max 300 chars)
@@ -184,13 +184,13 @@ All features are free for registered users in the hackathon MVP.
 - [ ] Manifestation saved to DB
 
 **Dua-to-Do:**
-- [ ] 5-step checklist generated from ImanSync output within 6 seconds
+- [ ] 5-step checklist generated from Imanifest output within 6 seconds
 - [ ] Each task shows description and completion checkbox
 - [ ] Tasks saved to DB linked to manifestation
 - [ ] Tasks posted to Quran Foundation Goals API
 - [ ] User can check/uncheck tasks
 
-**HeartPulse:**
+**Qalb:**
 - [ ] Voice recording captures audio and sends to GLM-5
 - [ ] Text input also accepted as fallback
 - [ ] Sentiment label and score returned and displayed
@@ -198,7 +198,7 @@ All features are free for registered users in the hackathon MVP.
 - [ ] Streak count displayed and updated via Quran Foundation API
 - [ ] 7-day sentiment chart visible in dashboard
 
-**SakinahStream:**
+**Tafakkur:**
 - [ ] Audio player loads reciter list from Quran Foundation Audio API
 - [ ] User can select reciter and surah
 - [ ] Audio plays, pauses, seeks correctly

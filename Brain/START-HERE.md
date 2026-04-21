@@ -1,6 +1,6 @@
 # START HERE — ImanifestApp
 ## Panduan Memulai di Code Editor (Cursor / Windsurf / code editor)
-## Version 1.0 — 4 Features: ImanSync | Dua-to-Do | HeartPulse | SakinahStream
+## Version 1.0 — 4 Features: Imanifest | Dua-to-Do | Qalb | Tafakkur
 
 ---
 
@@ -30,7 +30,7 @@ imanifestapp/
 - [ ] **Story 1.2** — Database schema + Prisma migration (User, Manifestation, Task, Reflection)
 - [ ] **Story 1.3** — Auth: OAuth2 Quran.com via Supabase/Clerk + JWT guard di NestJS
 
-### Epic 2: ImanSync
+### Epic 2: Imanifest
 - [ ] **Story 2.1** — Text analysis: GLM-5 → Quran Content API → DB
 - [ ] **Story 2.2** — Vision analysis: GLM-5V multimodal (image + text)
 - [ ] **Story 2.3** — Rate limiting (Redis) + caching (Quran API + GLM results)
@@ -39,12 +39,12 @@ imanifestapp/
 - [ ] **Story 3.1** — Checklist generation: GLM-5 → Quran Goals API → DB
 - [ ] **Story 3.2** — Task completion tracking (checkbox + optimistic UI)
 
-### Epic 4: HeartPulse
+### Epic 4: Qalb
 - [ ] **Story 4.1** — Voice recording (Expo Audio) + GLM-5 transcription
 - [ ] **Story 4.2** — Sentiment analysis + SentimentBadge display
 - [ ] **Story 4.3** — Streak tracking via Quran User API + text fallback
 
-### Epic 5: SakinahStream
+### Epic 5: Tafakkur
 - [ ] **Story 5.1** — Reciter + surah browser (Quran Audio API, no auth required)
 - [ ] **Story 5.2** — Audio player (Expo Audio, play/pause/seek)
 
@@ -178,7 +178,7 @@ SUPABASE_ANON_KEY="your_supabase_anon_key"
 CLERK_SECRET_KEY="your_clerk_secret"
 ```
 
-**Wajib sebelum Story 2.1 (ImanSync):**
+**Wajib sebelum Story 2.1 (Imanifest):**
 ```
 ZHIPU_API_KEY="your_zhipu_api_key"
 QURAN_FOUNDATION_API_KEY="your_quran_api_key"
@@ -189,7 +189,7 @@ QURAN_API_BASE_URL="https://api.quran.com/api/v4"
 
 ## Langkah 6: Catatan Penting per Epic
 
-### Epic 2 (ImanSync) — sebelum mulai:
+### Epic 2 (Imanifest) — sebelum mulai:
 Pastikan kamu punya:
 - Zhipu AI API key aktif (GLM-5 + GLM-5V akses)
 - Quran Foundation API key aktif
@@ -197,9 +197,9 @@ Pastikan kamu punya:
 
 Kalau OAuth2 Quran.com belum siap, pakai email/password auth dulu biar Epic 2 bisa jalan.
 
-### Epic 4 (HeartPulse) — sebelum mulai:
+### Epic 4 (Qalb) — sebelum mulai:
 ```
-Kita akan mulai Epic 4 — HeartPulse Voice Journaling.
+Kita akan mulai Epic 4 — Qalb Voice Journaling.
 
 Expo Audio API butuh permissions di app.json:
 - ios.infoPlist.NSMicrophoneUsageDescription
@@ -209,8 +209,8 @@ Pastikan ini sudah ada di app.json sebelum test di device.
 Implement Story 4.1 — Voice Recording & Transcription.
 ```
 
-### Epic 5 (SakinahStream) — perhatikan:
-- `/sakinah/*` routes tidak boleh pakai AuthGuard
+### Epic 5 (Tafakkur) — perhatikan:
+- `/tafakkur/*` routes tidak boleh pakai AuthGuard
 - Reciter list di-cache 24 jam — jangan re-fetch setiap request
 - Expo Audio untuk streaming: gunakan `Audio.Sound.createAsync(url)` bukan download dulu
 
@@ -248,4 +248,4 @@ Sudah dikunci di project brief — agent jangan buat:
 - ❌ Offline mode / service worker
 - ❌ Upload KTP, paspor, atau dokumen identitas
 
-Yang di-build hanya 4 fitur inti: ImanSync, Dua-to-Do, HeartPulse, SakinahStream.
+Yang di-build hanya 4 fitur inti: Imanifest, Dua-to-Do, Qalb, Tafakkur.

@@ -58,7 +58,7 @@ QURAN_FOUNDATION_AUTH_TOKEN="your_auth_token"
 QURAN_FOUNDATION_AUDIO_BASE_URL="https://audio.qurancdn.com"
 ```
 
-You can verify the backend integration at `GET /sakinah/foundation-health`. The endpoint returns only configuration flags and probe status, not the secret values.
+You can verify the backend integration at `GET /tafakkur/foundation-health`. The endpoint returns only configuration flags and probe status, not the secret values.
 
 ## Available Scripts
 

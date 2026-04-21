@@ -12,7 +12,7 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "../auth/auth.guard";
 import { Public } from "../auth/public.decorator";
-import { HeartPulseService } from "./heart-pulse.service";
+import { QalbService } from "./qalb.service";
 
 const ALLOWED_AUDIO_MIME_TYPES = [
   "audio/mpeg",
@@ -26,10 +26,10 @@ const ALLOWED_AUDIO_MIME_TYPES = [
 const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
 const MAX_TRANSCRIPT_LENGTH = 5000;
 
-@Controller(["heart-pulse", "qalb"])
+@Controller("qalb")
 @UseGuards(JwtAuthGuard)
-export class HeartPulseController {
-  constructor(private readonly heartPulseService: HeartPulseService) {}
+export class QalbController {
+  constructor(private readonly qalbService: QalbService) {}
 
   private resolveUserId(req: { user?: { userId: string } }): string {
     return req.user?.userId ?? "demo-user-123";
@@ -50,7 +50,7 @@ export class HeartPulseController {
       );
     }
 
-    return this.heartPulseService.reflectText(
+    return this.qalbService.reflectText(
       this.resolveUserId(req),
       body.transcriptText.trim(),
     );
@@ -93,7 +93,7 @@ export class HeartPulseController {
     }
 
     const audioPath = `voice:${Date.now()}`;
-    return this.heartPulseService.reflectVoice(
+    return this.qalbService.reflectVoice(
       this.resolveUserId(req),
       audioPath,
       transcriptText.trim(),
@@ -103,12 +103,12 @@ export class HeartPulseController {
   @Public()
   @Get("history")
   async getHistory(@Request() req: { user?: { userId: string } }) {
-    return this.heartPulseService.getHistory(this.resolveUserId(req));
+    return this.qalbService.getHistory(this.resolveUserId(req));
   }
 
   @Public()
   @Post("history")
   async getHistoryPost(@Request() req: { user?: { userId: string } }) {
-    return this.heartPulseService.getHistory(this.resolveUserId(req));
+    return this.qalbService.getHistory(this.resolveUserId(req));
   }
 }

@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { Sparkles } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useImanSync } from '../../hooks/useImanSync';
+import { useImanifest } from '../../hooks/useImanifest';
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../../components/shared/ErrorMessage';
 
@@ -58,7 +58,7 @@ const glass = {
 export default function ImanifestScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { loading, error, result, history, analyzeIntention, fetchHistory } = useImanSync();
+  const { loading, error, result, history, analyzeIntention, fetchHistory } = useImanifest();
   const [intentionText, setIntentionText] = useState('');
   const [gratitude, setGratitude] = useState(['', '', '']);
   const [recordingTarget, setRecordingTarget] = useState<'intention' | 'gratitude' | null>(null);

@@ -16,7 +16,7 @@ interface HadithReference {
   text: string;
 }
 
-interface HeartPulseResult {
+interface QalbResult {
   id: string;
   sentiment: 'positive' | 'neutral' | 'negative';
   emotion: string;
@@ -45,10 +45,10 @@ interface HistoryItem {
   createdAt: string;
 }
 
-export function useHeartPulse() {
+export function useQalb() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<HeartPulseResult | null>(null);
+  const [result, setResult] = useState<QalbResult | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
@@ -100,7 +100,7 @@ export function useHeartPulse() {
 
       const aiInsight = reflectResponse?.aiInsight || {};
 
-      const mapped: HeartPulseResult = {
+      const mapped: QalbResult = {
         id: reflectResponse?.reflection?.id || `qalb-${Date.now()}`,
         sentiment: mapSentiment(reflectResponse?.sentiment || 'neutral'),
         emotion: reflectResponse?.sentiment || 'neutral',

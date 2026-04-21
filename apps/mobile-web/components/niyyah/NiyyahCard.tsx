@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { Sparkles, Mic, BookOpen, Search } from "lucide-react-native";
-import { useImanSync } from "../../hooks/useImanSync";
+import { useImanifest } from "../../hooks/useImanifest";
 import { colors } from "../../constants/theme";
 
 interface NiyyahCardProps {
@@ -15,7 +15,7 @@ export const NiyyahCard: React.FC<NiyyahCardProps> = ({
   setIntention,
   onSubmit,
 }) => {
-  const { quickSearch } = useImanSync();
+  const { quickSearch } = useImanifest();
   const [liveVerses, setLiveVerses] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 

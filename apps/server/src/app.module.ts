@@ -4,15 +4,15 @@ import { DatabaseModule } from "@imanifest/database";
 import { RedisModule } from "./common/redis.module";
 import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/auth.guard";
-import { ImanSyncModule } from "./iman-sync/iman-sync.module";
+import { ImanifestModule } from "./imanifest/imanifest.module";
 import { DuaToDoModule } from "./dua-todo/dua-todo.module";
-import { HeartPulseModule } from "./heart-pulse/heart-pulse.module";
-import { SakinahModule } from "./sakinah/sakinah.module";
+import { QalbModule } from "./qalb/qalb.module";
+import { TafakkurModule } from "./tafakkur/tafakkur.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { AppController } from "./app.controller";
 
 @Module({
-  imports: [DatabaseModule, RedisModule, AuthModule, ImanSyncModule, DuaToDoModule, HeartPulseModule, SakinahModule, DashboardModule],
+  imports: [DatabaseModule, RedisModule, AuthModule, ImanifestModule, DuaToDoModule, QalbModule, TafakkurModule, DashboardModule],
   controllers: [AppController],
   providers: [
     // Apply JWT guard globally — use @Public() to skip

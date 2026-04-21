@@ -12,8 +12,8 @@
   "generatedBy": "HatterAgent",
   "width": "780",
   "height": "3644",
-  "title": "HeartPulse Journal",
-  "prompt": "Change the main title text from \"HeartPulse Journal\" to \"Qalb Voice\" at the top of the screen. Keep all other styles, layout, and functionality exactly as they are.",
+  "title": "Qalb Journal",
+  "prompt": "Change the main title text from \"Qalb Journal\" to \"Qalb Voice\" at the top of the screen. Keep all other styles, layout, and functionality exactly as they are.",
   "name": "projects/1170701292085352991/screens/d1e7611e2566492cb237d762ba31e3d0",
   "theme": {
     "colorMode": "LIGHT",

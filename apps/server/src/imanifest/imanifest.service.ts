@@ -32,8 +32,8 @@ type SuggestedAction = { title: string; guidance?: string };
 const CACHE_TTL = 3600;
 
 @Injectable()
-export class ImanSyncService {
-  private readonly logger = new Logger(ImanSyncService.name);
+export class ImanifestService {
+  private readonly logger = new Logger(ImanifestService.name);
 
   private extractQuickThemes(text: string): string[] {
     const source = text.toLowerCase();
@@ -224,7 +224,7 @@ export class ImanSyncService {
   }
 
   async analyze(userId: string, dto: AnalyzeDto): Promise<AnalyzeResult> {
-    const cacheKey = `iman-sync:cache:${userId}:${this.hashText(dto.intentText)}`;
+    const cacheKey = `imanifest:cache:${userId}:${this.hashText(dto.intentText)}`;
 
     try {
       const cached = await this.redis.get(cacheKey);
@@ -290,7 +290,7 @@ export class ImanSyncService {
     imagePath: string,
   ): Promise<AnalyzeVisionResult> {
     const visionHash = this.hashText(`${intentText}:${imageBase64}`);
-    const cacheKey = `iman-sync:vision:${userId}:${visionHash}`;
+    const cacheKey = `imanifest:vision:${userId}:${visionHash}`;
 
     try {
       const cached = await this.redis.get(cacheKey);

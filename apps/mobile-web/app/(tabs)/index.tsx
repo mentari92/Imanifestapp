@@ -525,10 +525,10 @@ export default function DashboardScreen() {
               <Text style={s.emptyStateSub}>Write your first intention or reflect on your heart to see activity here.</Text>
               <TouchableOpacity
                 style={s.emptyStateCta}
-                onPress={() => router.push('/(tabs)/imanifest')}
+                onPress={() => router.push('/(tabs)/qalb')}
                 activeOpacity={0.85}
               >
-                <Text style={s.emptyStateCtaText}>Start with Imanifest →</Text>
+                <Text style={s.emptyStateCtaText}>Start with Qalb →</Text>
               </TouchableOpacity>
             </View>
           )}

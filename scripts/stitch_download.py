@@ -6,7 +6,7 @@ API_KEY = "AQ.Ab8RN6I35HzjoXPujThHeDgPNbq38oMJwsbXn2oce8pIQsbAuQ"
 PROJECT_ID = "1170701292085352991"
 SCREENS = [
     ("dashboard", "491c3c60750d4490a6a48545d3a771c2"),
-    ("heartpulse", "d1e7611e2566492cb237d762ba31e3d0"),
+    ("qalb", "d1e7611e2566492cb237d762ba31e3d0"),
     ("soul-curhat", "1831a529823d4baeae752e457c651f33"),
     ("imanifest", "ff9fafe6a498485e855dd1b17c311f61"),
     ("dua-todo", "b2c8346545444150a59b7e742dd6aadc"),
