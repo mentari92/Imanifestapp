@@ -1,6 +1,6 @@
-# ImanifestApp — Islamic Spiritual Companion App
+# ImanifestApp
 
-> A mobile-first Islamic wellbeing app that helps you set spiritual intentions, reflect on your heart (Qalb), listen to the Quran (Tafakkur), and build daily spiritual habits (Dua to-Do) — powered by AI that responds in your language.
+Mobile-first Islamic companion app for intention setting, reflection, Quran listening, and habit building.
 
 ## Features
 
@@ -10,9 +10,9 @@
 - **Dua To-Do** — Auto-generated spiritual tasks from your manifestation, with completion tracking
 - **Dashboard** — Daily Iman Sync streak tracking and spiritual health overview
 
-## Live Demo
+## Demo
 
-**[https://imanifestapp.com](https://imanifestapp.com)**
+[https://imanifestapp.com](https://imanifestapp.com)
 
 ## Monorepo Structure
 
@@ -59,7 +59,19 @@ This starts:
 - **Expo** on `http://localhost:8081` (mobile) / `http://localhost:19006` (web)
 - **NestJS** on `http://localhost:3001`
 
-## Required Environment Variables
+## Environment Variables
+
+Keep secrets only in local .env files and deployment secret managers. Never commit .env files to git.
+
+Minimum required to run backend:
+
+```bash
+DATABASE_URL="postgresql://user:pass@localhost:5432/imanifest"
+JWT_SECRET="your_jwt_secret"
+REDIS_URL="redis://localhost:6379"
+```
+
+Optional but required for AI responses:
 
 ### AI (apps/server/.env)
 ```bash
@@ -67,19 +79,14 @@ OPENROUTER_API_KEY="your_openrouter_key"   # Primary AI provider
 ZHIPU_API_KEY="your_zhipu_key"             # Fallback AI provider
 ```
 
+Optional but required for Tafakkur backend audio proxy:
+
 ### Quran Audio (apps/server/.env)
 ```bash
 QURAN_FOUNDATION_CONTENT_API_URL="https://apis.quran.foundation/content/api/v4"
 QURAN_FOUNDATION_CLIENT_ID="your_client_id"
 QURAN_FOUNDATION_AUTH_TOKEN="your_auth_token"
 QURAN_FOUNDATION_AUDIO_BASE_URL="https://audio.qurancdn.com"
-```
-
-### Auth (apps/server/.env)
-```bash
-JWT_SECRET="your_jwt_secret"
-DATABASE_URL="postgresql://user:pass@localhost:5432/imanifest"
-REDIS_URL="redis://localhost:6379"
 ```
 
 You can verify backend status at `GET /api/health` and Quran integration at `GET /api/tafakkur/foundation-health`.
@@ -109,9 +116,8 @@ You can verify backend status at `GET /api/health` and Quran integration at `GET
 
 ## Documentation
 
-All project docs are in `Brain/`:
+Project docs are in `Brain/`:
 - `01-project-brief.md` — Product vision
 - `02-prd.md` — Product Requirements Document
 - `03-architecture.md` — Technical architecture
 - `04-epics-and-stories.md` — Sprint backlog
-- `05-design-system.md` — Design tokens & components
