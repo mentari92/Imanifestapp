@@ -469,8 +469,14 @@ Do not include any explanation outside the JSON array.`;
     hadith: Array<{ reference: string; text: string }>;
     logicalPath: string[];
   }> {
+    const targetLanguage = this.detectPreferredLanguage(transcriptText);
+
     const systemPrompt = `You are a warm Islamic counselor combining Quranic wisdom with modern science.
 Return ONLY a JSON object with keys spiritual, tafsir, scientific, hadith, logicalPath.
+Respond in ${targetLanguage}.
+If the user writes in Indonesian, respond in natural Indonesian.
+If the user writes in English, respond in natural English.
+If the user writes in Arabic, respond in Arabic.
 Rules for hadith:
 - hadith must be an array of exactly 2 items
 - each item must contain: reference, text
@@ -486,6 +492,28 @@ Writing style:
 
     if (!this.hasAnyAiProvider()) {
       const verseCitation = sentiment === "anxious" || sentiment === "struggling" ? "(94:5-6)" : "(13:28)";
+      if (targetLanguage === "indonesian") {
+        return {
+          spiritual: `Perasaanmu valid, dan Allah dekat dengan hamba yang memohon kepada-Nya. Pegang janji-Nya ${verseCitation}.`,
+          tafsir: "Ujian bukan tanda ditinggalkan. Ujian bisa menjadi jalan imanmu tumbuh dan arah hidupmu makin jelas.",
+          scientific: "Napas teratur, journaling syukur, dan shalat dengan hadir hati dapat membantu menurunkan stres dan menjernihkan pikiran.",
+          hadith: [
+            {
+              reference: "Sahih Muslim 2699",
+              text: "Siapa yang meringankan kesusahan seorang mukmin, Allah akan meringankan kesusahannya pada hari kiamat.",
+            },
+            {
+              reference: "Sahih Bukhari 6464",
+              text: "Jadilah engkau di dunia seperti orang asing atau seorang musafir.",
+            },
+          ],
+          logicalPath: [
+            "Pause 1 menit dan atur napas sebelum mengambil keputusan.",
+            "Tulis satu tindakan yang bisa selesai hari ini, lalu kerjakan sebelum maghrib.",
+            "Tutup hari dengan doa, lalu tawakal pada hal yang belum bisa kamu kendalikan.",
+          ],
+        };
+      }
       return {
         spiritual: `Your feelings are valid, and Allah is near to the one who calls Him. Hold to His promise ${verseCitation}.`,
         tafsir: "Trials are not abandonment. They can be the place where iman deepens and direction becomes clearer.",
@@ -536,15 +564,27 @@ Writing style:
           : [];
 
         return {
-          spiritual: this.humanizeEnglish(parsed.spiritual),
-          tafsir: this.humanizeEnglish(parsed.tafsir),
-          scientific: this.humanizeEnglish(parsed.scientific),
+          spiritual:
+            targetLanguage === "english"
+              ? this.humanizeEnglish(parsed.spiritual)
+              : this.cleanGeneratedText(parsed.spiritual),
+          tafsir:
+            targetLanguage === "english"
+              ? this.humanizeEnglish(parsed.tafsir)
+              : this.cleanGeneratedText(parsed.tafsir),
+          scientific:
+            targetLanguage === "english"
+              ? this.humanizeEnglish(parsed.scientific)
+              : this.cleanGeneratedText(parsed.scientific),
           hadith:
             hadith.length > 0
               ? hadith
                   .map((item) => ({
                     reference: this.cleanGeneratedText(item.reference),
-                    text: this.humanizeEnglish(item.text),
+                    text:
+                      targetLanguage === "english"
+                        ? this.humanizeEnglish(item.text)
+                        : this.cleanGeneratedText(item.text),
                   }))
               : [
                   {
@@ -558,7 +598,11 @@ Writing style:
                 ],
           logicalPath:
             logicalPath.length > 0
-              ? logicalPath.map((step) => this.humanizeEnglish(step))
+              ? logicalPath.map((step) =>
+                  targetLanguage === "english"
+                    ? this.humanizeEnglish(step)
+                    : this.cleanGeneratedText(step),
+                )
               : [
                   "Pause and breathe slowly for one minute before making any decision.",
                   "Pick one practical action you can complete today, then do it now.",
@@ -569,6 +613,28 @@ Writing style:
       throw new Error("Invalid reflection JSON");
     } catch (error) {
       this.logger.warn(`generateReflectionInsight fallback: ${error instanceof Error ? error.message : error}`);
+      if (targetLanguage === "indonesian") {
+        return {
+          spiritual: "Perasaanmu valid, dan Allah dekat dengan hamba yang memohon kepada-Nya. Pegang janji-Nya (13:28).",
+          tafsir: "Ketenangan hati tumbuh saat kita kembali kepada Allah dan konsisten dalam ikhtiar.",
+          scientific: "Napas teratur, journaling syukur, dan shalat dengan hadir hati dapat membantu menurunkan stres dan menjernihkan pikiran.",
+          hadith: [
+            {
+              reference: "Sahih Muslim 2699",
+              text: "Siapa yang meringankan kesusahan seorang mukmin, Allah akan meringankan kesusahannya pada hari kiamat.",
+            },
+            {
+              reference: "Sunan Ibn Majah 4241",
+              text: "Amal yang paling dicintai Allah adalah yang konsisten, walaupun sedikit.",
+            },
+          ],
+          logicalPath: [
+            "Ambil jeda 1 menit dan tenangkan napas sebelum bertindak.",
+            "Pilih satu langkah yang bisa selesai hari ini, lalu fokus menuntaskannya.",
+            "Tutup hari dengan doa, lalu lanjutkan besok dengan satu langkah kecil yang konsisten.",
+          ],
+        };
+      }
       return {
         spiritual: "Your feelings are valid, and Allah is near to the one who calls Him. Hold to His promise (13:28).",
         tafsir: "Peace of heart grows when we return to Allah and stay consistent in effort.",

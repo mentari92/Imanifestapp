@@ -58,20 +58,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Load saved token on mount
   useEffect(() => {
     async function loadSavedAuth() {
-      const savedToken = await storageGet(TOKEN_KEY);
-      const savedUser = await storageGet(USER_KEY);
-      if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } else if (Platform.OS === "web" && DEMO_AUTH_MODE) {
-        // Optional demo-only auto-login (explicitly enabled by env)
-        const demoUser = { id: "demo-user-123", email: "mentari@imanifestapp.com", name: "Mentari" };
-        const demoToken = "demo_token_high_vibration_888";
-        setToken(demoToken);
-        setUser(demoUser);
-        saveAuth(demoToken, demoUser);
+      try {
+        const savedToken = await storageGet(TOKEN_KEY);
+        const savedUser = await storageGet(USER_KEY);
+        if (savedToken && savedUser) {
+          try {
+            setToken(savedToken);
+            setUser(JSON.parse(savedUser));
+          } catch {
+            // Corrupted persisted user payload should not block app boot.
+            await storageDelete(TOKEN_KEY);
+            await storageDelete(USER_KEY);
+            setToken(null);
+            setUser(null);
+          }
+        } else if (Platform.OS === "web" && DEMO_AUTH_MODE) {
+          // Optional demo-only auto-login (explicitly enabled by env)
+          const demoUser = { id: "demo-user-123", email: "mentari@imanifestapp.com", name: "Mentari" };
+          const demoToken = "demo_token_high_vibration_888";
+          await saveAuth(demoToken, demoUser);
+        }
+      } catch (err) {
+        // Some older browsers/private mode can fail storage access.
+        console.warn("Auth bootstrap failed, continuing as signed-out", err);
+        setToken(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadSavedAuth();
   }, []);
