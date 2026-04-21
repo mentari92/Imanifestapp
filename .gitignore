@@ -19,7 +19,7 @@ apps/mobile-web/.expo/
 apps/mobile-web/web-build/
 
 # Prisma
-packages/database/prisma/migrations/
+# Note: migrations are tracked so they can be deployed automatically
 
 # IDE
 .idea/

@@ -23,7 +23,6 @@ export class DuaToDoController {
     return this.duaToDoService.generateTasks(this.resolveUserId(req), dto.manifestationId);
   }
 
-  @Public()
   @Patch("tasks/:taskId")
   async updateTask(
     @Request() req: { user?: { userId: string } },

@@ -45,5 +45,5 @@ USER nestjs
 
 EXPOSE 3001
 
-# Run compiled server (all workspace deps resolved via compiled dist/)
-CMD ["node", "apps/server/dist/main.js"]
+# Run migrations then start server
+CMD sh -c "cd packages/database && npx prisma migrate deploy && cd /app && node apps/server/dist/main.js"

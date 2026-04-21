@@ -100,13 +100,11 @@ export class QalbController {
     );
   }
 
-  @Public()
   @Get("history")
   async getHistory(@Request() req: { user?: { userId: string } }) {
     return this.qalbService.getHistory(this.resolveUserId(req));
   }
 
-  @Public()
   @Post("history")
   async getHistoryPost(@Request() req: { user?: { userId: string } }) {
     return this.qalbService.getHistory(this.resolveUserId(req));

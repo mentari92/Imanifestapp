@@ -1,6 +1,18 @@
-# ImanifestApp — AI-Powered Spiritual Productivity Platform
+# ImanifestApp — Islamic Spiritual Companion App
 
-> Turn your intention into action. ImanifestApp combines Islamic spirituality with modern productivity through AI-powered Quranic verse matching, spiritual task management, and reflective journaling.
+> A mobile-first Islamic wellbeing app that helps you set spiritual intentions, reflect on your heart (Qalb), listen to the Quran (Tafakkur), and build daily spiritual habits (Dua to-Do) — powered by AI that responds in your language.
+
+## Features
+
+- **Imanifest** — State your intention and receive matching Quranic verses with AI-generated guidance
+- **Qalb** — Voice or text journaling with AI sentiment reflection and multilingual response
+- **Tafakkur** — Full Quran reciter player with surah auto-continue and verse-level audio
+- **Dua To-Do** — Auto-generated spiritual tasks from your manifestation, with completion tracking
+- **Dashboard** — Daily Iman Sync streak tracking and spiritual health overview
+
+## Live Demo
+
+**[https://imanifestapp.com](https://imanifestapp.com)**
 
 ## Monorepo Structure
 
@@ -10,7 +22,7 @@ imanifestapp/
 │   ├── mobile-web/     # Expo (React Native + Web) — Expo Router + NativeWind v4
 │   └── server/         # NestJS API — TypeScript strict
 ├── packages/
-│   ├── shared/         # Shared types, validators (Zod), theme tokens
+│   ├── shared/         # Shared types and utilities
 │   └── database/       # Prisma ORM + PostgreSQL
 ├── turbo.json          # Turborepo pipeline config
 ├── pnpm-workspace.yaml # Workspace definitions
@@ -22,7 +34,7 @@ imanifestapp/
 - **Node.js** >= 18
 - **pnpm** 9.x (`corepack enable && corepack prepare pnpm@9.15.0 --activate`)
 - **PostgreSQL** 15+ running locally
-- **Redis** (for rate limiting — optional during initial setup)
+- **Redis** (for JWT blacklist + rate limiting)
 
 ## Quick Start
 
@@ -47,10 +59,15 @@ This starts:
 - **Expo** on `http://localhost:8081` (mobile) / `http://localhost:19006` (web)
 - **NestJS** on `http://localhost:3001`
 
-## Required Audio Env
+## Required Environment Variables
 
-Tafakkur reciter playback now resolves Quran Foundation audio through the backend. These server variables must be set in `apps/server/.env` or production secrets:
+### AI (apps/server/.env)
+```bash
+OPENROUTER_API_KEY="your_openrouter_key"   # Primary AI provider
+ZHIPU_API_KEY="your_zhipu_key"             # Fallback AI provider
+```
 
+### Quran Audio (apps/server/.env)
 ```bash
 QURAN_FOUNDATION_CONTENT_API_URL="https://apis.quran.foundation/content/api/v4"
 QURAN_FOUNDATION_CLIENT_ID="your_client_id"
@@ -58,7 +75,14 @@ QURAN_FOUNDATION_AUTH_TOKEN="your_auth_token"
 QURAN_FOUNDATION_AUDIO_BASE_URL="https://audio.qurancdn.com"
 ```
 
-You can verify the backend integration at `GET /tafakkur/foundation-health`. The endpoint returns only configuration flags and probe status, not the secret values.
+### Auth (apps/server/.env)
+```bash
+JWT_SECRET="your_jwt_secret"
+DATABASE_URL="postgresql://user:pass@localhost:5432/imanifest"
+REDIS_URL="redis://localhost:6379"
+```
+
+You can verify backend status at `GET /api/health` and Quran integration at `GET /api/tafakkur/foundation-health`.
 
 ## Available Scripts
 
@@ -70,15 +94,6 @@ You can verify the backend integration at `GET /tafakkur/foundation-health`. The
 | `pnpm db:generate` | Generate Prisma client |
 | `pnpm db:migrate` | Run Prisma migrations |
 
-## Design System
-
-- Active source of truth: Stitch artifacts in apps/mobile-web/assets/stitch/
-- Runtime styling baseline: apps/mobile-web/global.css
-- Icons: Lucide (lucide-react-native)
-- Brain/05-design-system.md is legacy reference only
-
-Primary visual direction follows the Celestial Ether Stitch outputs.
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -86,8 +101,9 @@ Primary visual direction follows the Celestial Ether Stitch outputs.
 | Frontend | Expo SDK 55, Expo Router, NativeWind v4 |
 | Backend | NestJS 10, TypeScript strict |
 | Database | PostgreSQL 15+, Prisma 6 |
-| AI | Zhipu GLM-5 (BigModel) |
-| Audio | expo-audio |
+| Auth | JWT + bcrypt + Redis token blacklist |
+| AI | OpenRouter (primary), Zhipu GLM-4 (fallback) |
+| Audio | Expo AV + Quran Foundation API |
 | Icons | Lucide React Native |
 | Package Manager | pnpm 9.15 + Turborepo |
 

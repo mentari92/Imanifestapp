@@ -20,14 +20,6 @@ export class JwtAuthGuard extends PassportAuthGuard("jwt") {
       return true;
     }
 
-    // Bypass for Demo Token during presentation
-    const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
-    if (authHeader === "Bearer demo_token_high_vibration_888") {
-      request.user = { userId: "demo-user-123", email: "mentari@imanifestapp.com" };
-      return true;
-    }
-
     return super.canActivate(context);
   }
 }

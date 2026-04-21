@@ -1,9 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException, HttpException, Logger, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, UnauthorizedException, ConflictException, HttpException, Logger, ServiceUnavailableException, BadRequestException, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "@imanifest/database";
 import { RedisService } from "../common/redis.service";
 import * as bcrypt from "bcrypt";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 
 const RATE_LIMIT_WINDOW = 15 * 60; // 15 minutes in seconds
 const RATE_LIMIT_MAX = 5; // max 5 attempts per window per IP
@@ -207,5 +207,83 @@ export class AuthService {
       if (err instanceof HttpException) throw err;
       this.logger.warn("Rate limit check failed — allowing request", err instanceof Error ? err.message : err);
     }
+  }
+
+  /**
+   * Generate a password reset token and store it in DB.
+   * In production, this token would be sent via email.
+   * For hackathon: token is returned in response so demo still works.
+   */
+  async forgotPassword(email: string): Promise<{ message: string; resetToken?: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    // Always return same message to prevent user enumeration
+    const genericMessage = "If that email is registered, a reset link has been sent.";
+
+    if (!user) {
+      return { message: genericMessage };
+    }
+
+    // Invalidate any existing unused tokens for this user
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, used: false },
+      data: { used: true },
+    });
+
+    const rawToken = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token: rawToken,
+        expiresAt,
+      },
+    });
+
+    this.logger.log(`Password reset token generated for user: ${user.id}`);
+
+    // TODO: Replace with actual email sending when SMTP is configured
+    // For hackathon demo, return token in response
+    const isProduction = process.env.NODE_ENV === "production" && process.env.SMTP_HOST;
+    if (isProduction) {
+      // await this.emailService.sendResetEmail(user.email, rawToken);
+      return { message: genericMessage };
+    }
+
+    return {
+      message: genericMessage,
+      resetToken: rawToken, // Remove this once SMTP is configured
+    };
+  }
+
+  /**
+   * Reset password using a valid token.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    const resetRecord = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!resetRecord || resetRecord.used || resetRecord.expiresAt < new Date()) {
+      throw new BadRequestException("Invalid or expired reset token");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetRecord.userId },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { token },
+        data: { used: true },
+      }),
+    ]);
+
+    this.logger.log(`Password reset successful for user: ${resetRecord.userId}`);
+    return { message: "Password reset successfully. Please log in with your new password." };
   }
 }

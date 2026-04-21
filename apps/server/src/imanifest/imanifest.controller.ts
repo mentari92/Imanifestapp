@@ -54,7 +54,6 @@ export class ImanifestController {
     }
   }
 
-  @Public()
   @Get("history")
   async getHistory(@Request() req: { user?: { userId: string } }) {
     const userId = req.user?.userId ?? "demo-user-hackathon";

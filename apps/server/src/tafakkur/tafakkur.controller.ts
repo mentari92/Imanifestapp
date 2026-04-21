@@ -20,18 +20,21 @@ export class TafakkurController {
     return { data: health };
   }
 
+  @Public()
   @Get('surahs')
   async getSurahs() {
     const surahs = await this.tafakkurService.getSurahs();
     return { data: surahs };
   }
 
+  @Public()
   @Get('reciters')
   async getReciters() {
     const reciters = await this.tafakkurService.getReciters();
     return { data: reciters };
   }
 
+  @Public()
   @Get('popular-reciters')
   async getPopularReciters() {
     const reciters = await this.tafakkurService.getPopularReciters();

@@ -10,41 +10,78 @@ import {
   ScrollView,
 } from 'react-native';
 import { useAuth } from '../lib/auth';
+import { api } from '../lib/api';
 import { colors } from '../constants/theme';
+
+type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 
 export default function AuthScreen() {
   const { login, register, loading } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (submitting) return;
 
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Please fill in all fields');
-      return;
-    }
-
     try {
       setSubmitting(true);
 
-      if (isLogin) {
+      if (mode === 'login') {
+        if (!email.trim() || !password.trim()) {
+          Alert.alert('Please fill in all fields');
+          return;
+        }
         await login(email.trim(), password.trim());
-      } else {
-        if (!name.trim()) {
-          Alert.alert('Please enter your name');
-          setSubmitting(false);
+
+      } else if (mode === 'register') {
+        if (!email.trim() || !password.trim() || !name.trim()) {
+          Alert.alert('Please fill in all fields');
           return;
         }
         await register(email.trim(), password.trim(), name.trim());
+
+      } else if (mode === 'forgot') {
+        if (!email.trim()) {
+          Alert.alert('Please enter your email');
+          return;
+        }
+        const res = await api.post('/auth/forgot-password', { email: email.trim() });
+        const data = res.data as { message: string; resetToken?: string };
+        if (data.resetToken) {
+          setResetToken(data.resetToken);
+          Alert.alert(
+            'Reset Token',
+            `Your reset token:\n\n${data.resetToken}\n\nCopy this and use it on the next screen.`,
+          );
+        } else {
+          Alert.alert('Email Sent', data.message);
+        }
+        setMode('reset');
+
+      } else if (mode === 'reset') {
+        if (!resetToken.trim() || !newPassword.trim()) {
+          Alert.alert('Please fill in all fields');
+          return;
+        }
+        const res = await api.post('/auth/reset-password', {
+          token: resetToken.trim(),
+          newPassword: newPassword.trim(),
+        });
+        const data = res.data as { message: string };
+        Alert.alert('Success', data.message);
+        setMode('login');
+        setResetToken('');
+        setNewPassword('');
       }
     } catch (error: any) {
       Alert.alert(
-        isLogin ? 'Login Failed' : 'Registration Failed',
-        error.message || 'Something went wrong',
+        'Error',
+        error.response?.data?.message || error.message || 'Something went wrong',
       );
     } finally {
       setSubmitting(false);
@@ -69,7 +106,16 @@ export default function AuthScreen() {
 
         {/* Form */}
         <View style={styles.form}>
-          {!isLogin && (
+          {/* Title */}
+          <Text style={styles.formTitle}>
+            {mode === 'login' && 'Sign In'}
+            {mode === 'register' && 'Create Account'}
+            {mode === 'forgot' && 'Forgot Password'}
+            {mode === 'reset' && 'Reset Password'}
+          </Text>
+
+          {/* Register: Name */}
+          {mode === 'register' && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Name</Text>
               <TextInput
@@ -83,30 +129,67 @@ export default function AuthScreen() {
             </View>
           )}
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="your@email.com"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          {/* Login / Register / Forgot: Email */}
+          {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="your@email.com"
+                placeholderTextColor={colors.textSecondary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+          )}
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
+          {/* Login / Register: Password */}
+          {(mode === 'login' || mode === 'register') && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textSecondary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
+          )}
+
+          {/* Reset: Token */}
+          {mode === 'reset' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Reset Token</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Paste your reset token here"
+                placeholderTextColor={colors.textSecondary}
+                value={resetToken}
+                onChangeText={setResetToken}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          )}
+
+          {/* Reset: New Password */}
+          {mode === 'reset' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>New Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textSecondary}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+              />
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.button, (loading || submitting) && styles.buttonDisabled]}
@@ -116,22 +199,49 @@ export default function AuthScreen() {
             <Text style={styles.buttonText}>
               {loading || submitting
                 ? 'Please wait...'
-                : isLogin
+                : mode === 'login'
                   ? 'Sign In'
-                  : 'Create Account'}
+                  : mode === 'register'
+                    ? 'Create Account'
+                    : mode === 'forgot'
+                      ? 'Send Reset Token'
+                      : 'Reset Password'}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => setIsLogin(!isLogin)}
-          >
-            <Text style={styles.switchText}>
-              {isLogin
-                ? "Don't have an account? Sign Up"
-                : 'Already have an account? Sign In'}
-            </Text>
-          </TouchableOpacity>
+          {/* Forgot password link (on login screen) */}
+          {mode === 'login' && (
+            <TouchableOpacity
+              style={styles.forgotButton}
+              onPress={() => setMode('forgot')}
+            >
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Switch between login / register */}
+          {(mode === 'login' || mode === 'register') && (
+            <TouchableOpacity
+              style={styles.switchButton}
+              onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
+            >
+              <Text style={styles.switchText}>
+                {mode === 'login'
+                  ? "Don't have an account? Sign Up"
+                  : 'Already have an account? Sign In'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Back to login link (on forgot/reset screen) */}
+          {(mode === 'forgot' || mode === 'reset') && (
+            <TouchableOpacity
+              style={styles.switchButton}
+              onPress={() => setMode('login')}
+            >
+              <Text style={styles.switchText}>Back to Sign In</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -176,6 +286,13 @@ const styles = {
     width: '100%' as const,
     maxWidth: 420,
   },
+  formTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: colors.text,
+    marginBottom: 20,
+    fontFamily: 'Inter-Bold',
+  },
   inputGroup: {
     marginBottom: 16,
   },
@@ -219,6 +336,15 @@ const styles = {
   switchText: {
     fontSize: 14,
     color: colors.primary,
+    fontFamily: 'Inter-Regular',
+  },
+  forgotButton: {
+    marginTop: 10,
+    alignItems: 'center' as const,
+  },
+  forgotText: {
+    fontSize: 13,
+    color: colors.textSecondary,
     fontFamily: 'Inter-Regular',
   },
 };
