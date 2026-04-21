@@ -101,6 +101,22 @@ You can verify backend status at `GET /api/health` and Quran integration at `GET
 | `pnpm db:generate` | Generate Prisma client |
 | `pnpm db:migrate` | Run Prisma migrations |
 
+## Testing
+
+Unit tests are available in the backend service and can be run with:
+
+```bash
+cd apps/server
+npm test
+```
+
+For CI-style TypeScript validation:
+
+```bash
+cd apps/server
+npx tsc --noEmit
+```
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -121,3 +137,9 @@ Project docs are in `Brain/`:
 - `02-prd.md` — Product Requirements Document
 - `03-architecture.md` — Technical architecture
 - `04-epics-and-stories.md` — Sprint backlog
+
+## Security Notes
+
+- Keep secrets only in local .env files or GitHub/VPS secret managers.
+- Rotate any key that was ever committed to git history.
+- Main branch protection should be enabled in GitHub settings.

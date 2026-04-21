@@ -1,9 +1,10 @@
 import json
+import os
 import subprocess
 from pathlib import Path
 
-API_KEY = "AQ.Ab8RN6I35HzjoXPujThHeDgPNbq38oMJwsbXn2oce8pIQsbAuQ"
-PROJECT_ID = "1170701292085352991"
+API_KEY = os.getenv("STITCH_API_KEY")
+PROJECT_ID = os.getenv("STITCH_PROJECT_ID", "1170701292085352991")
 SCREENS = [
     ("dashboard", "491c3c60750d4490a6a48545d3a771c2"),
     ("qalb", "d1e7611e2566492cb237d762ba31e3d0"),
@@ -13,7 +14,10 @@ SCREENS = [
     ("tafakkur", "1800775b22524ca6aaf8f3b49c41bf8a"),
 ]
 
-project_root = Path("/Users/mentarirahman/Documents/Imanifestapp")
+if not API_KEY:
+    raise SystemExit("Missing STITCH_API_KEY environment variable")
+
+project_root = Path(__file__).resolve().parents[1]
 assets_dir = project_root / "apps/mobile-web/assets/stitch"
 meta_dir = project_root / "apps/mobile-web/lib/stitch"
 assets_dir.mkdir(parents=True, exist_ok=True)

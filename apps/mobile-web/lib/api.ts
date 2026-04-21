@@ -31,9 +31,6 @@ function getApiBaseUrl(): string {
 }
 
 const API_BASE_URL = getApiBaseUrl();
-const DEMO_AUTH_MODE =
-  typeof process !== 'undefined' &&
-  process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === 'true';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -54,8 +51,6 @@ api.interceptors.request.use(async (config) => {
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (Platform.OS === 'web' && DEMO_AUTH_MODE) {
-      config.headers.Authorization = 'Bearer demo_token_high_vibration_888';
     }
   } catch {
     // non-critical token lookup failure
@@ -195,12 +190,12 @@ async function getAuthToken(): Promise<string | null> {
           : null;
 
       if (localStorageToken) return localStorageToken;
-      return DEMO_AUTH_MODE ? 'demo_token_high_vibration_888' : null;
+      return null;
     }
 
     const secureToken = await SecureStore.getItemAsync('imanifest_jwt_token');
     return secureToken || null;
   } catch {
-    return Platform.OS === 'web' && DEMO_AUTH_MODE ? 'demo_token_high_vibration_888' : null;
+    return null;
   }
 }
