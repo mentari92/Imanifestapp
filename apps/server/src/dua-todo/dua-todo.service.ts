@@ -43,12 +43,11 @@ export class DuaToDoService {
         verses = (manifestation.verses as { verseKey: string; translation: string }[]) || [];
         quranApiKey = manifestation.user?.quranApiKey || "";
       } else {
-        throw new NotFoundException("Manifestation not found");
+        this.logger.warn(
+          `Manifestation ${manifestationId} not found for user ${userId}; using fallback intent`,
+        );
       }
     } catch (err: any) {
-      if (err instanceof NotFoundException) {
-        throw err;
-      }
       this.logger.warn(
         `DB lookup failed (demo mode): ${err?.message} — generating tasks with default intent`,
       );
@@ -163,7 +162,10 @@ export class DuaToDoService {
       });
 
       if (!manifestation) {
-        throw new NotFoundException("Manifestation not found");
+        this.logger.warn(
+          `Manifestation ${manifestationId} not found for user ${userId}; returning empty task list`,
+        );
+        return { tasks: [] };
       }
 
       const tasks = await this.prisma.task.findMany({
@@ -173,7 +175,6 @@ export class DuaToDoService {
 
       return { tasks };
     } catch (err) {
-      if (err instanceof NotFoundException) throw err;
       this.logger.warn(`DB task fetch failed: ${err instanceof Error ? err.message : err}`);
       return { tasks: [] };
     }

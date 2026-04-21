@@ -32,7 +32,7 @@ export class QalbController {
   constructor(private readonly qalbService: QalbService) {}
 
   private resolveUserId(req: { user?: { userId: string } }): string {
-    return req.user?.userId ?? "demo-user-123";
+    return req.user?.userId ?? "demo-user-hackathon";
   }
 
   @Public()

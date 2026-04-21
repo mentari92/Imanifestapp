@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
 import { QuranApiService, VerseResult } from "../common/quran-api.service";
@@ -217,7 +217,10 @@ export class ImanifestService {
       this.logger.warn(
         `DB save failed in Imanifest write path: ${dbErr?.message}`,
       );
-      throw new ServiceUnavailableException("Imanifest is temporarily unavailable. Please try again in a moment.");
+      manifestationId = `demo-manifest-${Date.now()}`;
+      this.logger.warn(
+        `Using fallback manifestation ID without DB persistence: ${manifestationId}`,
+      );
     }
 
     return { manifestationId, verses, aiSummary, tasks };
@@ -381,7 +384,7 @@ export class ImanifestService {
       };
     } catch (err: any) {
       this.logger.warn(`Manifestation history DB read failed: ${err?.message}`);
-      throw new ServiceUnavailableException("Imanifest history is temporarily unavailable. Please try again in a moment.");
+      return { manifestations: [] };
     }
   }
 }

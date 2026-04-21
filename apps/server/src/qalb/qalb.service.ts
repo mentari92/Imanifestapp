@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@imanifest/database";
 import { ZhipuService } from "../common/zhipu.service";
 import { calculateReflectionStreak } from "../common/streak.util";
@@ -117,7 +117,21 @@ export class QalbService {
       streakCount = await calculateReflectionStreak(this.prisma, userId);
     } catch (dbErr: any) {
       this.logger.warn(`DB save failed in Qalb write path: ${dbErr?.message}`);
-      throw new ServiceUnavailableException("Qalb reflection is temporarily unavailable. Please try again in a moment.");
+      const now = new Date();
+      reflection = {
+        id: `demo-reflection-${Date.now()}`,
+        userId,
+        audioPath: data.audioPath ?? null,
+        transcriptText: data.transcriptText,
+        sentiment: label,
+        sentimentScore: score,
+        streakDate: now,
+        createdAt: now,
+      };
+      streakCount = 0;
+      this.logger.warn(
+        `Returning non-persistent reflection fallback: ${reflection.id}`,
+      );
     }
 
     // Fire-and-forget sync to Quran Foundation (don't block response)
@@ -205,7 +219,7 @@ export class QalbService {
       return { reflections, streakCount };
     } catch (err: any) {
       this.logger.warn(`Qalb history DB read failed: ${err?.message}`);
-      throw new ServiceUnavailableException("Qalb history is temporarily unavailable. Please try again in a moment.");
+      return { reflections: [], streakCount: 0 };
     }
   }
 }
