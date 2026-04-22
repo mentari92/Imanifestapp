@@ -45,5 +45,6 @@ USER nestjs
 
 EXPOSE 3001
 
-# Run migrations then start server
-CMD sh -c "cd packages/database && npx prisma migrate deploy && cd /app && node apps/server/dist/main.js"
+# Run migrations then start server.
+# If production DB predates migration tracking, baseline the initial migration and retry.
+CMD sh -c "cd packages/database && (npx prisma migrate deploy || (echo '[startup] migrate deploy failed, attempting baseline for existing DB'; npx prisma migrate resolve --applied 20260412032734_init || true; npx prisma migrate deploy)) && cd /app && node apps/server/dist/main.js"
