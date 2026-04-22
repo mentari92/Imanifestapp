@@ -123,6 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
+    if (DEMO_AUTH_MODE) {
+      // In demo mode, sign-out just resets back to the demo session so
+      // judges are never left on a broken auth screen.
+      setToken(DEMO_TOKEN);
+      setUser(DEMO_USER);
+      return;
+    }
+
     const activeToken = token ?? (await storageGet(TOKEN_KEY));
 
     if (activeToken) {
