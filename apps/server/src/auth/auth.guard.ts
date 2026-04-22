@@ -3,6 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { AuthGuard as PassportAuthGuard } from "@nestjs/passport";
 
 export const IS_PUBLIC_KEY = "isPublic";
+const AUTH_DISABLED = process.env.AUTH_DISABLED === "true";
 
 @Injectable()
 export class JwtAuthGuard extends PassportAuthGuard("jwt") {
@@ -17,6 +18,15 @@ export class JwtAuthGuard extends PassportAuthGuard("jwt") {
       context.getClass(),
     ]);
     if (isPublic) {
+      return true;
+    }
+
+    if (AUTH_DISABLED) {
+      const req = context.switchToHttp().getRequest();
+      req.user = {
+        userId: "demo-user-hackathon",
+        email: "demo@imanifestapp.com",
+      };
       return true;
     }
 

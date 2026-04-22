@@ -9,6 +9,18 @@ interface User {
   name: string;
 }
 
+const DEMO_AUTH_MODE =
+  typeof process !== "undefined" &&
+  process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === "true";
+
+const DEMO_USER: User = {
+  id: "demo-user-hackathon",
+  email: "demo@imanifestapp.com",
+  name: "Hackathon Jury",
+};
+
+const DEMO_TOKEN = "demo-auth-disabled-token";
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -56,6 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function loadSavedAuth() {
       try {
+        if (DEMO_AUTH_MODE) {
+          setToken(DEMO_TOKEN);
+          setUser(DEMO_USER);
+          return;
+        }
+
         const savedToken = await storageGet(TOKEN_KEY);
         const savedUser = await storageGet(USER_KEY);
         if (savedToken && savedUser) {

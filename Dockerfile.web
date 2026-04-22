@@ -22,6 +22,8 @@ RUN cd packages/shared && npx tsc
 # Bake in the production API URL at build time
 ARG EXPO_PUBLIC_API_URL=https://api.imanifestapp.com
 ENV EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL
+ARG EXPO_PUBLIC_DEMO_AUTH_MODE=false
+ENV EXPO_PUBLIC_DEMO_AUTH_MODE=$EXPO_PUBLIC_DEMO_AUTH_MODE
 
 RUN cd apps/mobile-web && npx expo export --platform web
 
