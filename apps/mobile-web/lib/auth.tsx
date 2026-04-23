@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import { api } from "./api";
+import { api, API_BASE_URL } from "./api";
 
 interface User {
   id: string;
@@ -27,6 +27,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
+  startOAuthLogin: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -72,6 +73,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setToken(DEMO_TOKEN);
           setUser(DEMO_USER);
           return;
+        }
+
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          const currentUrl = new URL(window.location.href);
+          const oauthCode = currentUrl.searchParams.get("oauth_code");
+          if (oauthCode) {
+            const res = await api.post("/auth/oauth/exchange", { code: oauthCode });
+            const { access_token, user: userData } = res.data;
+            await saveAuth(access_token, userData);
+            currentUrl.searchParams.delete("oauth_code");
+            currentUrl.searchParams.delete("oauth_error");
+            window.history.replaceState({}, "", currentUrl.toString());
+            return;
+          }
+
+          const oauthError = currentUrl.searchParams.get("oauth_error");
+          if (oauthError) {
+            console.warn(`OAuth login failed: ${oauthError}`);
+            currentUrl.searchParams.delete("oauth_error");
+            window.history.replaceState({}, "", currentUrl.toString());
+          }
         }
 
         const savedToken = await storageGet(TOKEN_KEY);
@@ -122,6 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function startOAuthLogin() {
+    if (DEMO_AUTH_MODE) return;
+
+    if (Platform.OS !== "web" || typeof window === "undefined") {
+      throw new Error("OAuth login is currently enabled on web build only.");
+    }
+
+    window.location.assign(`${API_BASE_URL}/auth/oauth/start`);
+  }
+
   async function logout() {
     if (DEMO_AUTH_MODE) {
       // In demo mode, sign-out just resets back to the demo session so
@@ -164,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, startOAuthLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

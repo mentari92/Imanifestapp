@@ -16,7 +16,7 @@ import { colors } from '../constants/theme';
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 
 export default function AuthScreen() {
-  const { login, register, loading } = useAuth();
+  const { login, register, startOAuthLogin, loading } = useAuth();
   const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -85,6 +85,14 @@ export default function AuthScreen() {
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleOAuthPress = async () => {
+    try {
+      await startOAuthLogin();
+    } catch (error: any) {
+      Alert.alert('OAuth Login Unavailable', error?.message || 'OAuth login could not be started.');
     }
   };
 
@@ -209,6 +217,22 @@ export default function AuthScreen() {
             </Text>
           </TouchableOpacity>
 
+          {(mode === 'login' || mode === 'register') && (
+            <TouchableOpacity
+              style={styles.oauthButton}
+              onPress={() => void handleOAuthPress()}
+              disabled={loading || submitting}
+            >
+              <Text style={styles.oauthButtonText}>Continue with Quran.com (OAuth)</Text>
+            </TouchableOpacity>
+          )}
+
+          {(mode === 'login' || mode === 'register') && (
+            <Text style={styles.oauthHint}>
+              We only request access needed for Quran user features (goals, streaks, reflections).
+            </Text>
+          )}
+
           {/* Forgot password link (on login screen) */}
           {mode === 'login' && (
             <TouchableOpacity
@@ -322,6 +346,28 @@ const styles = {
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  oauthButton: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  oauthButtonText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    fontFamily: 'Inter-SemiBold',
+  },
+  oauthHint: {
+    marginTop: 10,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: 'Inter-Regular',
   },
   buttonText: {
     color: '#fff',

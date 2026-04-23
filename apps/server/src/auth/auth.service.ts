@@ -4,6 +4,7 @@ import { PrismaService } from "@imanifest/database";
 import { RedisService } from "../common/redis.service";
 import * as bcrypt from "bcrypt";
 import { createHash, randomBytes } from "crypto";
+import axios from "axios";
 
 const RATE_LIMIT_WINDOW = 15 * 60; // 15 minutes in seconds
 const RATE_LIMIT_MAX = 5; // max 5 attempts per window per IP
@@ -15,6 +16,17 @@ type DemoAuthUser = {
   email: string;
   name: string;
   passwordHash: string;
+};
+
+type OauthExchangePayload = {
+  access_token?: string;
+  token_type?: string;
+  expires_in?: number;
+};
+
+type OauthUserProfile = {
+  email: string;
+  name: string;
 };
 
 @Injectable()
@@ -85,6 +97,119 @@ export class AuthService {
     });
   }
 
+  async getOauthStartUrl(): Promise<string> {
+    const cfg = this.getOauthConfig();
+    const state = randomBytes(24).toString("hex");
+    await this.redis.set(`auth:oauth:state:${state}`, "1", 10 * 60);
+
+    const authorizeUrl = new URL(`${cfg.oauthBaseUrl}/oauth2/authorize`);
+    authorizeUrl.searchParams.set("response_type", "code");
+    authorizeUrl.searchParams.set("client_id", cfg.clientId);
+    authorizeUrl.searchParams.set("redirect_uri", cfg.redirectUri);
+    authorizeUrl.searchParams.set("scope", cfg.scope);
+    authorizeUrl.searchParams.set("state", state);
+
+    return authorizeUrl.toString();
+  }
+
+  async handleOauthCallback(code: string, state: string): Promise<string> {
+    const cfg = this.getOauthConfig();
+    const safeErrorRedirect = (message: string) => {
+      const url = new URL(cfg.successRedirect);
+      url.searchParams.set("oauth_error", message);
+      return url.toString();
+    };
+
+    try {
+      const stateKey = `auth:oauth:state:${state}`;
+      const stateExists = await this.redis.get(stateKey);
+      if (!stateExists) {
+        return safeErrorRedirect("invalid_state");
+      }
+      await this.redis.del(stateKey);
+
+      const form = new URLSearchParams();
+      form.set("grant_type", "authorization_code");
+      form.set("code", code);
+      form.set("redirect_uri", cfg.redirectUri);
+
+      const tokenResp = await axios.post<OauthExchangePayload>(
+        `${cfg.oauthBaseUrl}/oauth2/token`,
+        form.toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          auth: {
+            username: cfg.clientId,
+            password: cfg.clientSecret,
+          },
+          timeout: 10000,
+        },
+      );
+
+      const quranAccessToken = tokenResp.data?.access_token || "";
+      if (!quranAccessToken) {
+        return safeErrorRedirect("token_exchange_failed");
+      }
+
+      const profile = await this.resolveOauthProfile(quranAccessToken);
+
+      const user = await this.prisma.user.upsert({
+        where: { email: profile.email },
+        create: {
+          email: profile.email,
+          name: profile.name,
+          // OAuth users can authenticate with provider token; no local password required.
+          password: null,
+          quranApiKey: quranAccessToken,
+        },
+        update: {
+          name: profile.name,
+          quranApiKey: quranAccessToken,
+        },
+      });
+
+      const accessToken = this.generateToken(user.id, user.email);
+      const loginCode = randomBytes(24).toString("hex");
+      await this.redis.set(
+        `auth:oauth:login:${loginCode}`,
+        JSON.stringify({
+          access_token: accessToken,
+          user: { id: user.id, email: user.email, name: user.name },
+        }),
+        120,
+      );
+
+      const redirectUrl = new URL(cfg.successRedirect);
+      redirectUrl.searchParams.set("oauth_code", loginCode);
+      return redirectUrl.toString();
+    } catch (error) {
+      this.logger.warn(
+        `OAuth callback failed: ${error instanceof Error ? error.message : error}`,
+      );
+      return safeErrorRedirect("oauth_callback_failed");
+    }
+  }
+
+  async exchangeOauthLoginCode(code: string) {
+    if (!code?.trim()) {
+      throw new BadRequestException("OAuth code is required");
+    }
+
+    const key = `auth:oauth:login:${code.trim()}`;
+    const payload = await this.redis.get(key);
+    if (!payload) {
+      throw new UnauthorizedException("OAuth code is invalid or expired");
+    }
+
+    await this.redis.del(key);
+    return JSON.parse(payload) as {
+      access_token: string;
+      user: { id: string; email: string; name: string | null };
+    };
+  }
+
   /**
    * Blacklist a JWT token so it can no longer be used.
    * TTL matches the token's remaining lifetime.
@@ -125,6 +250,81 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return createHash("sha256").update(token).digest("hex");
+  }
+
+  private getOauthConfig() {
+    const oauthBaseUrl = process.env.QURAN_FOUNDATION_OAUTH_BASE_URL || "";
+    const clientId = process.env.QURAN_FOUNDATION_CLIENT_ID || "";
+    const clientSecret = process.env.QURAN_FOUNDATION_CLIENT_SECRET || "";
+    const redirectUri = process.env.QURAN_FOUNDATION_OAUTH_REDIRECT_URI || "";
+    const successRedirect =
+      process.env.QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT || "";
+    const scope = process.env.QURAN_FOUNDATION_OAUTH_SCOPE || "content user";
+
+    if (!oauthBaseUrl || !clientId || !clientSecret || !redirectUri || !successRedirect) {
+      throw new ServiceUnavailableException(
+        "OAuth is not configured. Missing required Quran Foundation OAuth environment variables.",
+      );
+    }
+
+    return {
+      oauthBaseUrl: oauthBaseUrl.replace(/\/$/, ""),
+      clientId,
+      clientSecret,
+      redirectUri,
+      successRedirect,
+      scope,
+    };
+  }
+
+  private async resolveOauthProfile(accessToken: string): Promise<OauthUserProfile> {
+    const profileUrl = process.env.QURAN_FOUNDATION_OAUTH_USERINFO_URL || "";
+    if (!profileUrl) {
+      const syntheticEmail = `oauth-${createHash("sha256")
+        .update(accessToken)
+        .digest("hex")
+        .slice(0, 20)}@quran.foundation`;
+      return { email: syntheticEmail, name: "Quran.com User" };
+    }
+
+    try {
+      const response = await axios.get<Record<string, unknown>>(profileUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        timeout: 8000,
+      });
+
+      const body = response.data || {};
+      const email =
+        this.pickString(body, ["email", "user_email", "mail"]) ||
+        `oauth-${createHash("sha256").update(accessToken).digest("hex").slice(0, 20)}@quran.foundation`;
+      const name =
+        this.pickString(body, ["name", "full_name", "username", "preferred_username"]) ||
+        "Quran.com User";
+
+      return { email, name };
+    } catch (error) {
+      this.logger.warn(
+        `OAuth userinfo lookup failed: ${error instanceof Error ? error.message : error}`,
+      );
+
+      const syntheticEmail = `oauth-${createHash("sha256")
+        .update(accessToken)
+        .digest("hex")
+        .slice(0, 20)}@quran.foundation`;
+      return { email: syntheticEmail, name: "Quran.com User" };
+    }
+  }
+
+  private pickString(obj: Record<string, unknown>, keys: string[]): string | null {
+    for (const key of keys) {
+      const value = obj[key];
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+    }
+    return null;
   }
 
   private demoUserId(email: string): string {

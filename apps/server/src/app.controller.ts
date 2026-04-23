@@ -45,7 +45,13 @@ export class AppController {
       version: "1.0.0",
       status: "running",
       endpoints: {
-        auth: { register: "POST /auth/register", login: "POST /auth/login" },
+        auth: {
+          register: "POST /auth/register",
+          login: "POST /auth/login",
+          oauthStart: "GET /auth/oauth/start",
+          oauthCallback: "GET /auth/oauth/callback",
+          oauthExchange: "POST /auth/oauth/exchange",
+        },
         imanifest: "POST /imanifest/analyze",
         duaTodo: "POST /dua-to-do/generate",
         qalb: "POST /qalb/reflect",

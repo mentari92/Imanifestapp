@@ -1,4 +1,5 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Req } from "@nestjs/common";
+import { Controller, Post, Body, HttpCode, HttpStatus, Req, Get, Query, Res, BadRequestException } from "@nestjs/common";
+import { Response } from "express";
 import { AuthService } from "./auth.service";
 import { Public } from "./public.decorator";
 import { RegisterDto } from "./dto/register.dto";
@@ -41,6 +42,35 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Req() req: any) {
     const ip = this.getClientIp(req);
     return this.authService.login(dto.email, dto.password, ip);
+  }
+
+  @Public()
+  @Get("oauth/start")
+  async oauthStart(@Res() res: Response) {
+    const url = await this.authService.getOauthStartUrl();
+    return res.redirect(url);
+  }
+
+  @Public()
+  @Get("oauth/callback")
+  async oauthCallback(
+    @Query("code") code: string,
+    @Query("state") state: string,
+    @Res() res: Response,
+  ) {
+    if (!code || !state) {
+      throw new BadRequestException("Missing OAuth callback parameters");
+    }
+
+    const redirectUrl = await this.authService.handleOauthCallback(code, state);
+    return res.redirect(redirectUrl);
+  }
+
+  @Public()
+  @Post("oauth/exchange")
+  @HttpCode(HttpStatus.OK)
+  async oauthExchange(@Body("code") code: string) {
+    return this.authService.exchangeOauthLoginCode(code);
   }
 
   @Post("logout")

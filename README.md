@@ -1,6 +1,10 @@
 # ImanifestApp
 
-Mobile-first Islamic companion app for intention setting, reflection, Quran listening, and habit building.
+[![CI Checks](https://github.com/mentari92/Imanifestapp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/ci.yml)
+[![Backend Tests](https://github.com/mentari92/Imanifestapp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/test.yml)
+[![Deploy to VPS](https://github.com/mentari92/Imanifestapp/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/deploy.yml)
+
+**Transform spiritual intention into disciplined action.** An AI-powered spiritual productivity platform that guides users from authentic intention-setting (Imanifest) through reflection (Qalb) to Quranic wisdom (Tafakkur) and finally organized action (Dua To-Do).
 
 ## Features
 
@@ -89,6 +93,19 @@ QURAN_FOUNDATION_AUTH_TOKEN="your_auth_token"
 QURAN_FOUNDATION_AUDIO_BASE_URL="https://audio.qurancdn.com"
 ```
 
+Required for Quran.com OAuth 2.0 user integration (apps/server/.env):
+
+```bash
+QURAN_FOUNDATION_OAUTH_BASE_URL="https://oauth2.quran.foundation"
+QURAN_FOUNDATION_CLIENT_ID="your_client_id"
+QURAN_FOUNDATION_CLIENT_SECRET="your_client_secret"
+QURAN_FOUNDATION_OAUTH_REDIRECT_URI="https://imanifestapp.com/api/auth/oauth/callback"
+QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT="https://imanifestapp.com/auth"
+QURAN_FOUNDATION_OAUTH_SCOPE="content user"
+# Optional user profile endpoint (if provider exposes one)
+QURAN_FOUNDATION_OAUTH_USERINFO_URL=""
+```
+
 You can verify backend status at `GET /api/health` and Quran integration at `GET /api/tafakkur/foundation-health`.
 
 ## Available Scripts
@@ -143,3 +160,9 @@ Project docs are in `Brain/`:
 - Keep secrets only in local .env files or GitHub/VPS secret managers.
 - Rotate any key that was ever committed to git history.
 - Main branch protection should be enabled in GitHub settings.
+
+### Demo Day Security Checklist
+
+```bash
+bash scripts/security_checklist.sh
+```
