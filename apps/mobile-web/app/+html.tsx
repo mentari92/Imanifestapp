@@ -10,7 +10,7 @@ export default function Root({ children }: PropsWithChildren) {
   const siteTitle = 'Imanifest';
   const siteDescription = 'Build better daily habits through reflection, intention, and Quran-based guidance.';
   const siteUrl = 'https://imanifestapp.com';
-  const ogImageUrl = `${siteUrl}/og/imanifest-og.png?v=9506731`;
+  const ogImageUrl = `${siteUrl}/og/imanifest-og.png?v=20260423`;
 
   return (
     <html lang="en">
