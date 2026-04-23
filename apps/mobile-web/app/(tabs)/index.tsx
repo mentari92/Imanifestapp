@@ -46,7 +46,8 @@ const to12hLabel = (value: string): string => {
 const formatRemaining = (minutesLeft: number): string => {
   const hh = Math.floor(minutesLeft / 60);
   const mm = minutesLeft % 60;
-  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  if (hh === 0) return `${mm}m`;
+  return mm === 0 ? `${hh}h` : `${hh}h ${mm}m`;
 };
 
 const resolvePrayerState = (timings: Record<PrayerKey, string>, now: Date) => {
@@ -60,7 +61,8 @@ const resolvePrayerState = (timings: Record<PrayerKey, string>, now: Date) => {
       currentPrayer: 'Dhuhr',
       currentTimeLabel: '12:45 PM',
       nextPrayer: 'Asr',
-      remaining: '02:42',
+      nextTimeLabel: '3:27 PM',
+      remaining: '2h 42m',
     };
   }
 
@@ -77,6 +79,7 @@ const resolvePrayerState = (timings: Record<PrayerKey, string>, now: Date) => {
     currentPrayer: current.name,
     currentTimeLabel: to12hLabel(current.raw),
     nextPrayer: next.name,
+    nextTimeLabel: to12hLabel(next.raw),
     remaining: formatRemaining(remainingMinutes),
   };
 };
@@ -288,7 +291,8 @@ export default function DashboardScreen() {
         currentPrayer: 'Dhuhr',
         currentTimeLabel: '12:45 PM',
         nextPrayer: 'Asr',
-        remaining: '02:42',
+        nextTimeLabel: '3:27 PM',
+        remaining: '2h 42m',
       };
 
   return (
@@ -386,11 +390,9 @@ export default function DashboardScreen() {
             </View>
           </View>
           <View style={s.prayerRight}>
-            <Text style={s.prayerNextLabel}>Next: {prayerState.nextPrayer} in</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-              <Text style={s.prayerCountdown}>{prayerState.remaining}</Text>
-              <Text style={s.prayerRemainingLabel}>remaining</Text>
-            </View>
+            <Text style={s.prayerNextLabel}>Next: {prayerState.nextPrayer}</Text>
+            <Text style={s.prayerCountdown}>{prayerState.remaining}</Text>
+            <Text style={s.prayerRemainingLabel}>at {prayerState.nextTimeLabel}</Text>
           </View>
         </View>
 
