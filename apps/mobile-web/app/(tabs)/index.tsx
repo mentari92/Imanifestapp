@@ -12,7 +12,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useDashboard } from '../../hooks/useDashboard';
-import { useAuth } from '../../lib/auth';
 import { MeditationIcon } from '../../components/shared/MeditationIcon';
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../../components/shared/ErrorMessage';
@@ -140,7 +139,6 @@ const QUICK_ACCESS: QuickAccessItem[] = [
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { logout } = useAuth();
   const demoAuthMode =
     typeof process !== 'undefined' &&
     process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === 'true';
@@ -226,16 +224,7 @@ export default function DashboardScreen() {
   };
 
   const onPressProfile = () => {
-    Alert.alert('Account', 'Do you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: () => {
-          void logout();
-        },
-      },
-    ]);
+    Alert.alert('Account', 'Account settings are temporarily disabled during demo.');
   };
 
   const userName = data?.user?.name || 'Mentari';
