@@ -68,16 +68,34 @@ export class DuaToDoService {
             },
           });
 
-          // Attempt to post goal to Quran Foundation API
+          // Attempt to post goal to Quran Foundation API (even without user key, try with env token)
           try {
-            const quranGoalId = await this.quranApi.postGoal(quranApiKey, taskObj.title);
-            if (quranGoalId) {
-              return { ...(await this.prisma.task.update({ where: { id: task.id }, data: { quranGoalId } })), guidance: taskObj.guidance };
+            // If no per-user key, fall back to env auth token via shared client
+            const goalKey = quranApiKey || process.env.QURAN_FOUNDATION_AUTH_TOKEN || "";
+            if (goalKey) {
+              const quranGoalId = await this.quranApi.postGoal(goalKey, taskObj.title);
+              if (quranGoalId) {
+                const updated = await this.prisma.task.update({
+                  where: { id: task.id },
+                  data: { quranGoalId },
+                });
+                this.logger.log(
+                  `✅ Posted goal to Quran Foundation API: task ${task.id} → goal ${quranGoalId}`,
+                );
+                return { ...updated, guidance: taskObj.guidance };
+              } else {
+                this.logger.warn(
+                  `⚠️ Goal post returned no ID for task ${task.id} (may indicate API response issue)`,
+                );
+              }
+            } else {
+              this.logger.warn(
+                `⚠️ No Quran Foundation API key available for task ${task.id} — goal will not sync`,
+              );
             }
           } catch (goalErr) {
-            this.logger.warn(
-              `Failed to post goal for task ${task.id}`,
-              goalErr instanceof Error ? goalErr.message : goalErr,
+            this.logger.error(
+              `❌ Failed to post goal for task ${task.id}: ${goalErr instanceof Error ? goalErr.message : goalErr}`,
             );
           }
 

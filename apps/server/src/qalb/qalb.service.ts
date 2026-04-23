@@ -6,6 +6,7 @@ import { calculateReflectionStreak } from "../common/streak.util";
 /** Quran Foundation User API — configurable, graceful fallback if not set */
 const QF_USER_API_URL = process.env.QURAN_FOUNDATION_USER_API_URL || "";
 const QF_API_KEY = process.env.QURAN_FOUNDATION_API_KEY || "";
+const QF_AUTH_TOKEN = process.env.QURAN_FOUNDATION_AUTH_TOKEN || "";
 
 @Injectable()
 export class QalbService {
@@ -44,17 +45,33 @@ export class QalbService {
     reflectionData: { transcriptText: string; sentiment: string },
   ): Promise<void> {
     if (!QF_USER_API_URL) {
-      this.logger.debug("QF User API not configured — skipping sync");
+      this.logger.warn(
+        "⚠️ QF User API URL not configured (QURAN_FOUNDATION_USER_API_URL) — reflection will not sync",
+      );
+      return;
+    }
+
+    if (!QF_AUTH_TOKEN && !QF_API_KEY) {
+      this.logger.warn(
+        "⚠️ QF Auth credentials missing (QURAN_FOUNDATION_AUTH_TOKEN or QURAN_FOUNDATION_API_KEY) — reflection will not sync",
+      );
       return;
     }
 
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      // Try JWT token first, fallback to API key
+      if (QF_AUTH_TOKEN) {
+        headers["Authorization"] = `Bearer ${QF_AUTH_TOKEN}`;
+      } else if (QF_API_KEY) {
+        headers["X-API-Key"] = QF_API_KEY;
+      }
+
       const response = await fetch(`${QF_USER_API_URL}/reflections`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(QF_API_KEY ? { "X-API-Key": QF_API_KEY } : {}),
-        },
+        headers,
         body: JSON.stringify({
           userId,
           text: reflectionData.transcriptText,
@@ -65,6 +82,10 @@ export class QalbService {
       if (!response.ok) {
         this.logger.warn(
           `QF User API sync failed: ${response.status} ${response.statusText}`,
+        );
+      } else {
+        this.logger.log(
+          `✅ QF User API sync successful for user ${userId} (sentiment: ${reflectionData.sentiment})`,
         );
       }
     } catch (err) {

@@ -47,6 +47,14 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       AUTH_DISABLED: ${AUTH_DISABLED:-false}
+      # Quran Foundation API credentials (for Content + User APIs)
+      QURAN_FOUNDATION_CLIENT_ID: ${QURAN_FOUNDATION_CLIENT_ID:-}
+      QURAN_FOUNDATION_CLIENT_SECRET: ${QURAN_FOUNDATION_CLIENT_SECRET:-}
+      QURAN_FOUNDATION_AUTH_TOKEN: ${QURAN_FOUNDATION_AUTH_TOKEN:-}
+      QURAN_FOUNDATION_USER_API_URL: ${QURAN_FOUNDATION_USER_API_URL:-https://api.quran.com/api/v4}
+      QURAN_FOUNDATION_CONTENT_API_URL: ${QURAN_FOUNDATION_CONTENT_API_URL:-https://apis.quran.foundation/content/api/v4}
+      QURAN_API_BASE_URL: ${QURAN_API_BASE_URL:-https://api.quran.com/api/v4}
+      QURAN_FOUNDATION_API_KEY: ${QURAN_FOUNDATION_API_KEY:-}
     ports:
       - "3001:3001"
     depends_on:
