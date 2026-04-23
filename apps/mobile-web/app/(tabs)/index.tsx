@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useDashboard } from '../../hooks/useDashboard';
@@ -203,6 +204,23 @@ export default function DashboardScreen() {
         },
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
       );
+    } else if (Platform.OS !== 'web') {
+      void (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            await fetchByIpFallback();
+            return;
+          }
+
+          const position = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          await saveTimingsFromCoords(position.coords.latitude, position.coords.longitude);
+        } catch {
+          await fetchByIpFallback();
+        }
+      })();
     } else {
       void fetchByIpFallback();
     }

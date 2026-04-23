@@ -9,13 +9,17 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.imanifest.app"
+      "bundleIdentifier": "com.imanifest.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Imanifest needs your location to show accurate prayer times for your area."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F8FAFC"
       },
-      "package": "com.imanifest.app"
+      "package": "com.imanifest.app",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
     },
     "web": {
       "favicon": "./assets/favicon.png",
