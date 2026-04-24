@@ -1,5 +1,4 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Req, Get, Query, Res, BadRequestException } from "@nestjs/common";
-import { Response } from "express";
 import { AuthService } from "./auth.service";
 import { Public } from "./public.decorator";
 import { RegisterDto } from "./dto/register.dto";
@@ -46,7 +45,7 @@ export class AuthController {
 
   @Public()
   @Get("oauth/start")
-  async oauthStart(@Res() res: Response) {
+  async oauthStart(@Res() res: any) {
     const url = await this.authService.getOauthStartUrl();
     return res.redirect(url);
   }
@@ -56,7 +55,7 @@ export class AuthController {
   async oauthCallback(
     @Query("code") code: string,
     @Query("state") state: string,
-    @Res() res: Response,
+    @Res() res: any,
   ) {
     if (!code || !state) {
       throw new BadRequestException("Missing OAuth callback parameters");
