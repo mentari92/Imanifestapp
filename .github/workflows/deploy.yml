@@ -25,6 +25,9 @@ jobs:
             CLIENT_ID='${{ secrets.QURAN_FOUNDATION_CLIENT_ID }}'
             CLIENT_SECRET='${{ secrets.QURAN_FOUNDATION_CLIENT_SECRET }}'
             AUTH_TOKEN='${{ secrets.QURAN_FOUNDATION_AUTH_TOKEN }}'
+            OAUTH_REDIRECT_URI='${{ secrets.QURAN_FOUNDATION_OAUTH_REDIRECT_URI }}'
+            OAUTH_SUCCESS_REDIRECT='${{ secrets.QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT }}'
+            OAUTH_SCOPE='${{ secrets.QURAN_FOUNDATION_OAUTH_SCOPE }}'
             AUTH_DISABLED_FLAG='true'
             
             set -eu
@@ -76,6 +79,13 @@ jobs:
             upsert_env "QURAN_FOUNDATION_CLIENT_ID" "$CLIENT_ID"
             upsert_env "QURAN_FOUNDATION_CLIENT_SECRET" "$CLIENT_SECRET"
             upsert_env "QURAN_FOUNDATION_OAUTH_BASE_URL" "https://oauth2.quran.foundation"
+            upsert_env "QURAN_FOUNDATION_OAUTH_REDIRECT_URI" "$OAUTH_REDIRECT_URI"
+            upsert_env "QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT" "$OAUTH_SUCCESS_REDIRECT"
+            if [ -n "$OAUTH_SCOPE" ]; then
+              upsert_env "QURAN_FOUNDATION_OAUTH_SCOPE" "$OAUTH_SCOPE"
+            else
+              upsert_env "QURAN_FOUNDATION_OAUTH_SCOPE" "content user"
+            fi
             upsert_env "QURAN_FOUNDATION_AUTH_TOKEN" "$AUTH_TOKEN"
             upsert_env "DEMO_AUTH_FALLBACK_ENABLED" "true"
             upsert_env "AUTH_DISABLED" "$AUTH_DISABLED_FLAG"
@@ -107,7 +117,7 @@ jobs:
             fi
 
             echo "=== .env updated ==="
-            grep -E '^QURAN_FOUNDATION_(CLIENT_ID|CLIENT_SECRET|OAUTH_BASE_URL|AUTH_TOKEN)=' "$ENV_FILE" | sed 's/=.*$/=<set>/'
+            grep -E '^QURAN_FOUNDATION_(CLIENT_ID|CLIENT_SECRET|OAUTH_BASE_URL|OAUTH_REDIRECT_URI|OAUTH_SUCCESS_REDIRECT|OAUTH_SCOPE|AUTH_TOKEN)=' "$ENV_FILE" | sed 's/=.*$/=<set>/'
             grep -E '^DATABASE_URL=' "$ENV_FILE" | sed 's/=.*$/=<set>/'
 
             # ── Ensure stateful services are up first ───────────────

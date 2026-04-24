@@ -168,7 +168,7 @@ imanifestapp/
 │       │   ├── auth/
 │       │   │   ├── auth.module.ts
 │       │   │   ├── auth.guard.ts            # JWT guard for all protected routes
-│       │   │   └── auth.service.ts          # Token validation via Supabase/Clerk
+│       │   │   └── auth.service.ts          # Email/password JWT + Quran OAuth bridge
 │       │   │
 │       │   └── common/
 │       │       ├── zhipu.service.ts         # Shared GLM-5 / GLM-5V client
@@ -587,8 +587,16 @@ ZHIPU_API_KEY=your_zhipu_api_key
 QURAN_FOUNDATION_API_KEY=your_quran_api_key
 QURAN_API_BASE_URL=https://api.quran.com/api/v4
 
-# Auth (self-hosted JWT)
+# Auth (self-hosted JWT + Quran OAuth)
 JWT_SECRET=your_jwt_secret_min_32_chars
+QURAN_FOUNDATION_CLIENT_ID=your_quran_oauth_client_id
+QURAN_FOUNDATION_CLIENT_SECRET=your_quran_oauth_client_secret
+QURAN_FOUNDATION_OAUTH_BASE_URL=https://oauth2.quran.foundation
+QURAN_FOUNDATION_OAUTH_REDIRECT_URI=https://imanifestapp.com/api/auth/oauth/callback
+QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT=https://imanifestapp.com/auth
+QURAN_FOUNDATION_OAUTH_SCOPE=content user
+# Optional if provider exposes OpenID-like user profile endpoint
+QURAN_FOUNDATION_OAUTH_USERINFO_URL=
 
 # Redis
 REDIS_URL=redis://localhost:6379
@@ -620,8 +628,8 @@ Reason: The hackathon specifically integrates Quran Foundation APIs. Using it fo
 ### ADR-06: Redis for Quran API caching
 Reason: Quran Foundation API has rate limits. Tafsir and audio data are static — safe to cache for 24 hours. Imanifest results for the same input cached for 1 hour to reduce GLM-5 costs.
 
-### ADR-07: Self-hosted NestJS JWT Auth (email/password)
-Reason: App runs on VPS Contabo (self-hosted). No need for external auth services (Supabase/Clerk). NestJS + Passport + JWT + bcrypt handles email/password auth natively. Quran.com Content API uses API key authentication (x-api-key header), not OAuth2 — no client_id/client_secret needed. Per-user API keys stored in `quranApiKey` field if needed.
+### ADR-07: Self-hosted NestJS JWT + Quran OAuth 2.0 bridge
+Reason: App runs on VPS Contabo (self-hosted), so app sessions stay on NestJS JWT. To comply with hackathon user-API requirements, login also supports Quran OAuth 2.0 Authorization Code flow: backend creates auth URL, validates state, exchanges code server-side, stores provider token in `quranApiKey`, and returns a local JWT session to the client.
 
 ### ADR-08: PostgreSQL over MongoDB
 Reason: Relational structure — User → Manifestation → Task, User → Reflection. Prisma ORM is already in the team's standard stack. ACID compliance for task completion state.
