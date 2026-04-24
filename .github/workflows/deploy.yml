@@ -79,8 +79,16 @@ jobs:
             upsert_env "QURAN_FOUNDATION_CLIENT_ID" "$CLIENT_ID"
             upsert_env "QURAN_FOUNDATION_CLIENT_SECRET" "$CLIENT_SECRET"
             upsert_env "QURAN_FOUNDATION_OAUTH_BASE_URL" "https://oauth2.quran.foundation"
-            upsert_env "QURAN_FOUNDATION_OAUTH_REDIRECT_URI" "$OAUTH_REDIRECT_URI"
-            upsert_env "QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT" "$OAUTH_SUCCESS_REDIRECT"
+            if [ -n "$OAUTH_REDIRECT_URI" ]; then
+              upsert_env "QURAN_FOUNDATION_OAUTH_REDIRECT_URI" "$OAUTH_REDIRECT_URI"
+            else
+              upsert_env "QURAN_FOUNDATION_OAUTH_REDIRECT_URI" "https://imanifestapp.com/api/auth/oauth/callback"
+            fi
+            if [ -n "$OAUTH_SUCCESS_REDIRECT" ]; then
+              upsert_env "QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT" "$OAUTH_SUCCESS_REDIRECT"
+            else
+              upsert_env "QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT" "https://imanifestapp.com/auth"
+            fi
             if [ -n "$OAUTH_SCOPE" ]; then
               upsert_env "QURAN_FOUNDATION_OAUTH_SCOPE" "$OAUTH_SCOPE"
             else
