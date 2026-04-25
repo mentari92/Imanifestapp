@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch: # allow manual trigger from GitHub UI
+    inputs:
+      authDisabled:
+        description: "Set to true to enable demo auth mode (skip login gate)"
+        required: false
+        default: "false"
 
 jobs:
   deploy:
@@ -30,7 +35,7 @@ jobs:
             OAUTH_REDIRECT_URI='${{ secrets.QURAN_FOUNDATION_OAUTH_REDIRECT_URI }}'
             OAUTH_SUCCESS_REDIRECT='${{ secrets.QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT }}'
             OAUTH_SCOPE='${{ secrets.QURAN_FOUNDATION_OAUTH_SCOPE }}'
-            AUTH_DISABLED_FLAG='true'
+            AUTH_DISABLED_FLAG="${{ github.event.inputs.authDisabled || secrets.AUTH_DISABLED_FLAG || 'false' }}"
             
             set -eu
 
