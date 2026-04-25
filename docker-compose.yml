@@ -72,6 +72,7 @@ services:
       args:
         EXPO_PUBLIC_API_URL: https://imanifestapp.com/api
         EXPO_PUBLIC_DEMO_AUTH_MODE: ${EXPO_PUBLIC_DEMO_AUTH_MODE:-false}
+        EXPO_PUBLIC_OAUTH_ONLY: ${EXPO_PUBLIC_OAUTH_ONLY:-false}
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:80"   # hanya localhost, tidak expose ke internet langsung
