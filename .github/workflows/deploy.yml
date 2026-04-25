@@ -111,7 +111,7 @@ jobs:
             if [ -n "$OAUTH_SCOPE" ]; then
               upsert_env "QURAN_FOUNDATION_OAUTH_SCOPE" "$OAUTH_SCOPE"
             else
-              upsert_env "QURAN_FOUNDATION_OAUTH_SCOPE" "content user"
+              upsert_env "QURAN_FOUNDATION_OAUTH_SCOPE" "openid offline_access user collection"
             fi
             upsert_env "QURAN_FOUNDATION_AUTH_TOKEN" "$AUTH_TOKEN"
             upsert_env "DEMO_AUTH_FALLBACK_ENABLED" "true"
