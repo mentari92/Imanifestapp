@@ -51,7 +51,7 @@ export class AuthController {
   }
 
   @Public()
-  @Get("oauth/callback")
+  @Get(["oauth/callback", "oauth/callback/", "quran-callback", "quran-callback/"])
   async oauthCallback(
     @Query("code") code: string,
     @Query("state") state: string,
