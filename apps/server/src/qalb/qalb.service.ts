@@ -7,6 +7,7 @@ import { calculateReflectionStreak } from "../common/streak.util";
 const QF_USER_API_URL = process.env.QURAN_FOUNDATION_USER_API_URL || "";
 const QF_API_KEY = process.env.QURAN_FOUNDATION_API_KEY || "";
 const QF_AUTH_TOKEN = process.env.QURAN_FOUNDATION_AUTH_TOKEN || "";
+const QF_CLIENT_ID = process.env.QURAN_FOUNDATION_CLIENT_ID || "";
 
 @Injectable()
 export class QalbService {
@@ -62,10 +63,15 @@ export class QalbService {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
-      // Try JWT token first, fallback to API key
-      if (QF_AUTH_TOKEN) {
+      // Prefer User-related API auth headers (docs): x-auth-token + x-client-id
+      if (QF_AUTH_TOKEN && QF_CLIENT_ID) {
+        headers["x-auth-token"] = QF_AUTH_TOKEN;
+        headers["x-client-id"] = QF_CLIENT_ID;
+      } else if (QF_AUTH_TOKEN) {
+        // Legacy fallback
         headers["Authorization"] = `Bearer ${QF_AUTH_TOKEN}`;
       } else if (QF_API_KEY) {
+        // Legacy fallback
         headers["X-API-Key"] = QF_API_KEY;
       }
 
