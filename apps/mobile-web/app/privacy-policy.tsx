@@ -37,6 +37,12 @@ const Bullet = ({ children }: { children: React.ReactNode }) => (
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
 
+  const handleBack = () => {
+    const canGoBack = (router as any)?.canGoBack?.();
+    if (canGoBack) router.back();
+    else router.replace("/");
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: "#f9f7ff" }}
@@ -51,7 +57,7 @@ export default function PrivacyPolicyScreen() {
 
       {/* Header */}
       <View style={{ paddingHorizontal: 24, paddingTop: 56, paddingBottom: 24, flexDirection: "row", alignItems: "center", gap: 14 }}>
-        <TouchableOpacity onPress={() => router.back()} style={[glass(12), { paddingHorizontal: 14, paddingVertical: 8 }]}>
+        <TouchableOpacity onPress={handleBack} style={[glass(12), { paddingHorizontal: 14, paddingVertical: 8 }]}>
           <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "600", color: "#524f63" }}>← Back</Text>
         </TouchableOpacity>
         <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
@@ -120,7 +126,7 @@ export default function PrivacyPolicyScreen() {
 
           <Section title="Contact">
             <Para>
-              Questions or deletion requests: mentaribisnis92@gmail.com. We reply within 48 hours.
+              Questions or deletion requests: hello@imanifestapp.com. We reply within 48 hours.
             </Para>
           </Section>
         </View>

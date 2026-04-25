@@ -97,7 +97,7 @@ export default function SettingsScreen() {
           <View style={styles.legalDivider} />
           <TouchableOpacity
             style={styles.legalRow}
-            onPress={() => router.push("/terms")}
+            onPress={() => router.push("/terms-of-service")}
           >
             <Text style={styles.legalRowText}>Terms of Service</Text>
             <Text style={styles.legalRowChevron}>›</Text>

@@ -7,8 +7,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Linking,
   ScrollView,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
 import { colors } from '../constants/theme';
@@ -17,6 +19,7 @@ type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 
 export default function AuthScreen() {
   const { login, register, startOAuthLogin, loading } = useAuth();
+  const router = useRouter();
   const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,6 +27,10 @@ export default function AuthScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const upgradeUrl =
+    (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_QURAN_UPGRADE_URL) ||
+    'https://quran.foundation';
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -93,6 +100,25 @@ export default function AuthScreen() {
       await startOAuthLogin();
     } catch (error: any) {
       Alert.alert('OAuth Login Unavailable', error?.message || 'OAuth login could not be started.');
+    }
+  };
+
+  const handleUpgradePress = async () => {
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const opened = window.open(upgradeUrl, '_blank', 'noopener,noreferrer');
+        if (!opened) window.location.assign(upgradeUrl);
+        return;
+      }
+
+      const canOpen = await Linking.canOpenURL(upgradeUrl);
+      if (!canOpen) {
+        Alert.alert('Unable to open link', upgradeUrl);
+        return;
+      }
+      await Linking.openURL(upgradeUrl);
+    } catch (error: any) {
+      Alert.alert('Unable to open upgrade link', error?.message || upgradeUrl);
     }
   };
 
@@ -228,8 +254,24 @@ export default function AuthScreen() {
           )}
 
           {(mode === 'login' || mode === 'register') && (
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => void handleUpgradePress()}
+              disabled={loading || submitting}
+            >
+              <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+            </TouchableOpacity>
+          )}
+
+          {(mode === 'login' || mode === 'register') && (
             <Text style={styles.oauthHint}>
               We only request access needed for Quran user features (goals, streaks, reflections).
+            </Text>
+          )}
+
+          {(mode === 'login' || mode === 'register') && (
+            <Text style={styles.upgradeHint}>
+              Premium upgrade is handled externally and will open in your browser.
             </Text>
           )}
 
@@ -265,6 +307,20 @@ export default function AuthScreen() {
             >
               <Text style={styles.switchText}>Back to Sign In</Text>
             </TouchableOpacity>
+          )}
+
+          {(mode === 'login' || mode === 'register') && (
+            <View style={styles.legalContainer}>
+              <Text style={styles.legalText}>By continuing, you agree to our </Text>
+              <TouchableOpacity onPress={() => router.push('/terms-of-service')}>
+                <Text style={styles.legalLink}>Terms of Service</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalText}> and </Text>
+              <TouchableOpacity onPress={() => router.push('/privacy-policy')}>
+                <Text style={styles.legalLink}>Privacy Policy</Text>
+              </TouchableOpacity>
+              <Text style={styles.legalText}>.</Text>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -356,14 +412,34 @@ const styles = {
     borderWidth: 1,
     borderColor: colors.border,
   },
+  upgradeButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 10,
+  },
   oauthButtonText: {
     color: colors.text,
     fontSize: 15,
     fontWeight: '600' as const,
     fontFamily: 'Inter-SemiBold',
   },
+  upgradeButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600' as const,
+    fontFamily: 'Inter-SemiBold',
+  },
   oauthHint: {
     marginTop: 10,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: 'Inter-Regular',
+  },
+  upgradeHint: {
+    marginTop: 8,
     color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
@@ -392,5 +468,24 @@ const styles = {
     fontSize: 13,
     color: colors.textSecondary,
     fontFamily: 'Inter-Regular',
+  },
+  legalContainer: {
+    marginTop: 14,
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    justifyContent: 'center' as const,
+  },
+  legalText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary,
+    fontFamily: 'Inter-Regular',
+  },
+  legalLink: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.primary,
+    textDecorationLine: 'underline' as const,
+    fontFamily: 'Inter-SemiBold',
   },
 };

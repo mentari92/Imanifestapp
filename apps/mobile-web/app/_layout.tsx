@@ -36,6 +36,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const { loading, user, token } = useAuth();
   const segments = useSegments();
   const inAuthGroup = segments[0] === "auth";
+  const inPublicRoute =
+    segments[0] === "privacy-policy" ||
+    segments[0] === "terms-of-service" ||
+    segments[0] === "terms";
   const isAuthenticated = Boolean(user && token);
   const demoAuthMode =
     typeof process !== "undefined" &&
@@ -55,7 +59,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return <Redirect href="/" />;
   }
 
-  if (!demoAuthMode && !isAuthenticated && !inAuthGroup) {
+  if (!demoAuthMode && !isAuthenticated && !inAuthGroup && !inPublicRoute) {
     return <Redirect href="/auth" />;
   }
 
@@ -106,6 +110,7 @@ export default function RootLayout() {
           {demoAuthMode ? <Stack.Screen name="api-proof" options={{ title: "API Proof" }} /> : null}
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+          <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
           <Stack.Screen name="terms" options={{ headerShown: false }} />
           <Stack.Screen
             name="auth"

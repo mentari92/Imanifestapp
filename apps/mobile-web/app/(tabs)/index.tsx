@@ -245,7 +245,7 @@ export default function DashboardScreen() {
   };
 
   const onPressProfile = () => {
-    Alert.alert('Account', 'Account settings are temporarily disabled during demo.');
+    router.push('/settings');
   };
 
   const userName = data?.user?.name || 'Mentari';
@@ -324,17 +324,6 @@ export default function DashboardScreen() {
         <View style={[s.blob, { top: '40%', right: '20%', width: 200, height: 200, borderRadius: 100,
           backgroundColor: C.tertiaryContainer, opacity: 0.2,
           ...(Platform.OS === 'web' ? ({ filter: 'blur(60px)' } as any) : {}) }]} />
-      </View>
-
-      {/* ── Fixed glass top app bar ─────────────────────────────────── */}
-      <View style={[s.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={s.avatarCircle} onPress={onPressProfile} activeOpacity={0.8}>
-          <User size={18} color={C.primary} />
-        </TouchableOpacity>
-        <Text style={s.headerBrand}>Imanifest</Text>
-        <TouchableOpacity style={s.iconBtn} onPress={onPressBell} activeOpacity={0.8}>
-          <Bell size={22} color={C.onSurface} />
-        </TouchableOpacity>
       </View>
 
       {/* ── Scroll content ──────────────────────────────────────────── */}
@@ -580,6 +569,17 @@ export default function DashboardScreen() {
 
         <View style={{ height: 120 }} />
       </ScrollView>
+
+      {/* ── Fixed glass top app bar ─────────────────────────────────── */}
+      <View pointerEvents="box-none" style={[s.header, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity style={s.avatarCircle} onPress={onPressProfile} activeOpacity={0.8}>
+          <User size={18} color={C.primary} />
+        </TouchableOpacity>
+        <Text style={s.headerBrand}>Imanifest</Text>
+        <TouchableOpacity style={s.iconBtn} onPress={onPressBell} activeOpacity={0.8}>
+          <Bell size={22} color={C.onSurface} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -596,6 +596,7 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: 0, left: 0, right: 0,
     zIndex: 50,
+    elevation: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
