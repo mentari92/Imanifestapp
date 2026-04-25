@@ -45,6 +45,26 @@ export default function Root({ children }: PropsWithChildren) {
           rel="stylesheet"
         />
         <ScrollViewStyleReset />
+        <script
+          // Redirect as early as possible so /auth shows the Quran.Foundation hosted login UI.
+          // This runs before the React app hydrates, avoiding any interim auth screen.
+          dangerouslySetInnerHTML={{
+            __html: `(function () {
+  try {
+    if (typeof window === 'undefined' || !window.location) return;
+    var hostname = window.location.hostname || '';
+    if (hostname !== 'imanifestapp.com' && hostname !== 'www.imanifestapp.com') return;
+    var pathname = window.location.pathname || '';
+    if (pathname !== '/auth') return;
+    var search = window.location.search || '';
+    if (/(?:\\?|&)(oauth_code|oauth_error|code|error)=/.test(search)) return;
+    window.location.replace('/api/auth/oauth/start');
+  } catch (e) {
+    // no-op
+  }
+})();`,
+          }}
+        />
         <style>{`
           html, body, #root { height: 100%; }
           body { margin: 0; background-color: #f9f9fd; }
