@@ -169,8 +169,12 @@ jobs:
             echo "=== Restarting containers ==="
             echo "=== Cleaning conflicting stale containers (api/web) ==="
             for svc in api web; do
-              docker ps -a --filter "name=^/imanifestapp-${svc}-1$" --format '{{.ID}}' | xargs -r docker rm -f || true
-              docker ps -a --filter "name=_imanifestapp-${svc}-1$" --format '{{.ID}}' | xargs -r docker rm -f || true
+              # Remove by explicit name first (most reliable), then fall back to
+              # name-based filtering for any variants.
+              docker rm -f "imanifestapp-${svc}-1" 2>/dev/null || true
+              docker rm -f "/imanifestapp-${svc}-1" 2>/dev/null || true
+
+              docker ps -a --filter "name=imanifestapp-${svc}-1" --format '{{.ID}}' | xargs -r docker rm -f || true
             done
 
             echo "=== Recreating api/web containers ==="
