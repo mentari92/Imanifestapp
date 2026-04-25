@@ -28,12 +28,22 @@ export default function AuthScreen() {
   const [resetToken, setResetToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const oauthOnlyEnabled =
+    typeof process !== 'undefined' && process.env.EXPO_PUBLIC_OAUTH_ONLY === 'true';
+  // OAuth flow is currently implemented for web builds only.
+  const oauthOnly = oauthOnlyEnabled && Platform.OS === 'web';
+
   const upgradeUrl =
     (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_QURAN_UPGRADE_URL) ||
     'https://quran.foundation';
 
   const handleSubmit = async () => {
     if (submitting) return;
+
+    if (oauthOnly) {
+      Alert.alert('Use Quran.com Sign In', 'Please continue with Quran.com (OAuth).');
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -142,14 +152,25 @@ export default function AuthScreen() {
         <View style={styles.form}>
           {/* Title */}
           <Text style={styles.formTitle}>
-            {mode === 'login' && 'Sign In'}
-            {mode === 'register' && 'Create Account'}
-            {mode === 'forgot' && 'Forgot Password'}
-            {mode === 'reset' && 'Reset Password'}
+            {oauthOnly
+              ? 'Sign in with Quran.com'
+              : mode === 'login'
+                ? 'Sign In'
+                : mode === 'register'
+                  ? 'Create Account'
+                  : mode === 'forgot'
+                    ? 'Forgot Password'
+                    : 'Reset Password'}
           </Text>
 
+          {oauthOnly && (
+            <Text style={styles.oauthHint}>
+              You’ll be redirected to Quran.com to authorize, then returned here to finish sign-in.
+            </Text>
+          )}
+
           {/* Register: Name */}
-          {mode === 'register' && (
+          {!oauthOnly && mode === 'register' && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Name</Text>
               <TextInput
@@ -164,7 +185,7 @@ export default function AuthScreen() {
           )}
 
           {/* Login / Register / Forgot: Email */}
-          {(mode === 'login' || mode === 'register' || mode === 'forgot') && (
+          {!oauthOnly && (mode === 'login' || mode === 'register' || mode === 'forgot') && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
@@ -180,7 +201,7 @@ export default function AuthScreen() {
           )}
 
           {/* Login / Register: Password */}
-          {(mode === 'login' || mode === 'register') && (
+          {!oauthOnly && (mode === 'login' || mode === 'register') && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <TextInput
@@ -195,7 +216,7 @@ export default function AuthScreen() {
           )}
 
           {/* Reset: Token */}
-          {mode === 'reset' && (
+          {!oauthOnly && mode === 'reset' && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Reset Token</Text>
               <TextInput
@@ -211,7 +232,7 @@ export default function AuthScreen() {
           )}
 
           {/* Reset: New Password */}
-          {mode === 'reset' && (
+          {!oauthOnly && mode === 'reset' && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>New Password</Text>
               <TextInput
@@ -225,35 +246,39 @@ export default function AuthScreen() {
             </View>
           )}
 
-          <TouchableOpacity
-            style={[styles.button, (loading || submitting) && styles.buttonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading || submitting}
-          >
-            <Text style={styles.buttonText}>
-              {loading || submitting
-                ? 'Please wait...'
-                : mode === 'login'
-                  ? 'Sign In'
-                  : mode === 'register'
-                    ? 'Create Account'
-                    : mode === 'forgot'
-                      ? 'Send Reset Token'
-                      : 'Reset Password'}
-            </Text>
-          </TouchableOpacity>
-
-          {(mode === 'login' || mode === 'register') && (
+          {!oauthOnly && (
             <TouchableOpacity
-              style={styles.oauthButton}
-              onPress={() => void handleOAuthPress()}
+              style={[styles.button, (loading || submitting) && styles.buttonDisabled]}
+              onPress={handleSubmit}
               disabled={loading || submitting}
             >
-              <Text style={styles.oauthButtonText}>Continue with Quran.com (OAuth)</Text>
+              <Text style={styles.buttonText}>
+                {loading || submitting
+                  ? 'Please wait...'
+                  : mode === 'login'
+                    ? 'Sign In'
+                    : mode === 'register'
+                      ? 'Create Account'
+                      : mode === 'forgot'
+                        ? 'Send Reset Token'
+                        : 'Reset Password'}
+              </Text>
             </TouchableOpacity>
           )}
 
-          {(mode === 'login' || mode === 'register') && (
+          {(oauthOnly || mode === 'login' || mode === 'register') && (
+            <TouchableOpacity
+              style={oauthOnly ? styles.button : styles.oauthButton}
+              onPress={() => void handleOAuthPress()}
+              disabled={loading || submitting}
+            >
+              <Text style={oauthOnly ? styles.buttonText : styles.oauthButtonText}>
+                Continue with Quran.com (OAuth)
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {!oauthOnly && (mode === 'login' || mode === 'register') && (
             <TouchableOpacity
               style={styles.upgradeButton}
               onPress={() => void handleUpgradePress()}
@@ -263,20 +288,20 @@ export default function AuthScreen() {
             </TouchableOpacity>
           )}
 
-          {(mode === 'login' || mode === 'register') && (
+          {!oauthOnly && (mode === 'login' || mode === 'register') && (
             <Text style={styles.oauthHint}>
               We only request access needed for Quran user features (goals, streaks, reflections).
             </Text>
           )}
 
-          {(mode === 'login' || mode === 'register') && (
+          {!oauthOnly && (mode === 'login' || mode === 'register') && (
             <Text style={styles.upgradeHint}>
               Premium upgrade is handled externally and will open in your browser.
             </Text>
           )}
 
           {/* Forgot password link (on login screen) */}
-          {mode === 'login' && (
+          {!oauthOnly && mode === 'login' && (
             <TouchableOpacity
               style={styles.forgotButton}
               onPress={() => setMode('forgot')}
@@ -286,7 +311,7 @@ export default function AuthScreen() {
           )}
 
           {/* Switch between login / register */}
-          {(mode === 'login' || mode === 'register') && (
+          {!oauthOnly && (mode === 'login' || mode === 'register') && (
             <TouchableOpacity
               style={styles.switchButton}
               onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
@@ -300,7 +325,7 @@ export default function AuthScreen() {
           )}
 
           {/* Back to login link (on forgot/reset screen) */}
-          {(mode === 'forgot' || mode === 'reset') && (
+          {!oauthOnly && (mode === 'forgot' || mode === 'reset') && (
             <TouchableOpacity
               style={styles.switchButton}
               onPress={() => setMode('login')}
@@ -309,7 +334,7 @@ export default function AuthScreen() {
             </TouchableOpacity>
           )}
 
-          {(mode === 'login' || mode === 'register') && (
+          {(oauthOnly || mode === 'login' || mode === 'register') && (
             <View style={styles.legalContainer}>
               <Text style={styles.legalText}>By continuing, you agree to our </Text>
               <TouchableOpacity onPress={() => router.push('/terms-of-service')}>
