@@ -277,28 +277,58 @@ export class QuranApiService {
     quranApiKey: string,
     taskDescription: string,
   ): Promise<string | null> {
-    const userApiUrl =
-      process.env.QURAN_FOUNDATION_USER_API_URL ||
-      process.env.QURAN_USER_API_URL ||
-      "https://api.quran.com/api/v4";
+    // Quran Foundation User-related APIs require:
+    // - Base URL like https://apis(-prelive).quran.foundation/auth
+    // - Headers: x-auth-token (user access token) + x-client-id (our client id)
+    // See: https://api-docs.quran.foundation/docs/user_related_apis_versioned/user-related-apis/
+    const userApiUrl = (process.env.QURAN_FOUNDATION_USER_API_URL || "").replace(/\/$/, "");
+    const accessToken = (quranApiKey || "").trim();
+
+    if (!userApiUrl) {
+      this.logger.warn(
+        "QURAN_FOUNDATION_USER_API_URL not configured; skipping User API sync",
+      );
+      return null;
+    }
+
+    if (!this.foundationClientId) {
+      this.logger.warn(
+        "QURAN_FOUNDATION_CLIENT_ID not configured; skipping User API sync",
+      );
+      return null;
+    }
+
+    if (!accessToken) {
+      return null;
+    }
 
     try {
-      const response = await axios.post<{ goal?: { id: string } }>(
-        `${userApiUrl}/users/goals`,
+      // Use a documented endpoint that supports simple metadata.
+      // We map each task to a small "collection" item (name = task title).
+      const response = await axios.post<Record<string, any>>(
+        `${userApiUrl}/v1/collections`,
         {
-          description: taskDescription,
-          type: "custom",
+          name: String(taskDescription || "").slice(0, 120) || "Imanifest Task",
         },
         {
           headers: {
             "Content-Type": "application/json",
-            ...(quranApiKey ? { "x-api-key": quranApiKey } : {}),
+            Accept: "application/json",
+            "x-auth-token": accessToken,
+            "x-client-id": this.foundationClientId,
           },
           timeout: 8000,
         },
       );
 
-      return response.data?.goal?.id || null;
+      const body = response.data || {};
+      const id =
+        (typeof body?.data?.id === "string" && body.data.id) ||
+        (typeof body?.data?._id === "string" && body.data._id) ||
+        (typeof body?.collection?.id === "string" && body.collection.id) ||
+        null;
+
+      return id;
     } catch (error) {
       this.logger.warn(
         `Failed to post goal to Quran Foundation API: ${error instanceof Error ? error.message : error}`,

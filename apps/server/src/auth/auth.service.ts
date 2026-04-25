@@ -22,6 +22,9 @@ type OauthExchangePayload = {
   access_token?: string;
   token_type?: string;
   expires_in?: number;
+  refresh_token?: string;
+  scope?: string;
+  id_token?: string;
 };
 
 type OauthUserProfile = {
@@ -100,7 +103,19 @@ export class AuthService {
   async getOauthStartUrl(): Promise<string> {
     const cfg = this.getOauthConfig();
     const state = randomBytes(24).toString("hex");
-    await this.redis.set(`auth:oauth:state:${state}`, "1", 10 * 60);
+
+    // PKCE (RFC 7636) + nonce (OIDC)
+    const codeVerifier = this.base64UrlEncode(randomBytes(32));
+    const codeChallenge = this.base64UrlEncode(
+      createHash("sha256").update(codeVerifier).digest(),
+    );
+    const nonce = this.base64UrlEncode(randomBytes(16));
+
+    await this.redis.set(
+      `auth:oauth:flow:${state}`,
+      JSON.stringify({ codeVerifier, nonce }),
+      10 * 60,
+    );
 
     const authorizeUrl = new URL(`${cfg.oauthBaseUrl}/oauth2/auth`);
     authorizeUrl.searchParams.set("response_type", "code");
@@ -108,6 +123,9 @@ export class AuthService {
     authorizeUrl.searchParams.set("redirect_uri", cfg.redirectUri);
     authorizeUrl.searchParams.set("scope", cfg.scope);
     authorizeUrl.searchParams.set("state", state);
+    authorizeUrl.searchParams.set("nonce", nonce);
+    authorizeUrl.searchParams.set("code_challenge", codeChallenge);
+    authorizeUrl.searchParams.set("code_challenge_method", "S256");
 
     return authorizeUrl.toString();
   }
@@ -121,17 +139,32 @@ export class AuthService {
     };
 
     try {
-      const stateKey = `auth:oauth:state:${state}`;
-      const stateExists = await this.redis.get(stateKey);
-      if (!stateExists) {
+      const flowKey = `auth:oauth:flow:${state}`;
+      const flowJson = await this.redis.get(flowKey);
+      if (!flowJson) {
         return safeErrorRedirect("invalid_state");
       }
-      await this.redis.del(stateKey);
+
+      await this.redis.del(flowKey);
+
+      let flow: { codeVerifier?: string; nonce?: string } = {};
+      try {
+        flow = JSON.parse(flowJson) as { codeVerifier?: string; nonce?: string };
+      } catch {
+        return safeErrorRedirect("invalid_state");
+      }
+
+      const codeVerifier = typeof flow.codeVerifier === "string" ? flow.codeVerifier : "";
+      const expectedNonce = typeof flow.nonce === "string" ? flow.nonce : "";
+      if (!codeVerifier) {
+        return safeErrorRedirect("pkce_missing");
+      }
 
       const form = new URLSearchParams();
       form.set("grant_type", "authorization_code");
       form.set("code", code);
       form.set("redirect_uri", cfg.redirectUri);
+      form.set("code_verifier", codeVerifier);
 
       const tokenResp = await axios.post<OauthExchangePayload>(
         `${cfg.oauthBaseUrl}/oauth2/token`,
@@ -153,7 +186,27 @@ export class AuthService {
         return safeErrorRedirect("token_exchange_failed");
       }
 
-      const profile = await this.resolveOauthProfile(quranAccessToken);
+      // If the provider returned an id_token (OIDC), validate nonce claim matches.
+      const idToken = tokenResp.data?.id_token || "";
+      const idTokenPayload = idToken ? this.decodeJwtPayload(idToken) : null;
+      if (idTokenPayload && expectedNonce) {
+        const receivedNonce =
+          typeof idTokenPayload.nonce === "string" ? idTokenPayload.nonce : "";
+        if (!receivedNonce || receivedNonce !== expectedNonce) {
+          return safeErrorRedirect("invalid_nonce");
+        }
+      }
+
+      const idTokenEmail =
+        idTokenPayload && typeof idTokenPayload.email === "string" ? idTokenPayload.email : "";
+      const idTokenName =
+        idTokenPayload && typeof idTokenPayload.name === "string" ? idTokenPayload.name : "";
+      const idTokenSub =
+        idTokenPayload && typeof idTokenPayload.sub === "string" ? idTokenPayload.sub : "";
+
+      const profile = idTokenEmail
+        ? { email: idTokenEmail, name: idTokenName || "Quran.com User" }
+        : await this.resolveOauthProfile(quranAccessToken, idTokenSub);
 
       const user = await this.prisma.user.upsert({
         where: { email: profile.email },
@@ -259,7 +312,9 @@ export class AuthService {
     const redirectUri = process.env.QURAN_FOUNDATION_OAUTH_REDIRECT_URI || "";
     const successRedirect =
       process.env.QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT || "";
-    const scope = process.env.QURAN_FOUNDATION_OAUTH_SCOPE || "content user";
+    const scope =
+      process.env.QURAN_FOUNDATION_OAUTH_SCOPE ||
+      "openid offline_access user collection";
 
     if (!oauthBaseUrl || !clientId || !clientSecret || !redirectUri || !successRedirect) {
       throw new ServiceUnavailableException(
@@ -277,13 +332,16 @@ export class AuthService {
     };
   }
 
-  private async resolveOauthProfile(accessToken: string): Promise<OauthUserProfile> {
+  private async resolveOauthProfile(
+    accessToken: string,
+    subjectHint?: string,
+  ): Promise<OauthUserProfile> {
     const profileUrl = process.env.QURAN_FOUNDATION_OAUTH_USERINFO_URL || "";
     if (!profileUrl) {
-      const syntheticEmail = `oauth-${createHash("sha256")
-        .update(accessToken)
-        .digest("hex")
-        .slice(0, 20)}@quran.foundation`;
+      const stableId = subjectHint?.trim()
+        ? createHash("sha256").update(subjectHint.trim()).digest("hex").slice(0, 20)
+        : createHash("sha256").update(accessToken).digest("hex").slice(0, 20);
+      const syntheticEmail = `oauth-${stableId}@quran.foundation`;
       return { email: syntheticEmail, name: "Quran.com User" };
     }
 
@@ -298,7 +356,10 @@ export class AuthService {
       const body = response.data || {};
       const email =
         this.pickString(body, ["email", "user_email", "mail"]) ||
-        `oauth-${createHash("sha256").update(accessToken).digest("hex").slice(0, 20)}@quran.foundation`;
+        `oauth-${(subjectHint?.trim()
+          ? createHash("sha256").update(subjectHint.trim()).digest("hex")
+          : createHash("sha256").update(accessToken).digest("hex")
+        ).slice(0, 20)}@quran.foundation`;
       const name =
         this.pickString(body, ["name", "full_name", "username", "preferred_username"]) ||
         "Quran.com User";
@@ -309,11 +370,35 @@ export class AuthService {
         `OAuth userinfo lookup failed: ${error instanceof Error ? error.message : error}`,
       );
 
-      const syntheticEmail = `oauth-${createHash("sha256")
-        .update(accessToken)
-        .digest("hex")
-        .slice(0, 20)}@quran.foundation`;
+      const stableId = subjectHint?.trim()
+        ? createHash("sha256").update(subjectHint.trim()).digest("hex").slice(0, 20)
+        : createHash("sha256").update(accessToken).digest("hex").slice(0, 20);
+      const syntheticEmail = `oauth-${stableId}@quran.foundation`;
       return { email: syntheticEmail, name: "Quran.com User" };
+    }
+  }
+
+  private base64UrlEncode(input: Buffer | string): string {
+    const raw = Buffer.isBuffer(input) ? input.toString("base64") : Buffer.from(input).toString("base64");
+    return raw.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  private decodeJwtPayload(token: string): Record<string, unknown> | null {
+    try {
+      const parts = token.split(".");
+      if (parts.length < 2) return null;
+      const payloadB64Url = parts[1] || "";
+
+      const padded = payloadB64Url
+        .replace(/-/g, "+")
+        .replace(/_/g, "/")
+        .padEnd(Math.ceil(payloadB64Url.length / 4) * 4, "=");
+
+      const json = Buffer.from(padded, "base64").toString("utf8");
+      const parsed = JSON.parse(json) as Record<string, unknown>;
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
     }
   }
 

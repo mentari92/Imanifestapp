@@ -80,12 +80,12 @@ export class DuaToDoService {
                   data: { quranGoalId },
                 });
                 this.logger.log(
-                  `✅ Posted goal to Quran Foundation API: task ${task.id} → goal ${quranGoalId}`,
+                  `✅ Synced task to Quran Foundation User API: task ${task.id} → remote ${quranGoalId}`,
                 );
                 return { ...updated, guidance: taskObj.guidance };
               } else {
                 this.logger.warn(
-                  `⚠️ Goal post returned no ID for task ${task.id} (may indicate API response issue)`,
+                  `⚠️ User API sync returned no ID for task ${task.id} (may indicate API response issue)`,
                 );
               }
             } else {
