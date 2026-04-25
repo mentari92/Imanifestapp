@@ -102,7 +102,7 @@ export class AuthService {
     const state = randomBytes(24).toString("hex");
     await this.redis.set(`auth:oauth:state:${state}`, "1", 10 * 60);
 
-    const authorizeUrl = new URL(`${cfg.oauthBaseUrl}/oauth2/authorize`);
+    const authorizeUrl = new URL(`${cfg.oauthBaseUrl}/oauth2/auth`);
     authorizeUrl.searchParams.set("response_type", "code");
     authorizeUrl.searchParams.set("client_id", cfg.clientId);
     authorizeUrl.searchParams.set("redirect_uri", cfg.redirectUri);
