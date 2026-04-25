@@ -20,16 +20,28 @@ Add these secrets:
 | `QURAN_FOUNDATION_CLIENT_ID` | Your Client ID |
 | `QURAN_FOUNDATION_CLIENT_SECRET` | Your Client Secret |
 | `QURAN_FOUNDATION_AUTH_TOKEN` | Your JWT Token |
+| `QURAN_FOUNDATION_OAUTH_BASE_URL` *(optional)* | OAuth base URL (e.g. pre-live vs prod) |
+| `QURAN_FOUNDATION_USER_API_URL` *(optional)* | User API base URL (e.g. pre-live vs prod) |
+
+### Recommended values for Hackathon / Testing (Pre-live)
+
+If you were given **pre-live** credentials, set:
+
+- `QURAN_FOUNDATION_OAUTH_BASE_URL` = `https://prelive-oauth2.quran.foundation`
+- `QURAN_FOUNDATION_USER_API_URL` = `https://apis-prelive.quran.foundation/auth`
+
+This keeps User API writes (goals, streaks, reflections, etc.) in the pre-live environment.
 
 ### Getting the JWT Token
 
 If you don't have the auth token, generate it locally:
 
 ```bash
+OAUTH_BASE_URL="https://prelive-oauth2.quran.foundation" # or https://oauth2.quran.foundation
 CLIENT_ID="your-client-id"
 CLIENT_SECRET="your-client-secret"
 
-curl -X POST https://oauth2.quran.foundation/oauth2/token \
+curl -X POST "${OAUTH_BASE_URL}/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
   -u "${CLIENT_ID}:${CLIENT_SECRET}"
