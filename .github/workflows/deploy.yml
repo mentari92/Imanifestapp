@@ -9,6 +9,10 @@ on:
         description: "Set to true to enable demo auth mode (skip login gate)"
         required: false
         default: "false"
+      oauthOnly:
+        description: "Set to true to show only Quran.com OAuth sign-in on /auth (web)"
+        required: false
+        default: "false"
 
 jobs:
   deploy:
@@ -36,6 +40,7 @@ jobs:
             OAUTH_SUCCESS_REDIRECT='${{ secrets.QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT }}'
             OAUTH_SCOPE='${{ secrets.QURAN_FOUNDATION_OAUTH_SCOPE }}'
             AUTH_DISABLED_FLAG="${{ github.event.inputs.authDisabled || secrets.AUTH_DISABLED_FLAG || 'false' }}"
+            OAUTH_ONLY_FLAG="${{ github.event.inputs.oauthOnly || secrets.OAUTH_ONLY_FLAG || 'false' }}"
             
             set -eu
 
@@ -112,6 +117,7 @@ jobs:
             upsert_env "DEMO_AUTH_FALLBACK_ENABLED" "true"
             upsert_env "AUTH_DISABLED" "$AUTH_DISABLED_FLAG"
             upsert_env "EXPO_PUBLIC_DEMO_AUTH_MODE" "$AUTH_DISABLED_FLAG"
+            upsert_env "EXPO_PUBLIC_OAUTH_ONLY" "$OAUTH_ONLY_FLAG"
 
             # Build a safe DATABASE_URL with URL-encoded credentials so special
             # chars in username/password (e.g. @, :, /) don't break parsing.
