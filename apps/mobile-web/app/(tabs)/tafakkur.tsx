@@ -3,86 +3,81 @@ import {
   View, Text, ScrollView, TouchableOpacity, Platform,
   ActivityIndicator, TextInput,
 } from "react-native";
-import { MeditationIcon } from "../../components/shared/MeditationIcon";
-import { apiGet } from "../../lib/api";
+import { Headphones } from "lucide-react-native";
 
-const glass = (radius = 24) => ({
-  backgroundColor: "rgba(255,255,255,0.45)",
-  borderRadius: radius,
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const BG   = "#f0efeb";
+const CARD = "#ffffff";
+const GR   = "#166534";   // primary green
+const TXT  = "#1a1a1a";
+const SUB  = "#6b7280";
+const BDR  = "#e5e7eb";
+
+const card = (extra?: object) => ({
+  backgroundColor: CARD,
+  borderRadius: 16,
   borderWidth: 1,
-  borderColor: "rgba(255,255,255,0.5)",
-  ...(Platform.OS === "web"
-    ? ({ backdropFilter: "blur(24px) saturate(140%)", WebkitBackdropFilter: "blur(24px) saturate(140%)" } as any)
-    : {}),
+  borderColor: BDR,
+  ...(Platform.OS === "web" ? ({ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" } as any) : {}),
+  ...extra,
 });
 
-interface Reciter {
-  id: number;
-  name: string;
-  subtitle: string;
-  style: string;
-  initials: string;
-  bg: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Reciter { id: number; name: string; subtitle: string; cdnId: string; initials: string; bg: string; }
+interface Surah   { number: number; name: string; englishName: string; versesCount: number; }
+interface Verse   { verseKey: string; arabic: string; translation: string; }
 
-const RECITER_COLORS = [
-  "#7c3aed",
-  "#0e6030",
-  "#1d4ed8",
-  "#92400e",
-  "#334155",
-  "#065f46",
-  "#7e22ce",
-  "#0f766e",
-  "#1e40af",
-  "#9f1239",
+// ─── Static data ──────────────────────────────────────────────────────────────
+const ALL_RECITERS: Reciter[] = [
+  { id: 1,  name: "Mishary Rashid al-ʿAfasy",   subtitle: "RECITATION · MURATTAL", cdnId: "ar.alafasy",           initials: "MR", bg: "#2d5e3a" },
+  { id: 2,  name: "Abu Bakr al-Shatri",              subtitle: "SAUDI · MURATTAL",      cdnId: "ar.shaatree",          initials: "AB", bg: "#1e4a5c" },
+  { id: 3,  name: "AbdulBaset AbdulSamad",           subtitle: "EGYPT · MUJAWWAD",      cdnId: "ar.abdulsamad",        initials: "AA", bg: "#1e3a8a" },
+  { id: 4,  name: "AbdulBaset AbdulSamad",           subtitle: "EGYPT · MURATTAL",      cdnId: "ar.abdulsamadmurattal",initials: "AA", bg: "#7c2d2d" },
+  { id: 5,  name: "Abdur-Rahman as-Sudais",          subtitle: "RECITATION · MURATTAL", cdnId: "ar.abdurrahmansudais", initials: "AR", bg: "#1a4731" },
+  { id: 6,  name: "Hani ar-Rifai",                   subtitle: "SAUDI · MURATTAL",      cdnId: "ar.hanirifai",         initials: "HA", bg: "#2d4a3e" },
+  { id: 7,  name: "Maher Al-Muaiqly",                subtitle: "MADINAH · IMAM",        cdnId: "ar.mahermuaiqly",      initials: "MM", bg: "#1d4ed8" },
+  { id: 8,  name: "Mohamed Siddiq al-Minshawi",      subtitle: "EGYPT · MURATTAL",      cdnId: "ar.minshawi",          initials: "MS", bg: "#334155" },
+  { id: 9,  name: "Saud ash-Shuraym",                subtitle: "MAKKAH · IMAM",         cdnId: "ar.saudshuraym",       initials: "SS", bg: "#065f46" },
+  { id: 10, name: "Saad Al-Ghamdi",                  subtitle: "SAUDI · MURATTAL",      cdnId: "ar.saadalghamdi",      initials: "SG", bg: "#1e40af" },
+  { id: 11, name: "Yasser Al-Dosari",                subtitle: "SAUDI · MURATTAL",      cdnId: "ar.yasseraldossari",   initials: "YD", bg: "#9f1239" },
+  { id: 12, name: "Salah Bukhatir",                  subtitle: "KUWAIT · MURATTAL",     cdnId: "ar.salahbukhAtir",     initials: "SB", bg: "#7e22ce" },
 ];
+
+const INITIAL_SHOWN = 6;
 
 const DHIKR_LIST = [
-  { arabic: "سُبْحَانَ ٱللَّٰهِ",           transliteration: "Subhanallah",      meaning: "Glory be to Allah" },
-  { arabic: "ٱلْحَمْدُ لِلَّٰهِ",           transliteration: "Alhamdulillah",    meaning: "All praise is to Allah" },
-  { arabic: "ٱللَّٰهُ أَكْبَرُ",            transliteration: "Allahu Akbar",     meaning: "Allah is the Greatest" },
-  { arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ", transliteration: "La ilaha illallah",meaning: "There is no god but Allah" },
+  { arabic: "سُبْحَانَ اللّهِ",           transliteration: "Subhanallah",      meaning: "Glory be to Allah" },
+  { arabic: "الْحَمْدُ لِلّهِ",           transliteration: "Alhamdulillah",    meaning: "All praise is to Allah" },
+  { arabic: "اللّهُ أَكْبَرُ",                transliteration: "Allahu Akbar",     meaning: "Allah is the Greatest" },
+  { arabic: "لَا إِلَٰهَ إِلَّا اللّهُ", transliteration: "La ilaha illallah", meaning: "There is no god but Allah" },
 ];
-
-interface Surah { number: number; name: string; englishName: string; versesCount: number; }
-interface Verse  { verseKey: string; arabic: string; translation: string; }
 
 const NATURE_SOUNDS = [
   { id: "rain",  label: "Rain of Calm",  emoji: "🌧️" },
-  { id: "ocean", label: "Ocean Waves",      emoji: "🌊" },
-  { id: "river", label: "Zamzam Flow",      emoji: "💧" },
-  { id: "birds", label: "Dawn Garden",      emoji: "🐦" },
+  { id: "ocean", label: "Ocean Waves",   emoji: "🌊" },
+  { id: "river", label: "Zamzam Flow",   emoji: "💧" },
+  { id: "birds", label: "Dawn Garden",   emoji: "🐦" },
 ];
-
 const SOUND_FILES: Record<string, string> = {
-  rain:  "/sounds/rain.mp3",
-  ocean: "/sounds/ocean.mp3",
-  river: "/sounds/river.mp3",
-  birds: "/sounds/birds.mp3",
+  rain: "/sounds/rain.mp3", ocean: "/sounds/ocean.mp3",
+  river: "/sounds/river.mp3", birds: "/sounds/birds.mp3",
 };
 
-const PLAYBACK_SPEEDS = [0.75, 1, 1.25, 1.5] as const;
-const MAX_VISIBLE_RECITERS = 6;
+const SPEEDS = [1, 1.5, 2] as const;
+type Speed = typeof SPEEDS[number];
 
-function formatTime(s: number) {
+function fmt(s: number) {
   const m = Math.floor(s / 60);
   return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
+function stripHtml(t: string) { return t.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(); }
 
-function stripHtml(text: string) {
-  return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-}
-
-
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function TafakkurHubScreen() {
-  const [reciters, setReciters]          = useState<Reciter[]>([]);
-  const [loadingReciters, setLoadingReciters] = useState(true);
-  const [recitersError, setRecitersError] = useState<string | null>(null);
+  const [showAll, setShowAll]           = useState(false);
   const [surahs, setSurahs]             = useState<Surah[]>([]);
   const [surahSearch, setSurahSearch]   = useState("");
   const [loadingSurahs, setLoadingSurahs] = useState(true);
-  const [surahsError, setSurahsError] = useState<string | null>(null);
   const [activeReciter, setActiveReciter] = useState(0);
   const [activeSurah, setActiveSurah]   = useState<Surah | null>(null);
   const [isPlaying, setIsPlaying]       = useState(false);
@@ -91,582 +86,283 @@ export default function TafakkurHubScreen() {
   const [progress, setProgress]         = useState(0);
   const [duration, setDuration]         = useState(0);
   const [currentTime, setCurrentTime]   = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [speed, setSpeed]               = useState<Speed>(1);
+  const [autoPlay, setAutoPlay]         = useState(true);
   const [dhikrIndex, setDhikrIndex]     = useState(0);
   const [dhikrCount, setDhikrCount]     = useState(0);
   const [activeNature, setActiveNature] = useState<string | null>(null);
   const [surahVerses, setSurahVerses]   = useState<Verse[]>([]);
   const [currentVerseIdx, setCurrentVerseIdx] = useState(0);
-  const [pendingPlay, setPendingPlay]   = useState(false);
-  const [progressBarWidth, setProgressBarWidth] = useState(0);
-  const [scrubProgress, setScrubProgress] = useState<number | null>(null);
-  const [autoPlayMode, setAutoPlayMode] = useState<'stop' | 'loop'>('loop');
-  const [showAllReciters, setShowAllReciters] = useState(false);
 
   const audioRef      = useRef<HTMLAudioElement | null>(null);
   const intervalRef   = useRef<any>(null);
-  const ambientStopRef = useRef<(() => void) | null>(null);
-  const requestIdRef  = useRef(0); // cancels stale loadAndPlay calls
-  const audioUrlCacheRef = useRef<Record<string, { url: string; reciterIdUsed: number }>>({});
-  const scrubProgressRef = useRef<number | null>(null);
-  const autoPlayActiveSurahRef = useRef<Surah | null>(null); // track active surah during auto-play
+  const ambientRef    = useRef<(() => void) | null>(null);
+  const reqIdRef      = useRef(0);
 
-  const toInitials = (name: string) => {
-    const words = name
-      .replace(/[^A-Za-z\s]/g, " ")
-      .split(/\s+/)
-      .filter(Boolean);
-    if (words.length === 0) return "QR";
-    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return `${words[0][0]}${words[1][0]}`.toUpperCase();
-  };
+  const reciters = showAll ? ALL_RECITERS : ALL_RECITERS.slice(0, INITIAL_SHOWN);
+  const hiddenCount = ALL_RECITERS.length - INITIAL_SHOWN;
 
-  const loadReciters = useCallback(async () => {
-    setLoadingReciters(true);
-    setRecitersError(null);
-    try {
-      const response = await apiGet<{ data: Array<{ id: number; name: string; subtitle?: string; style?: string }> }>(
-        "/tafakkur/reciters",
-      );
-
-      const normalizeReciterName = (value: string) =>
-        value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
-
-      const reciterPriority = (reciter: { name: string }) => {
-        const name = normalizeReciterName(reciter.name);
-        if (name.includes("mishari") && name.includes("afasy")) return 0;
-        if (name.includes("abu bakr") && name.includes("shatri")) return 1;
-        return 2;
-      };
-
-      const ordered = [...(response.data || [])].sort((a, b) => {
-        const byPriority = reciterPriority(a) - reciterPriority(b);
-        if (byPriority !== 0) return byPriority;
-        return a.name.localeCompare(b.name);
-      });
-
-      const mapped: Reciter[] = ordered.map((r, index) => ({
-        id: r.id,
-        name: r.name,
-        subtitle: r.subtitle || `Recitation · ${r.style || "Murattal"}`,
-        style: r.style || "Murattal",
-        initials: toInitials(r.name),
-        bg: RECITER_COLORS[index % RECITER_COLORS.length],
-      }));
-
-      setReciters(mapped);
-      setActiveReciter(0);
-      setShowAllReciters(false);
-    } catch {
-      setReciters([]);
-      setRecitersError("Unable to load reciters right now.");
-    } finally {
-      setLoadingReciters(false);
-    }
-  }, []);
-
-  const loadSurahs = useCallback(async () => {
-    setLoadingSurahs(true);
-    setSurahsError(null);
-    try {
-      const res = await fetch("https://api.quran.com/api/v4/chapters?language=en");
-      const data = await res.json();
-      const mappedSurahs = (data.chapters || []).map((c: any) => ({
-        number: Number(c.id),
-        name: String(c.name_arabic || ""),
-        englishName: String(c.name_simple || `Surah ${c.id}`),
-        versesCount: Number(c.verses_count || 0),
-      }));
-
-      if (mappedSurahs.length === 0) {
-        setSurahsError("Surah list is currently unavailable.");
-        setSurahs(Array.from({ length: 114 }, (_, i) => ({
-          number: i + 1, name: "", englishName: `Surah ${i + 1}`, versesCount: 0,
-        })));
-        return;
-      }
-
-      setSurahs(mappedSurahs);
-    } catch {
-      setSurahsError("Unable to load surahs right now.");
-      setSurahs(Array.from({ length: 114 }, (_, i) => ({
-        number: i + 1, name: "", englishName: `Surah ${i + 1}`, versesCount: 0,
-      })));
-    } finally {
-      setLoadingSurahs(false);
-    }
-  }, []);
-
-  // Load reciters and 114 surahs
+  // Load surahs
   useEffect(() => {
-    void loadReciters();
-    void loadSurahs();
+    (async () => {
+      try {
+        const res  = await fetch("https://api.quran.com/api/v4/chapters?language=en");
+        const data = await res.json();
+        setSurahs((data.chapters || []).map((c: any) => ({
+          number: Number(c.id), name: String(c.name_arabic || ""),
+          englishName: String(c.name_simple || `Surah ${c.id}`),
+          versesCount: Number(c.verses_count || 0),
+        })));
+      } catch {
+        setSurahs(Array.from({ length: 114 }, (_, i) => ({ number: i + 1, name: "", englishName: `Surah ${i + 1}`, versesCount: 0 })));
+      } finally {
+        setLoadingSurahs(false);
+      }
+    })();
     return () => {
       audioRef.current?.pause();
       if (intervalRef.current) clearInterval(intervalRef.current);
-      ambientStopRef.current?.();
+      ambientRef.current?.();
     };
-  }, [loadReciters, loadSurahs]);
+  }, []);
 
-  // Fetch verses when surah changes (Quran Foundation API supports CORS)
+  // Load verses when surah changes
   useEffect(() => {
     if (!activeSurah) { setSurahVerses([]); return; }
-    setSurahVerses([]);
-    setCurrentVerseIdx(0);
+    setSurahVerses([]); setCurrentVerseIdx(0);
     (async () => {
       try {
-        const res = await fetch(
-          `https://api.quran.com/api/v4/verses/by_chapter/${activeSurah.number}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`
-        );
+        const res  = await fetch(`https://api.quran.com/api/v4/verses/by_chapter/${activeSurah.number}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`);
         const data = await res.json();
-        const verses: Verse[] = (data.verses || []).map((v: any) => {
-          const raw = v.translations?.find((t: any) => t.text?.trim())?.text || "";
-          return {
-            verseKey: v.verse_key,
-            arabic: v.text_uthmani || "",
-            translation: stripHtml(raw),
-          };
-        });
-        setSurahVerses(verses);
-      } catch {
-        setSurahVerses([]);
-      }
+        setSurahVerses((data.verses || []).map((v: any) => ({
+          verseKey: v.verse_key, arabic: v.text_uthmani || "",
+          translation: stripHtml(v.translations?.find((t: any) => t.text?.trim())?.text || ""),
+        })));
+      } catch { setSurahVerses([]); }
     })();
   }, [activeSurah]);
 
-  // Start playing when verses are ready (after surah tap)
+  // Sync verse to audio progress
   useEffect(() => {
-    if (pendingPlay && surahVerses.length > 0 && activeSurah) {
-      setPendingPlay(false);
-      loadAndPlayVerses(activeReciter, activeSurah, 0);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [surahVerses, pendingPlay]);
+    if (surahVerses.length === 0) return;
+    setCurrentVerseIdx(Math.min(Math.floor((progress / 100) * surahVerses.length), surahVerses.length - 1));
+  }, [progress, surahVerses.length]);
 
   const stopAudio = useCallback(() => {
-    requestIdRef.current++;
+    reqIdRef.current++;
     audioRef.current?.pause();
     if (audioRef.current) { audioRef.current.src = ""; audioRef.current = null; }
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsPlaying(false); setProgress(0); setCurrentTime(0); setDuration(0);
-    setIsLoadingAudio(false); setAudioError(null); setPendingPlay(false);
+    setIsLoadingAudio(false); setAudioError(null);
   }, []);
 
-  const fetchVerseAudioUrl = useCallback(async (reciterId: number, ayahKey: string) => {
-    const cacheKey = `${reciterId}:${ayahKey}`;
-    const fromCache = audioUrlCacheRef.current[cacheKey];
-    if (fromCache) {
-      return fromCache;
-    }
-
-    const response = await apiGet<{ url: string; reciterIdUsed: number; fallbackUsed: boolean }>(
-      "/tafakkur/verse-audio-url",
-      { reciterId: String(reciterId), ayahKey },
-    );
-
-    const value = { url: response.url, reciterIdUsed: response.reciterIdUsed };
-    audioUrlCacheRef.current[cacheKey] = value;
-    return value;
-  }, []);
-
-  const loadAndPlayVerses = useCallback((reciterIdx: number, _surah: Surah, startIdx: number) => {
+  const loadAndPlay = useCallback(async (reciterIdx: number, surah: Surah) => {
     if (Platform.OS !== "web") return;
-    const reciter = reciters[reciterIdx];
+    const reciter = ALL_RECITERS[reciterIdx];
     if (!reciter) return;
-
-    const thisId = ++requestIdRef.current;
-    setAudioError(null);
+    stopAudio();
+    const id  = ++reqIdRef.current;
     setIsLoadingAudio(true);
-    setIsPlaying(false);
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    const verses = surahVerses;
-    if (verses.length === 0) { setIsLoadingAudio(false); return; }
-
-    const playVerse = async (idx: number) => {
-      if (thisId !== requestIdRef.current || idx >= verses.length) {
-        setIsPlaying(false);
-        setIsLoadingAudio(false);
-        if (idx >= verses.length) setProgress(100);
-        return;
-      }
-      setCurrentVerseIdx(idx);
-      setCurrentTime(0);
-      setDuration(0);
-      setProgress(Math.round((idx / Math.max(verses.length, 1)) * 100));
-
-      const verse = verses[idx];
-      let resolved: { url: string; reciterIdUsed: number };
-      try {
-        resolved = await fetchVerseAudioUrl(reciter.id, verse.verseKey);
-      } catch {
-        setIsLoadingAudio(false);
-        if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 300);
-        return;
-      }
-
-      if (resolved.reciterIdUsed !== reciter.id) {
-        const fallbackReciterIndex = reciters.findIndex((r) => r.id === resolved.reciterIdUsed);
-        if (fallbackReciterIndex >= 0) {
-          setActiveReciter(fallbackReciterIndex);
-        }
-      }
-
-      const audio = new Audio(resolved.url);
-      audio.playbackRate = playbackRate;
-      audioRef.current = audio;
-
-      audio.oncanplay = () => {
-        if (thisId !== requestIdRef.current) { audio.pause(); return; }
-        setIsLoadingAudio(false);
-        audio.play().then(() => {
-          if (thisId !== requestIdRef.current) { audio.pause(); return; }
-          setIsPlaying(true);
-          intervalRef.current = setInterval(() => {
-            if (audio.duration > 0) {
-              setCurrentTime(audio.currentTime);
-              setDuration(audio.duration);
-              const totalVerses = Math.max(verses.length, 1);
-              const verseFraction = idx / totalVerses;
-              const inVerseFraction = (audio.currentTime / audio.duration) / totalVerses;
-              setProgress(Math.min(100, Math.max(0, Math.round((verseFraction + inVerseFraction) * 100))));
-            }
-          }, 300);
-        }).catch(() => {
-          setIsLoadingAudio(false);
-          if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 300);
-        });
-      };
-      audio.onended = () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        if (thisId === requestIdRef.current) {
-          // Check if we're at the last verse of current surah
-          if (idx + 1 >= verses.length) {
-            // We reached the end of this surah
-            if (autoPlayMode === 'loop') {
-              // Find next surah: if at surah 114, loop to surah 1, otherwise go to next
-              const currentSurahNum = _surah.number;
-              const nextSurahNum = currentSurahNum === 114 ? 1 : currentSurahNum + 1;
-              const nextSurah = surahs.find(s => s.number === nextSurahNum);
-              
-              if (nextSurah) {
-                // Mark that we're auto-advancing
-                autoPlayActiveSurahRef.current = nextSurah;
-                setActiveSurah(nextSurah);
-                setPendingPlay(true);
-              } else {
-                setIsPlaying(false);
-                setIsLoadingAudio(false);
-                setProgress(100);
-              }
-            } else {
-              // autoPlayMode === 'stop': just stop
-              setIsPlaying(false);
-              setIsLoadingAudio(false);
-              setProgress(100);
-              autoPlayActiveSurahRef.current = null;
-            }
-          } else {
-            // Continue to next verse in same surah
-            playVerse(idx + 1);
-          }
-        }
-      };
-      audio.onerror = () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setIsLoadingAudio(false);
-        if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 200);
-      };
-      audio.load();
+    const url = `https://cdn.islamic.network/quran/audio/128/${reciter.cdnId}/${surah.number}.mp3`;
+    const audio = new Audio(url);
+    audioRef.current  = audio;
+    audio.playbackRate = speed;
+    audio.onloadedmetadata = () => { if (id === reqIdRef.current) setDuration(audio.duration || 0); };
+    audio.oncanplay = () => {
+      if (id !== reqIdRef.current) { audio.pause(); return; }
+      setIsLoadingAudio(false);
+      audio.play().then(() => {
+        if (id !== reqIdRef.current) { audio.pause(); return; }
+        setIsPlaying(true);
+        intervalRef.current = setInterval(() => {
+          if (audio.duration > 0) { setCurrentTime(audio.currentTime); setProgress((audio.currentTime / audio.duration) * 100); }
+        }, 500);
+      }).catch(() => { setIsLoadingAudio(false); setAudioError("Tap ▶ to start."); });
     };
-
-    playVerse(startIdx);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchVerseAudioUrl, playbackRate, reciters, surahVerses, surahs, autoPlayMode]);
-
-  const seekToProgressFraction = useCallback((fraction: number) => {
-    if (!activeSurah || surahVerses.length === 0) return;
-    const clamped = Math.min(1, Math.max(0, fraction));
-    const targetIdx = Math.min(
-      surahVerses.length - 1,
-      Math.floor(clamped * surahVerses.length),
-    );
-    setCurrentVerseIdx(targetIdx);
-    setProgress(Math.round(clamped * 100));
-    loadAndPlayVerses(activeReciter, activeSurah, targetIdx);
-  }, [activeReciter, activeSurah, loadAndPlayVerses, surahVerses.length]);
-
-  const clampSeekFraction = useCallback((x: number) => {
-    if (progressBarWidth <= 0) return 0;
-    return Math.min(1, Math.max(0, x / progressBarWidth));
-  }, [progressBarWidth]);
-
-  const previewSeekFraction = useCallback((x: number) => {
-    const nextFraction = clampSeekFraction(x);
-    const nextProgress = Math.round(nextFraction * 100);
-    scrubProgressRef.current = nextProgress;
-    setScrubProgress(nextProgress);
-    return nextFraction;
-  }, [clampSeekFraction]);
-
-  const commitSeekFromX = useCallback((x: number) => {
-    const nextFraction = previewSeekFraction(x);
-    scrubProgressRef.current = null;
-    setScrubProgress(null);
-    seekToProgressFraction(nextFraction);
-  }, [previewSeekFraction, seekToProgressFraction]);
-
-  const cyclePlaybackRate = useCallback(() => {
-    const idx = PLAYBACK_SPEEDS.findIndex((s) => s === playbackRate);
-    const next = PLAYBACK_SPEEDS[(idx + 1) % PLAYBACK_SPEEDS.length];
-    setPlaybackRate(next);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = next;
-    }
-  }, [playbackRate]);
+    audio.onerror = () => {
+      if (id === reqIdRef.current) { setIsLoadingAudio(false); setAudioError("Could not load audio."); }
+    };
+    audio.onended = () => {
+      if (id !== reqIdRef.current) return;
+      setIsPlaying(false); setProgress(100);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (autoPlay) {
+        const nextIdx = surahs.findIndex(s => s.number === surah.number) + 1;
+        if (nextIdx < surahs.length) { setActiveSurah(surahs[nextIdx]); loadAndPlay(reciterIdx, surahs[nextIdx]); }
+      }
+    };
+    audio.load();
+  }, [speed, autoPlay, surahs, stopAudio]);
 
   const togglePlay = () => {
-    if (reciters.length === 0) {
-      setAudioError("No reciter available for playback.");
-      return;
-    }
-    
-    if (!activeSurah) {
-      setAudioError("Please select a surah first.");
-      return;
-    }
-
-    if (!audioRef.current?.src && activeSurah) {
-      if (surahVerses.length > 0) {
-        loadAndPlayVerses(activeReciter, activeSurah, currentVerseIdx);
-      } else {
-        setPendingPlay(true);
-      }
-      return;
-    }
+    if (!audioRef.current?.src) { if (activeSurah) loadAndPlay(activeReciter, activeSurah); return; }
     if (isPlaying) {
-      audioRef.current?.pause();
-      setIsPlaying(false);
+      audioRef.current.pause(); setIsPlaying(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
     } else {
-      audioRef.current?.play().then(() => {
+      audioRef.current.play().then(() => {
         setIsPlaying(true);
         intervalRef.current = setInterval(() => {
           const a = audioRef.current;
-          if (a && a.duration > 0) { setCurrentTime(a.currentTime); setDuration(a.duration); }
-        }, 300);
+          if (a && a.duration > 0) { setCurrentTime(a.currentTime); setProgress((a.currentTime / a.duration) * 100); }
+        }, 500);
       });
     }
   };
 
+  const cycleSpeed = () => {
+    const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+    setSpeed(next);
+    if (audioRef.current) audioRef.current.playbackRate = next;
+  };
+
   const toggleNature = (soundId: string) => {
-    if (ambientStopRef.current) { ambientStopRef.current(); ambientStopRef.current = null; }
+    if (ambientRef.current) { ambientRef.current(); ambientRef.current = null; }
     if (activeNature === soundId) { setActiveNature(null); return; }
     if (Platform.OS !== "web") return;
     const url = SOUND_FILES[soundId];
     if (!url) return;
-    const audio = new Audio(url);
-    audio.loop = true;
-    audio.volume = 0.35;
-    audio.play().catch(() => {});
-    ambientStopRef.current = () => { audio.pause(); audio.currentTime = 0; };
+    const a = new Audio(url); a.loop = true; a.volume = 0.35;
+    a.play().catch(() => {});
+    ambientRef.current = () => { a.pause(); a.currentTime = 0; };
     setActiveNature(soundId);
   };
 
-  const normalize = (s: string) => s.toLowerCase().replace(/[-'\u2019]/g, ' ').replace(/\s+/g, ' ').trim();
-  const filtered = surahs.filter((s) =>
-    normalize(s.englishName).includes(normalize(surahSearch)) ||
-    s.name.includes(surahSearch) ||
-    String(s.number).includes(surahSearch)
+  const filtered = surahs.filter(s =>
+    s.englishName.toLowerCase().includes(surahSearch.toLowerCase()) ||
+    s.name.includes(surahSearch) || String(s.number).includes(surahSearch)
   );
   const dhikr = DHIKR_LIST[dhikrIndex];
   const showPlayer = isPlaying || isLoadingAudio || progress > 0 || !!audioError;
   const currentVerse = surahVerses[currentVerseIdx];
-  const visibleProgress = scrubProgress ?? progress;
-  const reciterItems = reciters.map((reciter, index) => ({ reciter, index }));
-  const visibleReciterItems = showAllReciters
-    ? reciterItems
-    : reciterItems.slice(0, MAX_VISIBLE_RECITERS);
 
   return (
-    <View style={{ flex: 1 }}>
-      <View pointerEvents="none" style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: -1 } as any}>
-        {[
-          { top: "-5%", left: "-10%", w: "65%", h: "55%", bg: "rgba(229,223,248,0.3)" },
-          { bottom: "10%", right: "-10%", w: "55%", h: "45%", bg: "rgba(169,247,183,0.25)" },
-        ].map((b, i) => (
-          <View key={i} style={{ position: "absolute", ...(b.top ? { top: b.top } : { bottom: b.bottom }), ...(b.left ? { left: b.left } : { right: b.right }), width: b.w, height: b.h, backgroundColor: b.bg, borderRadius: 9999, opacity: 0.5, ...(Platform.OS === "web" ? ({ filter: "blur(90px)" } as any) : {}) } as any} />
-        ))}
-      </View>
+    <View style={{ flex: 1, backgroundColor: BG }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 180 }} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={{ paddingHorizontal: 24, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.4)", ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.2)" } as any) : {}) }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
-            <MeditationIcon size={20} color="#065f46" />
+        {/* ── Header ── */}
+        <View style={{
+          paddingHorizontal: 24, paddingVertical: 14, flexDirection: "row", alignItems: "center",
+          backgroundColor: CARD, borderBottomWidth: 1, borderBottomColor: BDR,
+          ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50 } as any) : {}),
+        }}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+            <Headphones size={18} color={GR} strokeWidth={1.8} />
           </View>
-          <Text style={{ position: "absolute", left: 0, right: 0, textAlign: "center", fontFamily: "Newsreader", fontSize: 22, fontStyle: "italic", fontWeight: "600", color: "#1e1b2e" }}>Tafakkur</Text>
-          <View style={{ width: 40, height: 40 }} />
+          <Text style={{ fontFamily: "Newsreader", fontSize: 20, fontStyle: "italic", fontWeight: "600", color: TXT }}>Tafakkur</Text>
         </View>
 
-        <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 28, maxWidth: 680, alignSelf: "center", width: "100%" }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 24, gap: 24, maxWidth: 600, alignSelf: "center", width: "100%" }}>
 
-          {/* Hero */}
+          {/* ── Hero ── */}
           <View style={{ gap: 4 }}>
-            <Text style={{ fontFamily: "Newsreader", fontSize: 36, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 44 }}>Tafakkur</Text>
-            <Text style={{ fontFamily: "Noto Serif", fontSize: 14, fontStyle: "italic", color: "#5b5f65", lineHeight: 22 }}>
+            <Text style={{ fontFamily: "Newsreader", fontSize: 30, fontStyle: "italic", fontWeight: "600", color: TXT }}>Tafakkur</Text>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: SUB, lineHeight: 20 }}>
               Contemplate the divine through recitation, reflection, and remembrance.
             </Text>
           </View>
 
-          {/* Setup Instructions */}
-          <View style={[glass(20), { padding: 20, gap: 12, backgroundColor: "rgba(169,247,183,0.08)" }]}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: "#0e6030" }}>
-              Getting Started:
+          {/* ── Getting Started ── */}
+          <View style={[card(), { padding: 18, gap: 10 }]}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, fontWeight: "700", color: GR, textTransform: "uppercase", letterSpacing: 1.5 }}>
+              Getting Started
             </Text>
-            <View style={{ gap: 8 }}>
-              <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 16, fontWeight: "800", color: "#166534" }}>1</Text>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#2f3338", flex: 1, lineHeight: 18 }}>Select your preferred reciter below</Text>
+            {[
+              "Select your preferred reciter below",
+              "Choose a Surah to begin reflection",
+              "Press play and configure auto-advance settings",
+            ].map((step, i) => (
+              <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: GR, alignItems: "center", justifyContent: "center", marginTop: 1 }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#fff" }}>{i + 1}</Text>
+                </View>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: "#374151", flex: 1, lineHeight: 20 }}>{step}</Text>
               </View>
-              <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 16, fontWeight: "800", color: "#166534" }}>2</Text>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#2f3338", flex: 1, lineHeight: 18 }}>Choose a Surah to begin reflection</Text>
-              </View>
-              <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 16, fontWeight: "800", color: "#166534" }}>3</Text>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#2f3338", flex: 1, lineHeight: 18 }}>Press play and configure auto-advance settings</Text>
-              </View>
-            </View>
+            ))}
           </View>
 
-          {/* Curated Reciters */}
-          <View style={{ gap: 12 }}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+          {/* ── Curated Reciters ── */}
+          <View style={{ gap: 10 }}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, fontWeight: "700", color: SUB, textTransform: "uppercase", letterSpacing: 1.5 }}>
               Curated Reciters
             </Text>
-            {loadingReciters ? (
-              <View style={[glass(20), { padding: 20, flexDirection: "row", alignItems: "center", gap: 10 }]}>
-                <ActivityIndicator color="#166534" />
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>
-                  Loading reciters...
-                </Text>
-              </View>
-            ) : reciters.length === 0 ? (
-              <View style={[glass(20), { padding: 20 }]}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#991b1b" }}>
-                  {recitersError || "Reciters are unavailable. Please try again shortly."}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => void loadReciters()}
-                  activeOpacity={0.85}
-                  style={[glass(999), { marginTop: 12, alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 8 }]}
-                >
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: "#0e6030" }}>
-                    Retry reciters
+            {reciters.map((r, i) => (
+              <TouchableOpacity
+                key={r.id}
+                onPress={() => { setActiveReciter(i); if (activeSurah) loadAndPlay(i, activeSurah); }}
+                activeOpacity={0.85}
+                style={[card({ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 14 }),
+                  activeReciter === i ? { backgroundColor: "#f0fdf4", borderColor: "#86efac" } : {}]}
+              >
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: r.bg, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 15, fontWeight: "800", color: "#fff" }}>{r.initials}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: TXT }}>{r.name}</Text>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: SUB, marginTop: 2, letterSpacing: 0.5 }}>{r.subtitle}</Text>
+                </View>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: activeReciter === i ? GR : "#f3f4f6", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 14, color: activeReciter === i ? "#fff" : "#374151" }}>
+                    {activeReciter === i && isPlaying ? "⏸" : "▶"}
                   </Text>
-                </TouchableOpacity>
-              </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+            {!showAll ? (
+              <TouchableOpacity onPress={() => setShowAll(true)} style={{ paddingVertical: 12, alignItems: "center" }}>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: GR, fontWeight: "600" }}>
+                  View all reciters ({hiddenCount} more)
+                </Text>
+              </TouchableOpacity>
             ) : (
-              <>
-                {visibleReciterItems.map(({ reciter: r, index: i }) => (
-                  <TouchableOpacity
-                    key={r.id}
-                    onPress={() => { setActiveReciter(i); if (activeSurah && surahVerses.length > 0) loadAndPlayVerses(i, activeSurah, 0); }}
-                    activeOpacity={0.85}
-                    style={[glass(20), { flexDirection: "row", alignItems: "center", gap: 16, padding: 18, ...(activeReciter === i ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" } : {}) }]}
-                  >
-                    <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: r.bg, alignItems: "center", justifyContent: "center" }}>
-                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "800", color: "#fff" }}>{r.initials}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 14, fontWeight: "700", color: "#2f3338" }}>{r.name}</Text>
-                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5 }}>{r.subtitle}</Text>
-                    </View>
-                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: activeReciter === i ? "#166534" : "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}>
-                      <Text style={{ fontSize: 18, color: activeReciter === i ? "#fff" : "#2f3338" }}>
-                        {activeReciter === i && isPlaying ? "⏸" : "▶"}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-                {reciters.length > MAX_VISIBLE_RECITERS ? (
-                  <TouchableOpacity
-                    onPress={() => setShowAllReciters((prev) => !prev)}
-                    activeOpacity={0.85}
-                    style={[glass(14), { paddingVertical: 10, alignItems: "center", justifyContent: "center" }]}
-                  >
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: "#166534" }}>
-                      {showAllReciters
-                        ? "Hide reciters"
-                        : `View all reciters (${reciters.length - MAX_VISIBLE_RECITERS} more)`}
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-              </>
+              <TouchableOpacity onPress={() => setShowAll(false)} style={{ paddingVertical: 12, alignItems: "center" }}>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, color: SUB, fontWeight: "600" }}>Show less</Text>
+              </TouchableOpacity>
             )}
           </View>
 
-          {/* Surah Selector */}
-          <View style={{ gap: 12 }}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+          {/* ── Surah Selector ── */}
+          <View style={{ gap: 10 }}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, fontWeight: "700", color: SUB, textTransform: "uppercase", letterSpacing: 1.5 }}>
               Choose Surah {surahs.length > 0 ? `(${surahs.length} total)` : ""}
             </Text>
-            <View style={[glass(16), { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10 }]}>
-              <Text style={{ fontSize: 16, marginRight: 8 }}>🔍</Text>
+            <View style={[card({ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10 })]}>
+              <Text style={{ fontSize: 15, marginRight: 8 }}>🔍</Text>
               <TextInput
-                value={surahSearch}
-                onChangeText={setSurahSearch}
+                value={surahSearch} onChangeText={setSurahSearch}
                 placeholder="Search surah by name or number..."
-                placeholderTextColor="rgba(91,95,101,0.45)"
-                style={{ flex: 1, fontFamily: "Plus Jakarta Sans", fontSize: 14, color: "#2f3338", ...(Platform.OS === "web" ? ({ outline: "none" } as any) : {}) }}
+                placeholderTextColor="#9ca3af"
+                style={{ flex: 1, fontFamily: "Plus Jakarta Sans", fontSize: 14, color: TXT, ...(Platform.OS === "web" ? ({ outline: "none" } as any) : {}) }}
               />
             </View>
             {loadingSurahs ? (
               <View style={{ padding: 24, alignItems: "center" }}>
-                <ActivityIndicator color="#166534" />
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65", marginTop: 8 }}>Loading surahs...</Text>
+                <ActivityIndicator color={GR} />
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: SUB, marginTop: 8 }}>Loading surahs...</Text>
               </View>
             ) : (
-              <View style={[glass(20)]}>
-                {surahsError ? (
-                  <View style={{ padding: 16 }}>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#991b1b" }}>
-                      {surahsError}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => void loadSurahs()}
-                      activeOpacity={0.85}
-                      style={[glass(999), { marginTop: 12, alignSelf: "flex-start", paddingHorizontal: 12, paddingVertical: 8 }]}
-                    >
-                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: "#0e6030" }}>
-                        Retry surah list
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
+              <View style={[card({ overflow: "hidden" })]}>
                 <ScrollView nestedScrollEnabled showsVerticalScrollIndicator
-                  style={{ maxHeight: 420, borderRadius: 20, ...(Platform.OS === "web" ? ({ overflowY: "auto" } as any) : {}) }}
-                >
+                  style={{ maxHeight: 380, ...(Platform.OS === "web" ? ({ overflowY: "auto" } as any) : {}) }}>
                   {filtered.map((s) => (
                     <TouchableOpacity
                       key={s.number}
-                      onPress={() => { setActiveSurah(s); stopAudio(); setCurrentVerseIdx(0); setSurahVerses([]); setPendingPlay(true); }}
+                      onPress={() => { setActiveSurah(s); loadAndPlay(activeReciter, s); }}
                       style={{
-                        flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14,
-                        borderBottomWidth: 1, borderBottomColor: "rgba(174,178,185,0.15)",
-                        backgroundColor: activeSurah?.number === s.number ? "rgba(169,247,183,0.2)" : "transparent",
+                        flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 13,
+                        borderBottomWidth: 1, borderBottomColor: "#f3f4f6",
+                        backgroundColor: activeSurah?.number === s.number ? "#f0fdf4" : "transparent",
                       }}
                     >
-                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: activeSurah?.number === s.number ? "#166534" : "rgba(229,223,248,0.5)", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
-                        <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: activeSurah?.number === s.number ? "#fff" : "#524f63" }}>{s.number}</Text>
+                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: activeSurah?.number === s.number ? GR : "#f3f4f6", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                        <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: activeSurah?.number === s.number ? "#fff" : "#6b7280" }}>{s.number}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: "#2f3338" }}>{s.englishName}</Text>
-                        {s.versesCount > 0 && <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: "#5b5f65" }}>{s.versesCount} verses</Text>}
+                        <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: TXT }}>{s.englishName}</Text>
+                        {s.versesCount > 0 && <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: SUB }}>{s.versesCount} verses</Text>}
                       </View>
-                      {s.name ? <Text style={{ fontFamily: "Amiri-Regular", fontSize: 18, color: "#524f63" }}>{s.name}</Text> : null}
+                      {s.name ? <Text style={{ fontFamily: "Amiri-Regular", fontSize: 16, color: "#524f63" }}>{s.name}</Text> : null}
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -674,191 +370,135 @@ export default function TafakkurHubScreen() {
             )}
           </View>
 
-          {/* Audio Player */}
-          {(showPlayer || !activeSurah) && (
-            <View style={[glass(24), { padding: 24, gap: 16, opacity: !activeSurah ? 0.6 : 1 }]}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                <Text style={{ fontSize: 20 }}>🎵</Text>
+          {/* ── Audio Player ── */}
+          {showPlayer && activeSurah ? (
+            <View style={[card({ padding: 16, gap: 12 }), { borderColor: "#d1fae5" }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text style={{ fontSize: 18 }}>🎵</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: "#2f3338" }}>
-                    {activeSurah ? `${activeSurah.englishName} · ${reciters[activeReciter]?.name || "Unknown"}` : "Select a surah to begin"}
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 13, fontWeight: "700", color: TXT }}>
+                    {activeSurah.englishName} · {ALL_RECITERS[activeReciter]?.name || ""}
                   </Text>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: audioError ? "#991b1b" : !activeSurah ? "#5b5f65" : "#5b5f65", marginTop: 2 }}>
-                    {!activeSurah ? "👉 Choose a surah from the list above" : isLoadingAudio ? "Loading audio..." : audioError ? audioError : `${formatTime(currentTime)} / ${formatTime(duration)}`}
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: audioError ? "#991b1b" : SUB, marginTop: 2 }}>
+                    {isLoadingAudio ? "Loading audio..." : audioError ? audioError : `${fmt(currentTime)} / ${fmt(duration)}`}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={togglePlay} disabled={!activeSurah || isLoadingAudio}
-                  style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: !activeSurah ? "#c5c5c5" : "#166534", alignItems: "center", justifyContent: "center" }}>
-                  {isLoadingAudio ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 20, color: "#fff" }}>{isPlaying ? "⏸" : "▶"}</Text>}
+                {/* Controls */}
+                <TouchableOpacity onPress={togglePlay} disabled={isLoadingAudio}
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GR, alignItems: "center", justifyContent: "center" }}>
+                  {isLoadingAudio ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 16, color: "#fff" }}>{isPlaying ? "⏸" : "▶"}</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={stopAudio}
-                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ fontSize: 18 }}>⏹</Text>
+                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#f3f4f6", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 14 }}>⏹</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={cyclePlaybackRate}
-                  style={{ minWidth: 58, height: 36, borderRadius: 18, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: "#2f3338" }}>{playbackRate}x</Text>
+                <TouchableOpacity onPress={cycleSpeed}
+                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#f3f4f6", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: "#374151" }}>{speed}x</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => setAutoPlayMode(autoPlayMode === 'stop' ? 'loop' : 'stop')}
-                  style={{ minWidth: 48, height: 36, borderRadius: 18, backgroundColor: autoPlayMode === 'loop' ? "rgba(22,165,52,0.3)" : "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 8, borderWidth: 1, borderColor: autoPlayMode === 'loop' ? "rgba(22,165,52,0.5)" : "transparent" }}>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: autoPlayMode === 'loop' ? "#0e6030" : "#524f63" }}>
-                    {autoPlayMode === 'loop' ? '🔁' : '⏭'}
-                  </Text>
+                <TouchableOpacity onPress={() => setAutoPlay(v => !v)}
+                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: autoPlay ? GR : "#f3f4f6", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 16 }}>🔁</Text>
                 </TouchableOpacity>
-              </View>
-
-              {/* Auto-play info */}
-              <View style={{ paddingHorizontal: 12, paddingVertical: 8, backgroundColor: autoPlayMode === 'loop' ? "rgba(169,247,183,0.1)" : "rgba(229,223,248,0.1)", borderRadius: 12 }}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: autoPlayMode === 'loop' ? "#0e6030" : "#524f63", textAlign: "center" }}>
-                  {autoPlayMode === 'loop' ? '🔁 Auto-play enabled: Will loop through all surahs' : '⏭ Auto-play disabled: Will stop at end of surah'}
-                </Text>
               </View>
               {!audioError && (
-                <View
-                  onLayout={(e) => setProgressBarWidth(e.nativeEvent.layout.width)}
-                  onStartShouldSetResponder={() => true}
-                  onMoveShouldSetResponder={() => true}
-                  onResponderGrant={(e) => {
-                    previewSeekFraction(e.nativeEvent.locationX || 0);
-                  }}
-                  onResponderMove={(e) => {
-                    previewSeekFraction(e.nativeEvent.locationX || 0);
-                  }}
-                  onResponderRelease={(e) => {
-                    commitSeekFromX(e.nativeEvent.locationX || 0);
-                  }}
-                  onResponderTerminate={() => {
-                    scrubProgressRef.current = null;
-                    setScrubProgress(null);
-                  }}
-                  style={{ height: 28, justifyContent: "center" }}
-                >
-                  <View style={{ height: 6, backgroundColor: "#eceef3", borderRadius: 3, overflow: "hidden" }}>
-                    <View style={{ width: `${Math.min(visibleProgress, 100)}%` as any, height: "100%", backgroundColor: "#166534", borderRadius: 3 }} />
-                  </View>
-                  <View
-                    pointerEvents="none"
-                    style={{
-                      position: "absolute",
-                      left: `${Math.min(visibleProgress, 100)}%` as any,
-                      marginLeft: -9,
-                      width: 18,
-                      height: 18,
-                      borderRadius: 9,
-                      backgroundColor: "#ffffff",
-                      borderWidth: 2,
-                      borderColor: "#166534",
-                      top: 5,
-                      shadowColor: "#166534",
-                      shadowOpacity: 0.15,
-                      shadowRadius: 6,
-                      shadowOffset: { width: 0, height: 2 },
-                      elevation: 2,
-                    }}
-                  />
+                <View style={{ height: 5, backgroundColor: "#e5e7eb", borderRadius: 3, overflow: "hidden" }}>
+                  <View style={{ width: `${Math.min(progress, 100)}%` as any, height: "100%", backgroundColor: GR, borderRadius: 3 }} />
                 </View>
               )}
+              {autoPlay && !audioError && (
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, color: SUB, textAlign: "center" }}>
+                  Auto-play enabled: Will loop through all surahs
+                </Text>
+              )}
             </View>
-          )}
+          ) : null}
 
-          {/* Read & Reflect — synced verse display */}
-          <View style={[glass(24), { padding: 28, gap: 16, backgroundColor: "rgba(169,247,183,0.08)" }]}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#0e6030", fontWeight: "700", textAlign: "center" }}>
-              Read &amp; Reflect{activeSurah ? ` · ${activeSurah.englishName}` : ""}
+          {/* ── Read & Reflect ── */}
+          <View style={[card({ padding: 24, gap: 14 })]}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, fontWeight: "700", color: GR, textTransform: "uppercase", letterSpacing: 1.5, textAlign: "center" }}>
+              Read &amp; Reflect{activeSurah ? ` · ${activeSurah.englishName.toUpperCase()}` : ""}
             </Text>
             {currentVerse ? (
               <>
-                <Text style={{ fontFamily: "Amiri-Regular", fontSize: 28, lineHeight: 54, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
+                <Text style={{ fontFamily: "Amiri-Regular", fontSize: 28, lineHeight: 52, color: TXT, textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
                   {currentVerse.arabic}
                 </Text>
-                <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
-                <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#2f3338", textAlign: "center", lineHeight: 26 }}>
+                <View style={{ height: 1, backgroundColor: BDR }} />
+                <Text style={{ fontFamily: "Noto Serif", fontSize: 14, fontStyle: "italic", color: "#374151", textAlign: "center", lineHeight: 24 }}>
                   "{currentVerse.translation}"
                 </Text>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
-                  — {currentVerse.verseKey}
-                  {surahVerses.length > 0 ? `  ·  verse ${currentVerseIdx + 1} of ${surahVerses.length}` : ""}
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: SUB, textAlign: "center", letterSpacing: 1 }}>
+                  — {currentVerse.verseKey}{surahVerses.length > 0 ? `  ·  Verse ${currentVerseIdx + 1} of ${surahVerses.length}` : ""}
                 </Text>
               </>
             ) : (
               <>
-                <Text style={{ fontFamily: "Amiri-Regular", fontSize: 26, lineHeight: 50, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
-                  فَبِأَيِّ آلَاءِ رَبِّكُمَا تُكَذِّبَانِ
+                <Text style={{ fontFamily: "Amiri-Regular", fontSize: 26, lineHeight: 50, color: TXT, textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
+                  {"فَبِأَيِّ آلَاءِ رَبِّكُمَا تُكَذِّبَانِ"}
                 </Text>
-                <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
-                <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#2f3338", textAlign: "center", lineHeight: 26 }}>
+                <View style={{ height: 1, backgroundColor: BDR }} />
+                <Text style={{ fontFamily: "Noto Serif", fontSize: 14, fontStyle: "italic", color: "#374151", textAlign: "center", lineHeight: 24 }}>
                   "So which of the favors of your Lord would you deny?"
                 </Text>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: SUB, textAlign: "center", letterSpacing: 1 }}>
                   {activeSurah ? "Loading verses..." : "Choose a surah to begin reading and reflecting."}
                 </Text>
               </>
             )}
           </View>
 
-          {/* Ambient Sounds */}
-          <View style={{ gap: 12 }}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#5b5f65", fontWeight: "700" }}>
+          {/* ── Ambient Sounds ── */}
+          <View style={{ gap: 10 }}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, fontWeight: "700", color: SUB, textTransform: "uppercase", letterSpacing: 1.5 }}>
               Ambient Sounds
             </Text>
-            <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+            <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
               {NATURE_SOUNDS.map((n) => (
-                <TouchableOpacity
-                  key={n.id}
-                  onPress={() => toggleNature(n.id)}
-                  activeOpacity={0.85}
-                  style={[glass(16), {
-                    flexDirection: "row", alignItems: "center", gap: 8,
-                    paddingHorizontal: 16, paddingVertical: 12, flex: 1, minWidth: 100,
-                    ...(activeNature === n.id ? { backgroundColor: "rgba(169,247,183,0.25)", borderColor: "rgba(22,101,52,0.3)" } : {}),
-                  }]}
-                >
-                  <Text style={{ fontSize: 18 }}>{n.emoji}</Text>
+                <TouchableOpacity key={n.id} onPress={() => toggleNature(n.id)} activeOpacity={0.85}
+                  style={[card({ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, paddingVertical: 10, flex: 1, minWidth: 100 }),
+                    activeNature === n.id ? { backgroundColor: "#f0fdf4", borderColor: "#86efac" } : {}]}>
+                  <Text style={{ fontSize: 16 }}>{n.emoji}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: activeNature === n.id ? "#0e6030" : "#2f3338" }}>
-                      {n.label}
-                    </Text>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65" }}>
-                      {activeNature === n.id ? "Playing ◼" : "Tap to play"}
-                    </Text>
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: activeNature === n.id ? GR : TXT }}>{n.label}</Text>
+                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: SUB }}>{activeNature === n.id ? "Playing ◼" : "Tap to play"}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* Dhikr Counter */}
-          <View style={[glass(28), { padding: 28, gap: 20, alignItems: "center" }]}>
-            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 3, color: "#5b5f65", fontWeight: "700" }}>
+          {/* ── Dhikr Counter ── */}
+          <View style={[card({ padding: 24, gap: 18, alignItems: "center" })]}>
+            <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, fontWeight: "700", color: SUB, textTransform: "uppercase", letterSpacing: 1.5 }}>
               Dhikr Counter
             </Text>
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
               {DHIKR_LIST.map((d, i) => (
                 <TouchableOpacity key={i} onPress={() => { setDhikrIndex(i); setDhikrCount(0); }}
-                  style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9999, backgroundColor: dhikrIndex === i ? "#166534" : "rgba(255,255,255,0.65)", borderWidth: 1, borderColor: dhikrIndex === i ? "#166534" : "rgba(174,178,185,0.3)" }}>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "600", color: dhikrIndex === i ? "#fff" : "#524f63" }}>{d.transliteration}</Text>
+                  style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9999, backgroundColor: dhikrIndex === i ? GR : "#f3f4f6", borderWidth: 1, borderColor: dhikrIndex === i ? GR : BDR }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "600", color: dhikrIndex === i ? "#fff" : "#374151" }}>{d.transliteration}</Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity onPress={() => setDhikrCount((c) => c + 1)} activeOpacity={0.75}
-              style={{ width: 148, height: 148, borderRadius: 74, backgroundColor: "rgba(169,247,183,0.2)", borderWidth: 2, borderColor: "rgba(22,101,52,0.2)", alignItems: "center", justifyContent: "center", gap: 4 }}>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 44, fontWeight: "800", color: "#0e6030" }}>{dhikrCount}</Text>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: "#5b5f65", textTransform: "uppercase", letterSpacing: 1 }}>Tap</Text>
+            <TouchableOpacity onPress={() => setDhikrCount(c => c + 1)} activeOpacity={0.75}
+              style={{ width: 140, height: 140, borderRadius: 70, backgroundColor: "#f0fdf4", borderWidth: 2, borderColor: "#86efac", alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 42, fontWeight: "800", color: GR }}>{dhikrCount}</Text>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, color: SUB, textTransform: "uppercase", letterSpacing: 1 }}>TAP</Text>
             </TouchableOpacity>
-            <View style={{ alignItems: "center", gap: 6 }}>
-              <Text style={{ fontFamily: "Amiri-Regular", fontSize: 28, color: "#2f3338", textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
+            <View style={{ alignItems: "center", gap: 4 }}>
+              <Text style={{ fontFamily: "Amiri-Regular", fontSize: 26, color: TXT, textAlign: "center", ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}) }}>
                 {dhikr.arabic}
               </Text>
-              <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#524f63" }}>{dhikr.transliteration}</Text>
-              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>{dhikr.meaning}</Text>
+              <Text style={{ fontFamily: "Noto Serif", fontSize: 14, fontStyle: "italic", color: "#524f63" }}>{dhikr.transliteration}</Text>
+              <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: SUB }}>{dhikr.meaning}</Text>
             </View>
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity onPress={() => setDhikrCount(0)} style={[glass(9999), { paddingHorizontal: 20, paddingVertical: 10 }]}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "600", color: "#524f63" }}>Reset</Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <TouchableOpacity onPress={() => setDhikrCount(0)} style={[card({ paddingHorizontal: 18, paddingVertical: 8 })]}>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "600", color: "#374151" }}>Reset</Text>
               </TouchableOpacity>
-              <View style={[glass(9999), { paddingHorizontal: 20, paddingVertical: 10 }]}>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: dhikrCount >= 33 ? "#166534" : "#5b5f65" }}>
+              <View style={[card({ paddingHorizontal: 18, paddingVertical: 8 })]}>
+                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: dhikrCount >= 33 ? GR : SUB }}>
                   {dhikrCount >= 33 ? `${Math.floor(dhikrCount / 33)}× 33 ✓` : `${33 - dhikrCount} more to 33`}
                 </Text>
               </View>
