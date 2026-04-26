@@ -377,8 +377,8 @@ export default function DashboardScreen() {
         {/* Guided onboarding */}
         {showFirstRunGuide ? (
           <View style={[glass, s.firstRunCard]}>
-            <Text style={s.firstRunKicker}>90-Second Setup</Text>
-            <Text style={s.firstRunTitle}>Finish this quick flow before the demo</Text>
+            <Text style={s.firstRunKicker}>Getting Started</Text>
+            <Text style={s.firstRunTitle}>Complete Your First Flow</Text>
             <Text style={s.firstRunSub}>
               Start with Qalb, set your Imanifest intention, then convert it to Dua-to-Do and close with Tafakkur.
             </Text>

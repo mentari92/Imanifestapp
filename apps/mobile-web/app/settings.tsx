@@ -7,8 +7,10 @@ import {
   Platform,
   Linking,
   ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookText, CircleUserRound } from "lucide-react-native";
 import { colors } from "../constants/theme";
 import { useAuth } from "../lib/auth";
@@ -16,6 +18,9 @@ import { useAuth } from "../lib/auth";
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, token, loading } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 768;
 
   const handleOAuthPress = async () => {
     router.push("/auth");
@@ -37,7 +42,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
@@ -45,7 +50,7 @@ export default function SettingsScreen() {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, !isCompact && styles.contentWide]}>
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Account & Sync</Text>
           <Text style={styles.cardDesc}>
@@ -165,6 +170,12 @@ const styles = {
   content: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  contentWide: {
+    maxWidth: 600,
+    alignSelf: "center" as const,
+    width: "100%" as const,
+    paddingHorizontal: 24,
   },
   card: {
     backgroundColor: colors.card,
