@@ -117,7 +117,7 @@ export class AuthService {
       10 * 60,
     );
 
-    const authorizeUrl = new URL(`${cfg.oauthBaseUrl}/oauth2/auth`);
+    const authorizeUrl = new URL(cfg.authUrl);
     authorizeUrl.searchParams.set("response_type", "code");
     authorizeUrl.searchParams.set("client_id", cfg.clientId);
     authorizeUrl.searchParams.set("redirect_uri", cfg.redirectUri);
@@ -126,6 +126,10 @@ export class AuthService {
     authorizeUrl.searchParams.set("nonce", nonce);
     authorizeUrl.searchParams.set("code_challenge", codeChallenge);
     authorizeUrl.searchParams.set("code_challenge_method", "S256");
+
+    this.logger.log(
+      `OAuth authorize redirect → ${cfg.authUrl} | redirect_uri=${cfg.redirectUri}`,
+    );
 
     return authorizeUrl.toString();
   }
@@ -166,8 +170,12 @@ export class AuthService {
       form.set("redirect_uri", cfg.redirectUri);
       form.set("code_verifier", codeVerifier);
 
+      this.logger.log(
+        `OAuth token exchange → ${cfg.tokenUrl} | redirect_uri=${cfg.redirectUri}`,
+      );
+
       const tokenResp = await axios.post<OauthExchangePayload>(
-        `${cfg.oauthBaseUrl}/oauth2/token`,
+        cfg.tokenUrl,
         form.toString(),
         {
           headers: {
@@ -306,7 +314,7 @@ export class AuthService {
   }
 
   private getOauthConfig() {
-    const oauthBaseUrl = process.env.QURAN_FOUNDATION_OAUTH_BASE_URL || "";
+    const oauthBaseUrl = (process.env.QURAN_FOUNDATION_OAUTH_BASE_URL || "").replace(/\/$/, "");
     const clientId = process.env.QURAN_FOUNDATION_CLIENT_ID || "";
     const clientSecret = process.env.QURAN_FOUNDATION_CLIENT_SECRET || "";
     const redirectUri = process.env.QURAN_FOUNDATION_OAUTH_REDIRECT_URI || "";
@@ -316,14 +324,33 @@ export class AuthService {
       process.env.QURAN_FOUNDATION_OAUTH_SCOPE ||
       "openid offline_access user collection";
 
-    if (!oauthBaseUrl || !clientId || !clientSecret || !redirectUri || !successRedirect) {
+    // Support explicit full URLs or fall back to base-URL + standard paths.
+    // Quran Foundation production endpoints: /authorize and /token (not /oauth2/auth, /oauth2/token).
+    const authUrl =
+      process.env.QURAN_FOUNDATION_OAUTH_AUTH_URL ||
+      (oauthBaseUrl ? `${oauthBaseUrl}/authorize` : "");
+    const tokenUrl =
+      process.env.QURAN_FOUNDATION_OAUTH_TOKEN_URL ||
+      (oauthBaseUrl ? `${oauthBaseUrl}/token` : "");
+
+    if (!clientId || !clientSecret || !redirectUri || !successRedirect || !authUrl || !tokenUrl) {
+      this.logger.error(
+        `OAuth misconfiguration — missing vars. ` +
+        `clientId=${!!clientId} clientSecret=${!!clientSecret} ` +
+        `redirectUri=${redirectUri || "(empty)"} successRedirect=${successRedirect || "(empty)"} ` +
+        `authUrl=${authUrl || "(empty)"} tokenUrl=${tokenUrl || "(empty)"}`,
+      );
       throw new ServiceUnavailableException(
         "OAuth is not configured. Missing required Quran Foundation OAuth environment variables.",
       );
     }
 
+    this.logger.log(`OAuth config loaded — redirectUri=${redirectUri} authUrl=${authUrl}`);
+
     return {
-      oauthBaseUrl: oauthBaseUrl.replace(/\/$/, ""),
+      oauthBaseUrl,
+      authUrl,
+      tokenUrl,
       clientId,
       clientSecret,
       redirectUri,

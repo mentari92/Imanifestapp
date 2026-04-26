@@ -146,6 +146,12 @@ export default function AuthScreen() {
 
   const handleOAuthPress = async () => {
     try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        const apiBase = `${window.location.protocol}//${window.location.hostname}/api`;
+        const startUrl = `${apiBase}/auth/oauth/start`;
+        console.log('[OAuth] Initiating Quran.com login → ', startUrl);
+        console.log('[OAuth] Expected redirect_uri: https://imanifestapp.com/api/auth/callback/qurancom');
+      }
       await startOAuthLogin();
     } catch (error: any) {
       Alert.alert('OAuth Login Unavailable', error?.message || 'OAuth login could not be started.');
@@ -307,13 +313,16 @@ export default function AuthScreen() {
 
           {(oauthOnly || mode === 'login' || mode === 'register') && (
             <TouchableOpacity
-              style={oauthOnly ? styles.button : styles.oauthButton}
+              style={[styles.quranButton, (loading || submitting) && styles.buttonDisabled]}
               onPress={() => void handleOAuthPress()}
               disabled={loading || submitting}
             >
-              <Text style={oauthOnly ? styles.buttonText : styles.oauthButtonText}>
-                Continue with Quran.com (OAuth)
-              </Text>
+              <View style={styles.quranButtonInner}>
+                <Text style={styles.quranButtonIcon}>☪</Text>
+                <Text style={styles.quranButtonText}>
+                  {loading || submitting ? 'Redirecting...' : 'Login with Quran.com'}
+                </Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -475,6 +484,28 @@ const styles = {
     marginTop: 10,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  quranButton: {
+    backgroundColor: '#1a6b45',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 10,
+  },
+  quranButtonInner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  quranButtonIcon: {
+    fontSize: 18,
+    color: '#fff',
+  },
+  quranButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600' as const,
+    fontFamily: 'Inter-SemiBold',
   },
   upgradeButton: {
     backgroundColor: colors.primary,

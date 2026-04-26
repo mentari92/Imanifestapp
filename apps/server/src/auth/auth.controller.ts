@@ -51,7 +51,17 @@ export class AuthController {
   }
 
   @Public()
-  @Get(["oauth/callback", "oauth/callback/", "quran-callback", "quran-callback/"])
+  @Get([
+    "oauth/callback",
+    "oauth/callback/",
+    "quran-callback",
+    "quran-callback/",
+    // Exact path registered with Quran Foundation OAuth client:
+    // https://imanifestapp.com/api/auth/callback/qurancom
+    // nginx strips /api/ prefix, so NestJS receives /auth/callback/qurancom
+    "callback/qurancom",
+    "callback/qurancom/",
+  ])
   async oauthCallback(
     @Query("code") code: string,
     @Query("state") state: string,
