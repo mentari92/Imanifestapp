@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -28,12 +28,18 @@ export default function AuthScreen() {
   const [resetToken, setResetToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // OAuth-only mode is only enabled when explicitly set via env var.
-  // Email/password login is always available as fallback.
-  const oauthOnly =
-    typeof process !== 'undefined' &&
-    process.env.EXPO_PUBLIC_OAUTH_ONLY === 'true' &&
-    Platform.OS === 'web';
+  const oauthOnlyEnabledFromEnv =
+    typeof process !== 'undefined' && process.env.EXPO_PUBLIC_OAUTH_ONLY === 'true';
+
+  const oauthOnlyEnabledFromHost =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'imanifestapp.com' ||
+      window.location.hostname === 'www.imanifestapp.com');
+
+  const oauthOnlyEnabled = oauthOnlyEnabledFromEnv || oauthOnlyEnabledFromHost;
+  // OAuth flow is currently implemented for web builds only.
+  const oauthOnly = oauthOnlyEnabled && Platform.OS === 'web';
 
   useEffect(() => {
     if (loading) return;
@@ -42,6 +48,27 @@ export default function AuthScreen() {
     }
   }, [loading, user, token, router]);
 
+  const autoRedirectedRef = useRef(false);
+  useEffect(() => {
+    if (!oauthOnly) return;
+    if (autoRedirectedRef.current) return;
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    const hasOAuthParams =
+      url.searchParams.has('oauth_code') ||
+      url.searchParams.has('oauth_error') ||
+      url.searchParams.has('code') ||
+      url.searchParams.has('error');
+    if (hasOAuthParams) return;
+
+    autoRedirectedRef.current = true;
+    // Kick off OAuth immediately so users land on Quran.Foundation hosted login.
+    startOAuthLogin().catch(() => {
+      // No-op: user can still press the button.
+      autoRedirectedRef.current = false;
+    });
+  }, [oauthOnly, startOAuthLogin]);
 
   const upgradeUrl =
     (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_QURAN_UPGRADE_URL) ||
@@ -280,26 +307,14 @@ export default function AuthScreen() {
 
           {(oauthOnly || mode === 'login' || mode === 'register') && (
             <TouchableOpacity
-              style={oauthOnly ? styles.quranButton : styles.oauthButton}
+              style={oauthOnly ? styles.button : styles.oauthButton}
               onPress={() => void handleOAuthPress()}
               disabled={loading || submitting}
-              activeOpacity={0.7}
             >
-              <View style={styles.quranButtonContent}>
-                <Text style={styles.quranButtonIcon}>📖</Text>
-                <Text style={oauthOnly ? styles.quranButtonLabelFull : styles.oauthButtonText}>
-                  Sign in with Quran.com
-                </Text>
-              </View>
+              <Text style={oauthOnly ? styles.buttonText : styles.oauthButtonText}>
+                Continue with Quran.com (OAuth)
+              </Text>
             </TouchableOpacity>
-          )}
-
-          {!oauthOnly && (mode === 'login' || mode === 'register') && (
-            <View style={styles.socialDivider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
           )}
 
           {!oauthOnly && (mode === 'login' || mode === 'register') && (
@@ -536,50 +551,5 @@ const styles = {
     color: colors.primary,
     textDecorationLine: 'underline' as const,
     fontFamily: 'Inter-SemiBold',
-  },
-  quranButton: {
-    backgroundColor: '#1B7A4A',
-    borderRadius: 14,
-    padding: 18,
-    alignItems: 'center' as const,
-    marginTop: 8,
-    shadowColor: '#1B7A4A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  quranButtonContent: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 10,
-  },
-  quranButtonIcon: {
-    fontSize: 22,
-  },
-  quranButtonLabelFull: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700' as const,
-    fontFamily: 'Inter-Bold',
-    letterSpacing: 0.3,
-  },
-  socialDivider: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginTop: 16,
-    marginBottom: 4,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    marginHorizontal: 12,
-    fontFamily: 'Inter-Regular',
   },
 };
