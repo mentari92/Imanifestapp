@@ -62,10 +62,24 @@ export class AuthController {
   async oauthCallback(
     @Query("code") code: string,
     @Query("state") state: string,
+    @Query("error") error: string,
+    @Query("error_description") errorDescription: string,
     @Res() res: any,
   ) {
+    const successRedirect = process.env.QURAN_FOUNDATION_OAUTH_SUCCESS_REDIRECT || "https://imanifestapp.com/auth";
+
+    // Handle OAuth provider errors (e.g. user denied access)
+    if (error) {
+      const errorMsg = errorDescription || error;
+      const redirectUrl = new URL(successRedirect);
+      redirectUrl.searchParams.set("oauth_error", errorMsg);
+      return res.redirect(redirectUrl.toString());
+    }
+
     if (!code || !state) {
-      throw new BadRequestException("Missing OAuth callback parameters");
+      const redirectUrl = new URL(successRedirect);
+      redirectUrl.searchParams.set("oauth_error", "Missing OAuth callback parameters");
+      return res.redirect(redirectUrl.toString());
     }
 
     const redirectUrl = await this.authService.handleOauthCallback(code, state);
