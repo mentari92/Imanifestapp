@@ -10,13 +10,15 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(cuid())
-  email          String          @unique
-  name           String?
-  password       String?         // bcrypt hashed password for email/password auth
-  quranApiKey    String?         // Quran Foundation Content API key (per-user, optional)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                 String          @id @default(cuid())
+  email              String          @unique
+  name               String?
+  password           String?         // bcrypt hashed password for email/password auth
+  quranApiKey        String?         // Quran Foundation OAuth access token (stored after OAuth login)
+  quranSub           String?         @unique // Permanent Quran Foundation user ID (`sub` claim from id_token)
+  quranRefreshToken  String?         // OAuth refresh token for silent renewal (offline_access scope)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
   manifestations Manifestation[]
   reflections    Reflection[]
