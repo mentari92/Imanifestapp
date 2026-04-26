@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -48,27 +48,6 @@ export default function AuthScreen() {
     }
   }, [loading, user, token, router]);
 
-  const autoRedirectedRef = useRef(false);
-  useEffect(() => {
-    if (!oauthOnly) return;
-    if (autoRedirectedRef.current) return;
-    if (typeof window === 'undefined') return;
-
-    const url = new URL(window.location.href);
-    const hasOAuthParams =
-      url.searchParams.has('oauth_code') ||
-      url.searchParams.has('oauth_error') ||
-      url.searchParams.has('code') ||
-      url.searchParams.has('error');
-    if (hasOAuthParams) return;
-
-    autoRedirectedRef.current = true;
-    // Kick off OAuth immediately so users land on Quran.Foundation hosted login.
-    startOAuthLogin().catch(() => {
-      // No-op: user can still press the button.
-      autoRedirectedRef.current = false;
-    });
-  }, [oauthOnly, startOAuthLogin]);
 
   const upgradeUrl =
     (typeof process !== 'undefined' && process.env.EXPO_PUBLIC_QURAN_UPGRADE_URL) ||
