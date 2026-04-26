@@ -28,18 +28,12 @@ export default function AuthScreen() {
   const [resetToken, setResetToken] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const oauthOnlyEnabledFromEnv =
-    typeof process !== 'undefined' && process.env.EXPO_PUBLIC_OAUTH_ONLY === 'true';
-
-  const oauthOnlyEnabledFromHost =
-    Platform.OS === 'web' &&
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'imanifestapp.com' ||
-      window.location.hostname === 'www.imanifestapp.com');
-
-  const oauthOnlyEnabled = oauthOnlyEnabledFromEnv || oauthOnlyEnabledFromHost;
-  // OAuth flow is currently implemented for web builds only.
-  const oauthOnly = oauthOnlyEnabled && Platform.OS === 'web';
+  // OAuth-only mode is only enabled when explicitly set via env var.
+  // Email/password login is always available as fallback.
+  const oauthOnly =
+    typeof process !== 'undefined' &&
+    process.env.EXPO_PUBLIC_OAUTH_ONLY === 'true' &&
+    Platform.OS === 'web';
 
   useEffect(() => {
     if (loading) return;
