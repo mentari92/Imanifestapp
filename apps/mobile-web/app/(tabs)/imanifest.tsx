@@ -10,6 +10,7 @@ import {
   Alert,
   StyleSheet,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sparkles } from 'lucide-react-native';
@@ -47,17 +48,19 @@ const glass = {
   elevation: 4,
   ...(Platform.OS === 'web'
     ? ({
-        backdropFilter: 'blur(24px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(130%)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.4)',
-      } as any)
+      backdropFilter: 'blur(24px) saturate(130%)',
+      WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.4)',
+    } as any)
     : {}),
 };
 
 export default function ImanifestScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 768;
   const { loading, error, result, history, analyzeIntention, fetchHistory } = useImanifest();
   const [intentionText, setIntentionText] = useState('');
   const [gratitude, setGratitude] = useState(['', '', '']);
@@ -68,7 +71,7 @@ export default function ImanifestScreen() {
   const isRecording = recordingTarget !== null;
 
   useEffect(() => {
-    fetchHistory().catch(() => {});
+    fetchHistory().catch(() => { });
   }, [fetchHistory]);
 
   const handleSubmit = async () => {
@@ -83,7 +86,7 @@ export default function ImanifestScreen() {
     }
     try {
       await analyzeIntention(sanitizedIntention);
-      fetchHistory().catch(() => {});
+      fetchHistory().catch(() => { });
     } catch (_) {
       // Error is already set in the hook
     }
@@ -168,300 +171,303 @@ export default function ImanifestScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 16, paddingHorizontal: isCompact ? 16 : 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentWrap}>
-        {/* ── Header ─────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <View style={styles.headerIconWrap}>
-            <Sparkles size={18} color="#4338ca" strokeWidth={2.1} />
+          {/* ── Header ─────────────────────────────────────────────── */}
+          <View style={styles.header}>
+            <View style={styles.headerIconWrap}>
+              <Sparkles size={18} color="#4338ca" strokeWidth={2.1} />
+            </View>
+            <Text style={styles.brandTitle}>Imanifest</Text>
+            <View style={styles.headerIconSpacer} />
           </View>
-          <Text style={styles.brandTitle}>Imanifest</Text>
-          <View style={styles.headerIconSpacer} />
-        </View>
 
-        {/* ── Hero ───────────────────────────────────────────────── */}
-        <View style={styles.hero}>
-          <Text style={styles.displayHeadline}>Imanifest{'\n'}My Vision</Text>
-          <Text style={styles.displaySub}>
-            Align your soul's purpose with intentional action.
-          </Text>
-        </View>
-
-        {/* ── Vision Focus Board ─────────────────────────────────── */}
-        <TouchableOpacity
-          onPress={pickVisionImage}
-          activeOpacity={0.85}
-          style={[glass, {
-            marginBottom: 28,
-            padding: 0,
-            overflow: 'hidden',
-            minHeight: 280,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }]}
-        >
-          {visionImage ? (
-            <Image
-              source={{ uri: visionImage }}
-              style={{ width: '100%', height: 320, borderRadius: 32 } as any}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.captureBoard}>
-              <Text style={styles.captureIcon}>📷</Text>
-              <Text style={styles.captureTitle}>Capture Inspiration</Text>
-              <Text style={styles.captureSubtext}>Upload a visual reminder for the goal you want to pursue.</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* ── Soul's Intention ───────────────────────────────────── */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Soul's Intention</Text>
-          <TouchableOpacity onPress={() => startVoiceRecording('intention')} disabled={isRecording}>
-            <Text style={[styles.voiceLabel, recordingTarget === 'intention' && { color: '#ac3149' }]}> 
-              {recordingTarget === 'intention' ? '⏺ Recording...' : '🎙 Voice Record'}
+          {/* ── Hero ───────────────────────────────────────────────── */}
+          <View style={styles.hero}>
+            <Text style={[styles.displayHeadline, isCompact && styles.displayHeadlineCompact]}>Imanifest{'\n'}My Vision</Text>
+            <Text style={styles.displaySub}>
+              Align your soul's purpose with intentional action.
             </Text>
-          </TouchableOpacity>
-        </View>
-        <View style={[glass, styles.intentionCard]}>
-          <TextInput
-            style={styles.intentionInput}
-            placeholder="Write what your soul desires to manifest today..."
-            placeholderTextColor="rgba(96,93,113,0.45)"
-            value={intentionText}
-            onChangeText={setIntentionText}
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
+          </View>
 
-        {/* ── Gratitude Journal ──────────────────────────────────── */}
-        <View style={styles.gratitudeHeader}>
-          <View style={styles.gratitudeLine} />
-          <Text style={styles.gratitudeTitle}>What are you grateful for today?</Text>
-          <View style={styles.gratitudeLine} />
-        </View>
-        <View style={[glass, styles.gratitudePromptCard]}>
-          <Text style={styles.gratitudePromptText}>
-            Fill all 3 rows to train your heart in daily gratitude and mindful reflection.
-          </Text>
-          <Text style={styles.gratitudeVerseText}>
-            "If you are grateful, I will surely increase you (in favor)." (QS. Ibrahim: 7)
-          </Text>
-          <View style={styles.gratitudeControlRow}>
-            <View style={styles.gratitudeSelectorWrap}>
-              {[0, 1, 2].map((idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  onPress={() => setActiveGratitudeIndex(idx)}
-                  style={[
-                    styles.gratitudeSelectorChip,
-                    activeGratitudeIndex === idx && styles.gratitudeSelectorChipActive,
-                  ]}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    style={[
-                      styles.gratitudeSelectorText,
-                      activeGratitudeIndex === idx && styles.gratitudeSelectorTextActive,
-                    ]}
-                  >
-                    Row 0{idx + 1}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity
-              onPress={() => startVoiceRecording('gratitude')}
-              disabled={isRecording}
-              style={styles.gratitudeGlobalMicButton}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.gratitudeGlobalMicText, recordingTarget === 'gratitude' && { color: '#ac3149' }]}>
-                {recordingTarget === 'gratitude'
-                  ? `⏺ Recording Row 0${activeGratitudeIndex + 1}`
-                  : `🎙 Voice to Row 0${activeGratitudeIndex + 1}`}
+          {/* ── Vision Focus Board ─────────────────────────────────── */}
+          <TouchableOpacity
+            onPress={pickVisionImage}
+            activeOpacity={0.85}
+            style={[glass, {
+              marginBottom: 28,
+              padding: 0,
+              overflow: 'hidden',
+              minHeight: isCompact ? 220 : 280,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }]}
+          >
+            {visionImage ? (
+              <Image
+                source={{ uri: visionImage }}
+                style={{ width: '100%', height: isCompact ? 240 : 320, borderRadius: 32 } as any}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.captureBoard}>
+                <Text style={styles.captureIcon}>📷</Text>
+                <Text style={styles.captureTitle}>Capture Inspiration</Text>
+                <Text style={styles.captureSubtext}>Upload a visual reminder for the goal you want to pursue.</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* ── Soul's Intention ───────────────────────────────────── */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionLabel}>Soul's Intention</Text>
+            <TouchableOpacity onPress={() => startVoiceRecording('intention')} disabled={isRecording}>
+              <Text style={[styles.voiceLabel, recordingTarget === 'intention' && { color: '#ac3149' }]}>
+                {recordingTarget === 'intention' ? '⏺ Recording...' : '🎙 Voice Record'}
               </Text>
             </TouchableOpacity>
           </View>
-          {hasGratitudeEntry ? (
-            <Text style={styles.gratitudeHadithText}>
-              "How wonderful is the affair of the believer... if he is blessed, he is grateful, and that is good for him." (HR. Muslim)
+          <View style={[glass, styles.intentionCard, isCompact && styles.intentionCardCompact]}>
+            <TextInput
+              style={styles.intentionInput}
+              placeholder="Write what your soul desires to manifest today..."
+              placeholderTextColor="rgba(96,93,113,0.45)"
+              value={intentionText}
+              onChangeText={setIntentionText}
+              multiline
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* ── Gratitude Journal ──────────────────────────────────── */}
+          <View style={styles.gratitudeHeader}>
+            <View style={styles.gratitudeLine} />
+            <Text style={[styles.gratitudeTitle, isCompact && styles.gratitudeTitleCompact]}>What are you grateful for today?</Text>
+            <View style={styles.gratitudeLine} />
+          </View>
+          <View style={[glass, styles.gratitudePromptCard]}>
+            <Text style={styles.gratitudePromptText}>
+              Fill all 3 rows to train your heart in daily gratitude and mindful reflection.
             </Text>
-          ) : null}
-        </View>
-        {['Something I am grateful for...', 'Another blessing today...', 'A final moment of gratitude...'].map(
-          (ph, i) => (
-            <View key={i} style={[glass, styles.gratitudeRow, activeGratitudeIndex === i && styles.gratitudeRowActive]}>
-              <Text style={styles.gratitudeNum}>0{i + 1}</Text>
-              <TextInput
-                style={styles.gratitudeInput}
-                placeholder={ph}
-                placeholderTextColor="rgba(91,95,101,0.4)"
-                value={gratitude[i]}
-                onChangeText={(v) => setGratitudeAt(i, v)}
-                onFocus={() => setActiveGratitudeIndex(i)}
-              />
+            <Text style={styles.gratitudeVerseText}>
+              "If you are grateful, I will surely increase you (in favor)." (QS. Ibrahim: 7)
+            </Text>
+            <View style={[styles.gratitudeControlRow, isCompact && styles.gratitudeControlRowCompact]}>
+              <View style={styles.gratitudeSelectorWrap}>
+                {[0, 1, 2].map((idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    onPress={() => setActiveGratitudeIndex(idx)}
+                    style={[
+                      styles.gratitudeSelectorChip,
+                      activeGratitudeIndex === idx && styles.gratitudeSelectorChipActive,
+                    ]}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[
+                        styles.gratitudeSelectorText,
+                        activeGratitudeIndex === idx && styles.gratitudeSelectorTextActive,
+                      ]}
+                    >
+                      Row 0{idx + 1}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                onPress={() => startVoiceRecording('gratitude')}
+                disabled={isRecording}
+                style={styles.gratitudeGlobalMicButton}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.gratitudeGlobalMicText, recordingTarget === 'gratitude' && { color: '#ac3149' }]}>
+                  {recordingTarget === 'gratitude'
+                    ? `⏺ Recording Row 0${activeGratitudeIndex + 1}`
+                    : `🎙 Voice to Row 0${activeGratitudeIndex + 1}`}
+                </Text>
+              </TouchableOpacity>
             </View>
-          )
-        )}
+            {hasGratitudeEntry ? (
+              <Text style={styles.gratitudeHadithText}>
+                "How wonderful is the affair of the believer... if he is blessed, he is grateful, and that is good for him." (HR. Muslim)
+              </Text>
+            ) : null}
+          </View>
+          {['Something I am grateful for...', 'Another blessing today...', 'A final moment of gratitude...'].map(
+            (ph, i) => (
+              <View key={i} style={[glass, styles.gratitudeRow, activeGratitudeIndex === i && styles.gratitudeRowActive]}>
+                <Text style={styles.gratitudeNum}>0{i + 1}</Text>
+                <TextInput
+                  style={styles.gratitudeInput}
+                  placeholder={ph}
+                  placeholderTextColor="rgba(91,95,101,0.4)"
+                  value={gratitude[i]}
+                  onChangeText={(v) => setGratitudeAt(i, v)}
+                  onFocus={() => setActiveGratitudeIndex(i)}
+                />
+              </View>
+            )
+          )}
 
-        {/* ── Primary CTA ────────────────────────────────────────── */}
-        <TouchableOpacity
-          style={[styles.ctaButton, loading && styles.ctaDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.ctaText}>
-            {loading ? 'Analyzing...' : 'Manifest & Get AI Guidance  →'}
-          </Text>
-        </TouchableOpacity>
+          {/* ── Primary CTA ────────────────────────────────────────── */}
+          <TouchableOpacity
+            style={[styles.ctaButton, loading && styles.ctaDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.ctaText}>
+              {loading ? 'Analyzing...' : 'Manifest & Get AI Guidance  →'}
+            </Text>
+          </TouchableOpacity>
 
-        {/* ── Feedback ───────────────────────────────────────────── */}
-        {error && (
-          <ErrorMessage
-            message={error}
-            onRetry={() => {
-              if (intentionText.trim()) {
-                void handleSubmit();
-                return;
-              }
-              void fetchHistory().catch(() => {});
-            }}
-          />
-        )}
-        {loading && <LoadingSpinner message="Analyzing your intention with AI..." />}
+          {/* ── Feedback ───────────────────────────────────────────── */}
+          {error && (
+            <ErrorMessage
+              message={error}
+              onRetry={() => {
+                if (intentionText.trim()) {
+                  void handleSubmit();
+                  return;
+                }
+                void fetchHistory().catch(() => { });
+              }}
+            />
+          )}
+          {loading && <LoadingSpinner message="Analyzing your intention with AI..." />}
 
-        {/* ── AI Result ──────────────────────────────────────────── */}
-        {result && !loading && (
-          <View style={styles.resultSection}>
-            <Text style={styles.subSectionTitle}>AI Guidance Rooted in Quran and Sunnah</Text>
-            <View style={[glass, styles.encouragementCard]}>
-              <Text style={styles.encouragementText}>{result.encouragement}</Text>
-            </View>
+          {/* ── AI Result ──────────────────────────────────────────── */}
+          {result && !loading && (
+            <View style={styles.resultSection}>
+              <Text style={styles.subSectionTitle}>AI Guidance Rooted in Quran and Sunnah</Text>
+              <View style={[glass, styles.encouragementCard]}>
+                <Text style={styles.encouragementText}>{result.encouragement}</Text>
+              </View>
 
-            <View
-              style={[
-                styles.sentimentPill,
-                {
-                  backgroundColor:
-                    result.sentiment === 'positive'
-                      ? C.tertiaryContainer
-                      : result.sentiment === 'negative'
-                        ? '#f9dde3'
-                        : '#fef3d7',
-                },
-              ]}
-            >
-              <Text
+              <View
                 style={[
-                  styles.sentimentPillText,
+                  styles.sentimentPill,
                   {
-                    color:
+                    backgroundColor:
                       result.sentiment === 'positive'
-                        ? C.tertiary
+                        ? C.tertiaryContainer
                         : result.sentiment === 'negative'
-                          ? C.error
-                          : C.warning,
+                          ? '#f9dde3'
+                          : '#fef3d7',
                   },
                 ]}
               >
-                {result.sentiment === 'positive'
-                  ? 'Positive'
-                  : result.sentiment === 'negative'
-                    ? 'Needs Support'
-                    : 'Neutral'}
-              </Text>
-            </View>
-
-            {result.verses && result.verses.length > 0 && (
-              <>
-                <Text style={styles.subSectionTitle}>Relevant Quran Verses</Text>
-                {result.verses.map((verse, idx) => (
-                  <View key={verse.number || idx} style={[glass, styles.verseCard]}>
-                    {verse.arabicText ? (
-                      <Text style={styles.verseArabic}>{verse.arabicText}</Text>
-                    ) : null}
-                    <Text style={styles.verseText}>"{verse.text}"</Text>
-                    <Text style={styles.verseRef}>
-                      {verse.surahName} {verse.surahNumber}:{verse.ayahNumber}
-                    </Text>
-                    {verse.tafsirSnippet ? (
-                      <View style={styles.tafsirBox}>
-                        <Text style={styles.tafsirLabel}>English explanation</Text>
-                        <Text style={styles.tafsirText}>{verse.tafsirSnippet}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                ))}
-                <Text style={styles.referenceNote}>
-                  References are retrieved through Quran API with MCP Quran fallback when needed.
-                </Text>
-              </>
-            )}
-
-            {result.suggestedActions && result.suggestedActions.length > 0 && (
-              <>
-                <Text style={styles.subSectionTitle}>Suggested Actions You Can Start Today</Text>
-                {result.suggestedActions.map((action, idx) => (
-                  <View key={idx} style={styles.actionRow}>
-                    <Text style={styles.actionDot}>·</Text>
-                    <View style={styles.actionContent}>
-                      <Text style={styles.actionText}>{action.title}</Text>
-                      {action.guidance ? (
-                        <Text style={styles.actionGuidance}>{action.guidance}</Text>
-                      ) : null}
-                    </View>
-                  </View>
-                ))}
-              </>
-            )}
-
-            <TouchableOpacity
-              style={styles.secondaryCtaButton}
-              onPress={handleContinueToDuaTodo}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.secondaryCtaText}>Continue to Dua-to-Do</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {history.length > 0 ? (
-          <View style={styles.historySection}>
-            <Text style={styles.subSectionTitle}>Saved manifestations</Text>
-            {history.map((item) => (
-              <View key={item.id} style={[glass, styles.historyCard]}>
-                <View style={styles.historyTopRow}>
-                  <Text style={styles.historyIntent} numberOfLines={2}>{item.text}</Text>
-                  <View style={[
-                    styles.historyBadge,
-                    item.isAchieved
-                      ? { backgroundColor: 'rgba(169,247,183,0.45)' }
-                      : (item.completedTasks || 0) > 0
-                        ? { backgroundColor: 'rgba(254,243,215,0.75)' }
-                        : { backgroundColor: 'rgba(226,221,248,0.7)' },
-                  ]}>
-                    <Text style={styles.historyBadgeText}>
-                      {item.isAchieved ? 'Achieved' : (item.completedTasks || 0) > 0 ? 'In Progress' : 'Saved'}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.historySummary} numberOfLines={3}>{item.encouragement}</Text>
-                <Text style={styles.historyMeta}>
-                  {(item.completedTasks || 0)}/{item.totalTasks || 0} tasks completed
+                <Text
+                  style={[
+                    styles.sentimentPillText,
+                    {
+                      color:
+                        result.sentiment === 'positive'
+                          ? C.tertiary
+                          : result.sentiment === 'negative'
+                            ? C.error
+                            : C.warning,
+                    },
+                  ]}
+                >
+                  {result.sentiment === 'positive'
+                    ? 'Positive'
+                    : result.sentiment === 'negative'
+                      ? 'Needs Support'
+                      : 'Neutral'}
                 </Text>
               </View>
-            ))}
-          </View>
-        ) : null}
 
-        <View style={{ height: 120 }} />
+              {result.verses && result.verses.length > 0 && (
+                <>
+                  <Text style={styles.subSectionTitle}>Relevant Quran Verses</Text>
+                  {result.verses.map((verse, idx) => (
+                    <View key={verse.number || idx} style={[glass, styles.verseCard]}>
+                      {verse.arabicText ? (
+                        <Text style={styles.verseArabic}>{verse.arabicText}</Text>
+                      ) : null}
+                      <Text style={styles.verseText}>"{verse.text}"</Text>
+                      <Text style={styles.verseRef}>
+                        {verse.surahName} {verse.surahNumber}:{verse.ayahNumber}
+                      </Text>
+                      {verse.tafsirSnippet ? (
+                        <View style={styles.tafsirBox}>
+                          <Text style={styles.tafsirLabel}>English explanation</Text>
+                          <Text style={styles.tafsirText}>{verse.tafsirSnippet}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ))}
+                  <Text style={styles.referenceNote}>
+                    References are retrieved through Quran API with MCP Quran fallback when needed.
+                  </Text>
+                </>
+              )}
+
+              {result.suggestedActions && result.suggestedActions.length > 0 && (
+                <>
+                  <Text style={styles.subSectionTitle}>Suggested Actions You Can Start Today</Text>
+                  {result.suggestedActions.map((action, idx) => (
+                    <View key={idx} style={styles.actionRow}>
+                      <Text style={styles.actionDot}>·</Text>
+                      <View style={styles.actionContent}>
+                        <Text style={styles.actionText}>{action.title}</Text>
+                        {action.guidance ? (
+                          <Text style={styles.actionGuidance}>{action.guidance}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              <TouchableOpacity
+                style={styles.secondaryCtaButton}
+                onPress={handleContinueToDuaTodo}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.secondaryCtaText}>Continue to Dua-to-Do</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {history.length > 0 ? (
+            <View style={styles.historySection}>
+              <Text style={styles.subSectionTitle}>Saved manifestations</Text>
+              {history.map((item) => (
+                <View key={item.id} style={[glass, styles.historyCard]}>
+                  <View style={styles.historyTopRow}>
+                    <Text style={styles.historyIntent} numberOfLines={2}>{item.text}</Text>
+                    <View style={[
+                      styles.historyBadge,
+                      item.isAchieved
+                        ? { backgroundColor: 'rgba(169,247,183,0.45)' }
+                        : (item.completedTasks || 0) > 0
+                          ? { backgroundColor: 'rgba(254,243,215,0.75)' }
+                          : { backgroundColor: 'rgba(226,221,248,0.7)' },
+                    ]}>
+                      <Text style={styles.historyBadgeText}>
+                        {item.isAchieved ? 'Achieved' : (item.completedTasks || 0) > 0 ? 'In Progress' : 'Saved'}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.historySummary} numberOfLines={3}>{item.encouragement}</Text>
+                  <Text style={styles.historyMeta}>
+                    {(item.completedTasks || 0)}/{item.totalTasks || 0} tasks completed
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          <View style={{ height: 120 }} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -545,6 +551,10 @@ const styles = StyleSheet.create({
     color: C.onSurface,
     marginBottom: 10,
   },
+  displayHeadlineCompact: {
+    fontSize: 34,
+    lineHeight: 40,
+  },
   displaySub: {
     fontSize: 17,
     lineHeight: 26,
@@ -579,13 +589,17 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 32,
   },
+  intentionCardCompact: {
+    padding: 20,
+  },
   captureBoard: {
     width: '100%',
-    minHeight: 320,
+    minHeight: 280,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
     backgroundColor: 'rgba(255,255,255,0.92)',
   },
   captureIcon: {
@@ -593,7 +607,8 @@ const styles = StyleSheet.create({
   },
   captureTitle: {
     fontFamily: 'Newsreader',
-    fontSize: 40,
+    fontSize: 32,
+    lineHeight: 38,
     fontStyle: 'italic',
     color: C.primaryDim,
     fontWeight: '600',
@@ -609,12 +624,12 @@ const styles = StyleSheet.create({
   },
   intentionInput: {
     flex: 1,
-    fontSize: 22,
-    lineHeight: 32,
+    fontSize: 20,
+    lineHeight: 30,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
-    minHeight: 160,
+    minHeight: 140,
     textAlignVertical: 'top',
   },
   // gratitude
@@ -632,11 +647,16 @@ const styles = StyleSheet.create({
   },
   gratitudeTitle: {
     fontSize: 37,
+    lineHeight: 44,
     fontFamily: 'Newsreader',
     fontStyle: 'italic' as const,
     color: C.onSurface,
     flexShrink: 1,
     textAlign: 'center',
+  },
+  gratitudeTitleCompact: {
+    fontSize: 24,
+    lineHeight: 30,
   },
   gratitudePromptCard: {
     borderRadius: 20,
@@ -664,6 +684,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flexWrap: 'wrap',
+  },
+  gratitudeControlRowCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   gratitudeSelectorWrap: {
     flexDirection: 'row',

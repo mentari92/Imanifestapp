@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Platform } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Platform, useWindowDimensions } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
 const glass = (radius = 24) => ({
@@ -36,12 +36,12 @@ interface NewQalbStoredResult {
   verses?: Array<
     | Verse
     | {
-        number?: number;
-        text?: string;
-        surahName?: string;
-        surahNumber?: number;
-        ayahNumber?: number;
-      }
+      number?: number;
+      text?: string;
+      surahName?: string;
+      surahNumber?: number;
+      ayahNumber?: number;
+    }
   >;
 }
 
@@ -106,6 +106,8 @@ function buildLogicalPath(text: string, sentiment?: string) {
 
 export default function QalbResultScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 768;
   const { userText, sentiment } = useLocalSearchParams<{
     userText: string;
     sentiment: string;
@@ -125,7 +127,7 @@ export default function QalbResultScreen() {
           setResult(JSON.parse(stored));
         }
       }
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -139,7 +141,7 @@ export default function QalbResultScreen() {
         );
         setChapterNames(mapped);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return () => {
       active = false;
@@ -151,23 +153,23 @@ export default function QalbResultScreen() {
 
   const verses: Verse[] = Array.isArray(result?.verses)
     ? result.verses.map((verse): Verse => {
-        if (typeof (verse as Verse).verseKey === "string") {
-          return verse as Verse;
-        }
+      if (typeof (verse as Verse).verseKey === "string") {
+        return verse as Verse;
+      }
 
-        const normalized = verse as {
-          text?: string;
-          surahNumber?: number;
-          ayahNumber?: number;
-        };
+      const normalized = verse as {
+        text?: string;
+        surahNumber?: number;
+        ayahNumber?: number;
+      };
 
-        return {
-          verseKey: `${normalized.surahNumber ?? 0}:${normalized.ayahNumber ?? 0}`,
-          arabicText: "",
-          translation: normalized.text || "",
-          tafsirSnippet: "",
-        };
-      })
+      return {
+        verseKey: `${normalized.surahNumber ?? 0}:${normalized.ayahNumber ?? 0}`,
+        arabicText: "",
+        translation: normalized.text || "",
+        tafsirSnippet: "",
+      };
+    })
     : [];
 
   const aiSummary =
@@ -180,16 +182,16 @@ export default function QalbResultScreen() {
 
   const hadith: HadithItem[] = Array.isArray((result as NewQalbStoredResult | null)?.hadith)
     ? ((result as NewQalbStoredResult).hadith || [])
-        .filter((h) => h?.reference && h?.text)
-        .map((h) => ({ reference: String(h.reference), text: String(h.text) }))
+      .filter((h) => h?.reference && h?.text)
+      .map((h) => ({ reference: String(h.reference), text: String(h.text) }))
     : [];
 
   const logicalPath = useMemo(() => {
     const fromModel = Array.isArray((result as NewQalbStoredResult | null)?.logicalPath)
       ? ((result as NewQalbStoredResult).logicalPath || [])
-          .filter((step) => typeof step === 'string' && step.trim().length > 0)
-          .slice(0, 3)
-          .map((step) => cleanModelText(step))
+        .filter((step) => typeof step === 'string' && step.trim().length > 0)
+        .slice(0, 3)
+        .map((step) => cleanModelText(step))
       : [];
 
     if (fromModel.length > 0) {
@@ -246,7 +248,7 @@ export default function QalbResultScreen() {
 
       {/* Header */}
       <View style={{
-        paddingHorizontal: 24, paddingVertical: 16,
+        paddingHorizontal: isCompact ? 16 : 24, paddingVertical: isCompact ? 12 : 16,
         flexDirection: "row", justifyContent: "space-between", alignItems: "center",
         backgroundColor: "rgba(255,255,255,0.4)",
         ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.2)" } as any) : {}),
@@ -261,7 +263,7 @@ export default function QalbResultScreen() {
         </View>
       </View>
 
-      <View style={{ paddingHorizontal: 24, gap: 24, paddingTop: 24, maxWidth: 680, alignSelf: "center", width: "100%" }}>
+      <View style={{ paddingHorizontal: isCompact ? 16 : 24, gap: isCompact ? 18 : 24, paddingTop: 24, maxWidth: 680, alignSelf: "center", width: "100%" }}>
 
         {/* User's Reflection */}
         <View style={[glass(24), { padding: 24, gap: 12 }]}>
@@ -319,7 +321,7 @@ export default function QalbResultScreen() {
               ) : null}
             </View>
             <Text style={{ fontFamily: "Noto Serif", fontSize: 15, color: "#2f3338", lineHeight: 28 }}>
-                {cleanedSummary}
+              {cleanedSummary}
             </Text>
           </View>
         ) : null}
@@ -329,7 +331,7 @@ export default function QalbResultScreen() {
           <Text style={{ fontFamily: 'Newsreader', fontSize: 22, fontStyle: 'italic', color: '#2f3338' }}>
             Logical Path
           </Text>
-          <View style={[glass(24), { padding: 22, gap: 14, borderWidth: 1.5, borderColor: 'rgba(32,108,58,0.45)' }]}> 
+          <View style={[glass(24), { padding: 22, gap: 14, borderWidth: 1.5, borderColor: 'rgba(32,108,58,0.45)' }]}>
             <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 11, fontWeight: '700', color: '#206c3a', letterSpacing: 1.2, textTransform: 'uppercase' }}>
               To navigate this with spiritual clarity
             </Text>
@@ -356,7 +358,7 @@ export default function QalbResultScreen() {
               </Text>
             </View>
             {verses.map((verse, i) => (
-              <View key={i} style={[glass(24), { padding: 28, gap: 20 }]}> 
+              <View key={i} style={[glass(24), { padding: 28, gap: 20 }]}>
                 {(() => {
                   const meta = getVerseMeta(verse.verseKey, chapterNames);
                   return (
@@ -364,33 +366,33 @@ export default function QalbResultScreen() {
                       <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 10, textTransform: 'uppercase', letterSpacing: 2, color: '#777b81', textAlign: 'center', fontWeight: '700' }}>
                         Quoted from {meta.surahName} {meta.surahNumber}:{meta.ayahNumber}
                       </Text>
-                {/* Arabic */}
-                <Text style={{
-                  fontFamily: "Amiri", fontSize: 26, lineHeight: 52,
-                  color: "#2f3338", textAlign: "center",
-                  ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}),
-                }}>
-                  {verse.arabicText}
-                </Text>
-                <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
-                {/* Translation */}
-                <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#524f63", textAlign: "center", lineHeight: 26 }}>
-                  "{cleanModelText(verse.translation)}"
-                </Text>
-                <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
-                  — {meta.surahName} ({meta.surahNumber}:{meta.ayahNumber})
-                </Text>
-                {/* Tafsir */}
-                {verse.tafsirSnippet ? (
-                  <View style={{ backgroundColor: "rgba(229,223,248,0.2)", borderRadius: 16, padding: 16 }}>
-                    <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#6d5965", fontWeight: "700", marginBottom: 6 }}>
-                      Tafsir
-                    </Text>
-                    <Text style={{ fontFamily: "Noto Serif", fontSize: 13, color: "#5b5f65", lineHeight: 22 }}>
-                      {cleanModelText(verse.tafsirSnippet)}
-                    </Text>
-                  </View>
-                ) : null}
+                      {/* Arabic */}
+                      <Text style={{
+                        fontFamily: "Amiri", fontSize: 26, lineHeight: 52,
+                        color: "#2f3338", textAlign: "center",
+                        ...(Platform.OS === "web" ? ({ direction: "rtl" } as any) : {}),
+                      }}>
+                        {verse.arabicText}
+                      </Text>
+                      <View style={{ height: 1, backgroundColor: "rgba(174,178,185,0.2)" }} />
+                      {/* Translation */}
+                      <Text style={{ fontFamily: "Noto Serif", fontSize: 15, fontStyle: "italic", color: "#524f63", textAlign: "center", lineHeight: 26 }}>
+                        "{cleanModelText(verse.translation)}"
+                      </Text>
+                      <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#777b81", textAlign: "center" }}>
+                        — {meta.surahName} ({meta.surahNumber}:{meta.ayahNumber})
+                      </Text>
+                      {/* Tafsir */}
+                      {verse.tafsirSnippet ? (
+                        <View style={{ backgroundColor: "rgba(229,223,248,0.2)", borderRadius: 16, padding: 16 }}>
+                          <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#6d5965", fontWeight: "700", marginBottom: 6 }}>
+                            Tafsir
+                          </Text>
+                          <Text style={{ fontFamily: "Noto Serif", fontSize: 13, color: "#5b5f65", lineHeight: 22 }}>
+                            {cleanModelText(verse.tafsirSnippet)}
+                          </Text>
+                        </View>
+                      ) : null}
                     </>
                   );
                 })()}

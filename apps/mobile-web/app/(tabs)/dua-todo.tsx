@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { ListChecks } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,16 +44,18 @@ const glass = {
   elevation: 4,
   ...(Platform.OS === 'web'
     ? ({
-        backdropFilter: 'blur(24px) saturate(130%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(130%)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.30)',
-      } as any)
+      backdropFilter: 'blur(24px) saturate(130%)',
+      WebkitBackdropFilter: 'blur(24px) saturate(130%)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.30)',
+    } as any)
     : {}),
 };
 
 export default function DuaTodoScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 768;
   const router = useRouter();
   const { manifestationId } = useLocalSearchParams<{ manifestationId?: string }>();
   const {
@@ -68,7 +71,7 @@ export default function DuaTodoScreen() {
   const [intention, setIntention] = useState('');
 
   useEffect(() => {
-    fetchTasks(typeof manifestationId === 'string' ? manifestationId : undefined).catch(() => {});
+    fetchTasks(typeof manifestationId === 'string' ? manifestationId : undefined).catch(() => { });
   }, [fetchTasks, manifestationId]);
 
   const handleGenerate = async () => {
@@ -118,7 +121,10 @@ export default function DuaTodoScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 16, paddingHorizontal: isCompact ? 16 : 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -135,7 +141,7 @@ export default function DuaTodoScreen() {
 
           {/* ── Hero ───────────────────────────────────────────────── */}
           <View style={styles.hero}>
-            <Text style={styles.displayHeadline}>
+            <Text style={[styles.displayHeadline, isCompact && styles.displayHeadlineCompact]}>
               {totalCount > 0
                 ? `${totalCount} Steps to Manifest your Intention`
                 : 'Turn your Duas into Actionable Steps'}
@@ -144,10 +150,10 @@ export default function DuaTodoScreen() {
 
           {/* ── Progress Bento (only when tasks exist) ─────────────── */}
           {totalCount > 0 && (
-            <View style={[glass, styles.progressCard]}>
+            <View style={[glass, styles.progressCard, isCompact && styles.progressCardCompact]}>
               <View style={styles.progressLeft}>
                 <Text style={styles.progressLabel}>Journey Status</Text>
-                <Text style={styles.progressValue}>
+                <Text style={[styles.progressValue, isCompact && styles.progressValueCompact]}>
                   {completedCount}/{totalCount} Steps Completed
                 </Text>
               </View>
@@ -181,13 +187,13 @@ export default function DuaTodoScreen() {
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionLabel}>Your Dua / Intention</Text>
               </View>
-              <View style={[glass, styles.emptyGuideCard]}>
-                <Text style={styles.emptyGuideTitle}>Quick start flow</Text>
+              <View style={[glass, styles.emptyGuideCard, isCompact && styles.emptyGuideCardCompact]}>
+                <Text style={[styles.emptyGuideTitle, isCompact && styles.emptyGuideTitleCompact]}>Quick start flow</Text>
                 <Text style={styles.emptyGuideText}>
                   Paste one intention from Imanifest, generate your tasks, and complete at least one item to make your demo progress visible.
                 </Text>
               </View>
-              <View style={[glass, styles.inputCard]}>
+              <View style={[glass, styles.inputCard, isCompact && styles.inputCardCompact]}>
                 <TextInput
                   style={styles.intentionInput}
                   placeholder="e.g., I want to become closer to Allah through daily Quran reading..."
@@ -199,7 +205,7 @@ export default function DuaTodoScreen() {
                 />
               </View>
               <TouchableOpacity
-                style={[styles.ctaButtonFull, loading && styles.ctaDisabled]}
+                style={[styles.ctaButtonFull, isCompact && styles.ctaButtonFullCompact, loading && styles.ctaDisabled]}
                 onPress={handleGenerate}
                 disabled={loading}
                 activeOpacity={0.85}
@@ -220,7 +226,7 @@ export default function DuaTodoScreen() {
                   void handleGenerate();
                   return;
                 }
-                void fetchTasks(typeof manifestationId === 'string' ? manifestationId : undefined).catch(() => {});
+                void fetchTasks(typeof manifestationId === 'string' ? manifestationId : undefined).catch(() => { });
               }}
             />
           )}
@@ -240,7 +246,7 @@ export default function DuaTodoScreen() {
                 if (isActive) {
                   // ── Active task: glass card, left green border, indented
                   return (
-                    <View key={task.id} style={[glass, styles.taskRowActive]}>
+                    <View key={task.id} style={[glass, styles.taskRowActive, isCompact && styles.taskRowActiveCompact]}>
                       <TouchableOpacity
                         style={styles.taskCircleOutline}
                         onPress={() => handleToggleComplete(task.id, task.completed)}
@@ -387,6 +393,10 @@ const styles = StyleSheet.create({
     fontStyle: 'italic' as const,
     color: C.onSurface,
   },
+  displayHeadlineCompact: {
+    fontSize: 36,
+    lineHeight: 40,
+  },
   // progress card
   progressCard: {
     flexDirection: 'row',
@@ -396,6 +406,12 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     overflow: 'hidden',
     borderRadius: 28,
+  },
+  progressCardCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 18,
+    padding: 20,
   },
   progressLeft: {
     flex: 1,
@@ -414,6 +430,10 @@ const styles = StyleSheet.create({
     fontStyle: 'italic' as const,
     color: C.onSurfaceVariant,
     lineHeight: 36,
+  },
+  progressValueCompact: {
+    fontSize: 22,
+    lineHeight: 28,
   },
   ringWrap: {
     width: 96,
@@ -449,12 +469,19 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     borderRadius: 28,
   },
+  inputCardCompact: {
+    padding: 16,
+  },
   emptyGuideCard: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 18,
     marginBottom: 12,
     backgroundColor: 'rgba(169,247,183,0.12)',
+  },
+  emptyGuideCardCompact: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   emptyGuideTitle: {
     fontSize: 11,
@@ -464,6 +491,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Plus Jakarta Sans',
     fontWeight: '700' as const,
     marginBottom: 6,
+  },
+  emptyGuideTitleCompact: {
+    fontSize: 10,
   },
   emptyGuideText: {
     fontSize: 12,
@@ -495,6 +525,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 32,
     elevation: 6,
+  },
+  ctaButtonFullCompact: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
   },
   ctaDisabled: {
     opacity: 0.6,
@@ -556,11 +590,14 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 8,
     marginBottom: 8,
-    marginLeft: Platform.OS === 'web' ? 24 : 8,
+    marginLeft: 24,
     borderLeftWidth: 4,
     borderLeftColor: '#166534',
     borderRadius: 24,
     gap: 20,
+  },
+  taskRowActiveCompact: {
+    marginLeft: 8,
   },
   // Completed: large filled green circle w-10 h-10
   taskCircleDone: {

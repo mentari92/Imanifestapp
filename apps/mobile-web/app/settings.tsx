@@ -9,46 +9,31 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { BookText, CircleUserRound } from "lucide-react-native";
 import { colors } from "../constants/theme";
 import { useAuth } from "../lib/auth";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { startOAuthLogin, loading } = useAuth();
-
-  const upgradeUrl =
-    (typeof process !== "undefined" && process.env.EXPO_PUBLIC_QURAN_UPGRADE_URL) ||
-    "https://quran.foundation";
+  const { user, token, loading } = useAuth();
 
   const handleOAuthPress = async () => {
-    try {
-      await startOAuthLogin();
-    } catch (error: any) {
-      Alert.alert(
-        "Sign in unavailable",
-        error?.message || "Quran.com sign-in could not be started.",
-      );
-    }
+    router.push("/auth");
   };
 
-  const handleUpgradePress = async () => {
-    try {
-      if (Platform.OS === "web" && typeof window !== "undefined") {
-        const opened = window.open(upgradeUrl, "_blank", "noopener,noreferrer");
-        if (!opened) window.location.assign(upgradeUrl);
-        return;
-      }
-
-      const canOpen = await Linking.canOpenURL(upgradeUrl);
-      if (!canOpen) {
-        Alert.alert("Unable to open link", upgradeUrl);
-        return;
-      }
-      await Linking.openURL(upgradeUrl);
-    } catch (error: any) {
-      Alert.alert("Unable to open upgrade link", error?.message || upgradeUrl);
+  const handleProfilePress = () => {
+    if (!isSignedIn) {
+      router.push("/auth");
+      return;
     }
+
+    Alert.alert(
+      "Your Profile",
+      `${user?.name || "User"}\n${user?.email || ""}`.trim(),
+    );
   };
+
+  const isSignedIn = Boolean(token || user);
 
   return (
     <View style={styles.container}>
@@ -76,17 +61,54 @@ export default function SettingsScreen() {
             <Text style={styles.primaryButtonText}>Sign in with Quran.com</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.secondaryButton, loading && styles.buttonDisabled]}
-            onPress={() => void handleUpgradePress()}
-            disabled={loading}
-          >
-            <Text style={styles.secondaryButtonText}>Upgrade to Premium</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={[styles.card, { marginTop: 16 }]}>
           <Text style={styles.cardTitle}>Legal</Text>
+          <TouchableOpacity
+            style={styles.legalRow}
+            onPress={handleProfilePress}
+          >
+            <View style={styles.profileRowLeft}>
+              <View style={styles.profileIconWrap}>
+                <CircleUserRound size={18} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.legalRowText}>Profile</Text>
+                <Text style={styles.profileRowSubtext}>
+                  {isSignedIn ? "View your account details" : "Sign in to view your profile"}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.legalRowChevron}>›</Text>
+          </TouchableOpacity>
+          <View style={styles.profileSummaryBox}>
+            <Text style={styles.profileSummaryTitle}>Profile details</Text>
+            <Text style={styles.profileSummaryText}>
+              {isSignedIn
+                ? `${user?.name || "User"}${user?.email ? ` • ${user.email}` : ""}`
+                : "Sign in to see your account details and sync status."}
+            </Text>
+          </View>
+          <View style={styles.legalDivider} />
+          <TouchableOpacity
+            style={styles.legalRow}
+            onPress={() => router.push("/about-us")}
+          >
+            <View style={styles.profileRowLeft}>
+              <View style={styles.profileIconWrap}>
+                <BookText size={18} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.legalRowText}>About Us</Text>
+                <Text style={styles.profileRowSubtext}>
+                  Meet the founder and mission
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.legalRowChevron}>›</Text>
+          </TouchableOpacity>
+          <View style={styles.legalDivider} />
           <TouchableOpacity
             style={styles.legalRow}
             onPress={() => router.push("/privacy-policy")}
@@ -179,21 +201,6 @@ const styles = {
     fontWeight: "600" as const,
     fontFamily: "Inter-SemiBold",
   },
-  secondaryButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 9999,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    alignItems: "center" as const,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  secondaryButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600" as const,
-    fontFamily: "Inter-SemiBold",
-  },
   buttonDisabled: {
     opacity: 0.6,
   },
@@ -203,8 +210,56 @@ const styles = {
     justifyContent: "space-between" as const,
     paddingVertical: 14,
   },
+  profileRowLeft: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 12,
+    flex: 1,
+    paddingRight: 12,
+  },
+  profileIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: colors.surface,
+  },
   legalRowText: {
     fontSize: 15,
+    color: colors.text,
+    fontFamily: "Inter-Regular",
+  },
+  profileRowSubtext: {
+    marginTop: 3,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.textSecondary,
+    fontFamily: "Inter-Regular",
+  },
+  profileSummaryBox: {
+    marginTop: 2,
+    marginBottom: 4,
+    marginLeft: 4,
+    marginRight: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  profileSummaryTitle: {
+    fontSize: 12,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.8,
+    color: colors.textSecondary,
+    fontFamily: "Inter-SemiBold",
+    marginBottom: 6,
+  },
+  profileSummaryText: {
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.text,
     fontFamily: "Inter-Regular",
   },

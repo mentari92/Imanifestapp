@@ -18,7 +18,7 @@ import { colors } from '../constants/theme';
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 
 export default function AuthScreen() {
-  const { login, register, startOAuthLogin, loading } = useAuth();
+  const { login, register, startOAuthLogin, loading, user, token } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
@@ -40,6 +40,13 @@ export default function AuthScreen() {
   const oauthOnlyEnabled = oauthOnlyEnabledFromEnv || oauthOnlyEnabledFromHost;
   // OAuth flow is currently implemented for web builds only.
   const oauthOnly = oauthOnlyEnabled && Platform.OS === 'web';
+
+  useEffect(() => {
+    if (loading) return;
+    if (user && token) {
+      router.replace('/');
+    }
+  }, [loading, user, token, router]);
 
   const autoRedirectedRef = useRef(false);
   useEffect(() => {
@@ -84,6 +91,7 @@ export default function AuthScreen() {
           return;
         }
         await login(email.trim(), password.trim());
+        router.replace('/');
 
       } else if (mode === 'register') {
         if (!email.trim() || !password.trim() || !name.trim()) {
@@ -91,6 +99,7 @@ export default function AuthScreen() {
           return;
         }
         await register(email.trim(), password.trim(), name.trim());
+        router.replace('/');
 
       } else if (mode === 'forgot') {
         if (!email.trim()) {
