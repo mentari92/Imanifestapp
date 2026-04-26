@@ -209,26 +209,23 @@ export class AuthService {
         idTokenPayload && typeof idTokenPayload.email === "string" ? idTokenPayload.email : "";
       const idTokenName =
         idTokenPayload && typeof idTokenPayload.name === "string" ? idTokenPayload.name : "";
+      // `sub` is the permanent unique user identifier per Quran Foundation docs.
+      // Use it as the primary key for upsert so email changes don't create duplicates.
       const idTokenSub =
         idTokenPayload && typeof idTokenPayload.sub === "string" ? idTokenPayload.sub : "";
+
+      const refreshToken = tokenResp.data?.refresh_token || null;
 
       const profile = idTokenEmail
         ? { email: idTokenEmail, name: idTokenName || "Quran.com User" }
         : await this.resolveOauthProfile(quranAccessToken, idTokenSub);
 
-      const user = await this.prisma.user.upsert({
-        where: { email: profile.email },
-        create: {
-          email: profile.email,
-          name: profile.name,
-          // OAuth users can authenticate with provider token; no local password required.
-          password: null,
-          quranApiKey: quranAccessToken,
-        },
-        update: {
-          name: profile.name,
-          quranApiKey: quranAccessToken,
-        },
+      const user = await this.upsertOauthUser({
+        quranSub: idTokenSub || null,
+        email: profile.email,
+        name: profile.name,
+        quranAccessToken,
+        quranRefreshToken: refreshToken,
       });
 
       const accessToken = this.generateToken(user.id, user.email);
@@ -403,6 +400,58 @@ export class AuthService {
       const syntheticEmail = `oauth-${stableId}@quran.foundation`;
       return { email: syntheticEmail, name: "Quran.com User" };
     }
+  }
+
+  /**
+   * Upsert a user after OAuth login.
+   * Priority: quranSub (permanent) > email (fallback).
+   * Links existing email-only accounts to their quranSub on first OAuth login.
+   */
+  private async upsertOauthUser(params: {
+    quranSub: string | null;
+    email: string;
+    name: string;
+    quranAccessToken: string;
+    quranRefreshToken: string | null;
+  }) {
+    const { quranSub, email, name, quranAccessToken, quranRefreshToken } = params;
+
+    const tokenFields = {
+      quranApiKey: quranAccessToken,
+      quranRefreshToken,
+    };
+
+    if (quranSub) {
+      // 1. Try to find by permanent sub
+      const bySub = await this.prisma.user.findFirst({ where: { quranSub } });
+      if (bySub) {
+        return this.prisma.user.update({
+          where: { id: bySub.id },
+          data: { name, email, ...tokenFields },
+        });
+      }
+
+      // 2. Link existing email-only account to quranSub
+      const byEmail = await this.prisma.user.findUnique({ where: { email } });
+      if (byEmail) {
+        return this.prisma.user.update({
+          where: { id: byEmail.id },
+          data: { quranSub, ...tokenFields },
+        });
+      }
+
+      // 3. New user
+      return this.prisma.user.create({
+        data: { email, name, password: null, quranSub, ...tokenFields },
+      });
+    }
+
+    // Fallback when sub is unavailable (no id_token returned)
+    return this.prisma.user.upsert({
+      where: { email },
+      create: { email, name, password: null, ...tokenFields },
+      update: { name, ...tokenFields },
+    });
   }
 
   private base64UrlEncode(input: Buffer | string): string {
