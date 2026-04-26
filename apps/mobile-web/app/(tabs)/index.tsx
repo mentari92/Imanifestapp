@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -113,11 +114,11 @@ const glass = {
   elevation: 3,
   ...(Platform.OS === 'web'
     ? ({
-        backdropFilter: 'blur(24px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(140%)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.5)',
-      } as any)
+      backdropFilter: 'blur(24px) saturate(140%)',
+      WebkitBackdropFilter: 'blur(24px) saturate(140%)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.5)',
+    } as any)
     : {}),
 };
 
@@ -142,7 +143,9 @@ const QUICK_ACCESS: QuickAccessItem[] = [
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const router = useRouter();
+  const isCompact = width < 768;
   const demoAuthMode =
     typeof process !== 'undefined' &&
     process.env.EXPO_PUBLIC_DEMO_AUTH_MODE === 'true';
@@ -236,7 +239,7 @@ export default function DashboardScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    try { await fetchDashboard(); } catch {}
+    try { await fetchDashboard(); } catch { }
     setRefreshing(false);
   };
 
@@ -283,58 +286,67 @@ export default function DashboardScreen() {
   const recentIntentions =
     data?.recentActivity && data.recentActivity.length > 0
       ? data.recentActivity.slice(0, 3).map((activity, index) => {
-          const normalized = activity.type.toLowerCase();
-          const isDua = normalized.includes('dua');
-          const isQuran = normalized.includes('quran') || normalized.includes('tafakkur');
-          const isQalb = normalized.includes('qalb') || normalized.includes('heart') || normalized.includes('journal');
-          const icon = isDua ? ListChecks : isQuran ? BookOpen : isQalb ? Heart : Star;
-          const iconBg = isDua ? 'rgba(254,243,199,0.6)' : isQuran ? 'rgba(169,247,183,0.5)' : isQalb ? 'rgba(252,231,243,0.6)' : 'rgba(229,223,248,0.5)';
-          const iconColor = isDua ? '#b45309' : isQuran ? C.tertiary : isQalb ? '#db2777' : C.primaryDim;
-          const pct = isDua ? alignPct : Math.max(45, 78 - index * 14);
+        const normalized = activity.type.toLowerCase();
+        const isDua = normalized.includes('dua');
+        const isQuran = normalized.includes('quran') || normalized.includes('tafakkur');
+        const isQalb = normalized.includes('qalb') || normalized.includes('heart') || normalized.includes('journal');
+        const icon = isDua ? ListChecks : isQuran ? BookOpen : isQalb ? Heart : Star;
+        const iconBg = isDua ? 'rgba(254,243,199,0.6)' : isQuran ? 'rgba(169,247,183,0.5)' : isQalb ? 'rgba(252,231,243,0.6)' : 'rgba(229,223,248,0.5)';
+        const iconColor = isDua ? '#b45309' : isQuran ? C.tertiary : isQalb ? '#db2777' : C.primaryDim;
+        const pct = isDua ? alignPct : Math.max(45, 78 - index * 14);
 
-          return {
-            title: activity.title,
-            pct,
-            icon,
-            iconBg,
-            iconColor,
-            route: toActivityRoute(activity.type),
-          };
-        })
+        return {
+          title: activity.title,
+          pct,
+          icon,
+          iconBg,
+          iconColor,
+          route: toActivityRoute(activity.type),
+        };
+      })
       : [];
 
   const prayerState = prayerTimings
     ? resolvePrayerState(prayerTimings, new Date(clockTick))
     : {
-        currentPrayer: 'Dhuhr',
-        currentTimeLabel: '12:45 PM',
-        nextPrayer: 'Asr',
-        nextTimeLabel: '3:27 PM',
-        remaining: '2h 42m',
-      };
+      currentPrayer: 'Dhuhr',
+      currentTimeLabel: '12:45 PM',
+      nextPrayer: 'Asr',
+      nextTimeLabel: '3:27 PM',
+      remaining: '2h 42m',
+    };
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       {/* ── Holographic background blobs ───────────────────────────── */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <View style={[s.blob, { top: -80, left: -80, backgroundColor: C.primaryContainer,
-          ...(Platform.OS === 'web' ? ({ filter: 'blur(80px)' } as any) : {}) }]} />
-        <View style={[s.blob, { bottom: -80, right: -80, backgroundColor: C.secondaryContainer,
-          ...(Platform.OS === 'web' ? ({ filter: 'blur(80px)' } as any) : {}) }]} />
-        <View style={[s.blob, { top: '40%', right: '20%', width: 200, height: 200, borderRadius: 100,
+        <View style={[s.blob, {
+          top: -80, left: -80, backgroundColor: C.primaryContainer,
+          ...(Platform.OS === 'web' ? ({ filter: 'blur(80px)' } as any) : {})
+        }]} />
+        <View style={[s.blob, {
+          bottom: -80, right: -80, backgroundColor: C.secondaryContainer,
+          ...(Platform.OS === 'web' ? ({ filter: 'blur(80px)' } as any) : {})
+        }]} />
+        <View style={[s.blob, {
+          top: '40%', right: '20%', width: 200, height: 200, borderRadius: 100,
           backgroundColor: C.tertiaryContainer, opacity: 0.2,
-          ...(Platform.OS === 'web' ? ({ filter: 'blur(60px)' } as any) : {}) }]} />
+          ...(Platform.OS === 'web' ? ({ filter: 'blur(60px)' } as any) : {})
+        }]} />
       </View>
 
       {/* ── Scroll content ──────────────────────────────────────────── */}
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingTop: insets.top + 72 }]}
+        contentContainerStyle={[
+          s.scroll,
+          { paddingTop: insets.top + (isCompact ? 64 : 72), paddingHorizontal: isCompact ? 16 : 24 },
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
         {/* Welcome */}
         <View style={s.welcomeSection}>
-          <Text style={s.welcomeHeadline}>Assalamu'alaikum, {userName}.</Text>
+          <Text style={[s.welcomeHeadline, isCompact && s.welcomeHeadlineCompact]}>Assalamu'alaikum, {userName}.</Text>
           <Text style={s.welcomeSub}>Build your dreams through intention, action, and consistency.</Text>
         </View>
 
@@ -357,7 +369,7 @@ export default function DashboardScreen() {
         ) : null}
 
         {loading && !data ? (
-          <View style={[glass, { padding: 18, marginBottom: 20 }]}> 
+          <View style={[glass, { padding: 18, marginBottom: 20 }]}>
             <LoadingSpinner message="Preparing your dashboard..." />
           </View>
         ) : null}
@@ -381,11 +393,13 @@ export default function DashboardScreen() {
         ) : null}
 
         {/* Prayer Times */}
-        <View style={s.prayerCard}>
+        <View style={[s.prayerCard, isCompact && s.prayerCardCompact]}>
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            <View style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120,
+            <View style={{
+              position: 'absolute', top: -30, right: -30, width: 120, height: 120,
               borderRadius: 60, backgroundColor: C.primaryContainer, opacity: 0.3,
-              ...(Platform.OS === 'web' ? ({ filter: 'blur(40px)' } as any) : {}) }} />
+              ...(Platform.OS === 'web' ? ({ filter: 'blur(40px)' } as any) : {})
+            }} />
           </View>
           <View style={s.prayerLeft}>
             <View style={s.prayerIconWrap}>
@@ -396,9 +410,9 @@ export default function DashboardScreen() {
               <Text style={s.prayerMeta}>Current Prayer · {prayerState.currentTimeLabel}</Text>
             </View>
           </View>
-          <View style={s.prayerRight}>
+          <View style={[s.prayerRight, isCompact && s.prayerRightCompact]}>
             <Text style={s.prayerNextLabel}>Next: {prayerState.nextPrayer}</Text>
-            <Text style={s.prayerCountdown}>{prayerState.remaining}</Text>
+            <Text style={[s.prayerCountdown, isCompact && s.prayerCountdownCompact]}>{prayerState.remaining}</Text>
             <Text style={s.prayerRemainingLabel}>at {prayerState.nextTimeLabel}</Text>
           </View>
         </View>
@@ -411,7 +425,7 @@ export default function DashboardScreen() {
           {QUICK_ACCESS.map(({ label, desc, route, Icon, iconEmoji, iconBg, iconColor, iconFill }) => (
             <TouchableOpacity
               key={label}
-              style={[glass, s.quickCard]}
+              style={[glass, s.quickCard, isCompact && s.quickCardCompact]}
               onPress={() => router.push(route as any)}
               activeOpacity={0.85}
             >
@@ -464,25 +478,27 @@ export default function DashboardScreen() {
         </View>
 
         {/* Bento: Daily Alignment + Streak */}
-        <View style={s.bentoRow}>
+        <View style={[s.bentoRow, isCompact && s.bentoRowCompact]}>
           {/* Dream Realization */}
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => router.push('/(tabs)/dua-todo')}
-            style={[glass, s.bentoMain]}
+            style={[glass, s.bentoMain, isCompact && s.bentoMainCompact]}
           >
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
-              <View style={{ position: 'absolute', top: -40, right: -40, width: 150, height: 150,
+              <View style={{
+                position: 'absolute', top: -40, right: -40, width: 150, height: 150,
                 borderRadius: 75, backgroundColor: C.primaryContainer, opacity: 0.2,
-                ...(Platform.OS === 'web' ? ({ filter: 'blur(50px)' } as any) : {}) }} />
+                ...(Platform.OS === 'web' ? ({ filter: 'blur(50px)' } as any) : {})
+              }} />
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+            <View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }, isCompact && { flexDirection: 'column', gap: 10 }]}>
               <View>
                 <Text style={s.bentoTitle}>Dream Realization</Text>
                 <Text style={s.bentoSubtitle}>Intention to daily action</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={s.bentoStat}>{completed}/{total}</Text>
+                <Text style={[s.bentoStat, isCompact && s.bentoStatCompact]}>{completed}/{total}</Text>
                 <Text style={s.bentoStatLabel}>TASKS DONE</Text>
               </View>
             </View>
@@ -504,7 +520,7 @@ export default function DashboardScreen() {
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => router.push('/(tabs)/dua-todo')}
-            style={[glass, s.bentoSide]}
+            style={[glass, s.bentoSide, isCompact && s.bentoSideCompact]}
           >
             <View style={s.streakIconWrap}>
               <Star size={28} color={C.tertiary} fill={C.tertiaryContainer} />
@@ -516,7 +532,7 @@ export default function DashboardScreen() {
                 <View
                   key={i}
                   style={[s.streakDot, i < streak ? s.streakDotActive : s.streakDotInactive,
-                    i === Math.min(streak, 6) && streak < 7 && s.streakDotPulse]}
+                  i === Math.min(streak, 6) && streak < 7 && s.streakDotPulse]}
                 />
               ))}
             </View>
@@ -525,7 +541,7 @@ export default function DashboardScreen() {
 
         {/* Recent Activity */}
         <View style={[glass, { padding: 24, marginBottom: 8 }]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
+          <View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }, isCompact && { flexDirection: 'column', alignItems: 'flex-start', gap: 8 }]}>
             <Text style={s.sectionTitle}>Recent Activity</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/imanifest')}>
               <Text style={s.seeAll}>See All</Text>
@@ -639,6 +655,10 @@ const s = StyleSheet.create({
     opacity: 0.92,
     marginBottom: 6,
   },
+  welcomeHeadlineCompact: {
+    fontSize: 30,
+    lineHeight: 36,
+  },
   welcomeSub: {
     fontSize: 14,
     fontFamily: 'Plus Jakarta Sans',
@@ -669,11 +689,11 @@ const s = StyleSheet.create({
     backgroundColor: 'linear-gradient(135deg,rgba(226,221,248,0.4),rgba(255,228,242,0.4))' as any,
     ...(Platform.OS === 'web'
       ? ({
-          background: 'linear-gradient(135deg,rgba(226,221,248,0.4) 0%,rgba(255,228,242,0.4) 100%)',
-          backdropFilter: 'blur(20px)',
-          borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)',
-          boxShadow: '0 8px 32px rgba(31,38,135,0.07)',
-        } as any)
+        background: 'linear-gradient(135deg,rgba(226,221,248,0.4) 0%,rgba(255,228,242,0.4) 100%)',
+        backdropFilter: 'blur(20px)',
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)',
+        boxShadow: '0 8px 32px rgba(31,38,135,0.07)',
+      } as any)
       : { backgroundColor: 'rgba(226,221,248,0.4)' }),
     borderRadius: 32,
     padding: 24,
@@ -682,6 +702,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 28,
     overflow: 'hidden',
+  },
+  prayerCardCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 16,
   },
   prayerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   prayerIconWrap: {
@@ -697,12 +722,16 @@ const s = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 1.2, opacity: 0.8,
   },
   prayerRight: { alignItems: 'flex-end' },
+  prayerRightCompact: { alignItems: 'flex-start' },
   prayerNextLabel: {
     fontSize: 10, fontFamily: 'Plus Jakarta Sans', color: C.tertiary,
     fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4,
   },
   prayerCountdown: {
     fontSize: 36, fontFamily: 'Newsreader', color: C.onSurface, fontWeight: '600',
+  },
+  prayerCountdownCompact: {
+    fontSize: 28,
   },
   prayerRemainingLabel: {
     fontSize: 11, fontFamily: 'Plus Jakarta Sans', color: C.onSurfaceVariant,
@@ -810,6 +839,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  quickCardCompact: {
+    width: '100%' as any,
+  },
   quickIconWrap: {
     width: 48, height: 48, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center', marginBottom: 4,
@@ -825,8 +857,15 @@ const s = StyleSheet.create({
   bentoRow: {
     flexDirection: 'row', gap: 14, marginBottom: 20, flexWrap: 'wrap',
   },
+  bentoRowCompact: {
+    flexDirection: 'column',
+  },
   bentoMain: {
     flex: 2, minWidth: 200, padding: 28, overflow: 'hidden',
+  },
+  bentoMainCompact: {
+    minWidth: '100%' as any,
+    padding: 20,
   },
   bentoTitle: {
     fontSize: 26, fontFamily: 'Newsreader', fontWeight: '600', color: C.onSurface, marginBottom: 2,
@@ -837,6 +876,9 @@ const s = StyleSheet.create({
   },
   bentoStat: {
     fontSize: 44, fontFamily: 'Newsreader', color: C.primary, lineHeight: 48,
+  },
+  bentoStatCompact: {
+    fontSize: 32, lineHeight: 38,
   },
   bentoStatLabel: {
     fontSize: 9, fontFamily: 'Plus Jakarta Sans', color: C.tertiary,
@@ -854,6 +896,9 @@ const s = StyleSheet.create({
   },
   bentoSide: {
     flex: 1, minWidth: 140, padding: 24, alignItems: 'center',
+  },
+  bentoSideCompact: {
+    minWidth: '100%' as any,
   },
   streakIconWrap: {
     width: 72, height: 72, borderRadius: 36,

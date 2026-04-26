@@ -58,6 +58,7 @@ export default function Root({ children }: PropsWithChildren) {
     if (pathname !== '/auth') return;
     var search = window.location.search || '';
     if (/(?:\\?|&)(oauth_code|oauth_error|code|error)=/.test(search)) return;
+    if (/(?:\\?|&)logged_out=1(?:&|$)/.test(search)) return;
     window.location.replace('/api/auth/oauth/start');
   } catch (e) {
     // no-op

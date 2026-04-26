@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Platform,
   ActivityIndicator, TextInput,
+  useWindowDimensions,
 } from "react-native";
 import { MeditationIcon } from "../../components/shared/MeditationIcon";
 import { apiGet } from "../../lib/api";
@@ -39,24 +40,24 @@ const RECITER_COLORS = [
 ];
 
 const DHIKR_LIST = [
-  { arabic: "سُبْحَانَ ٱللَّٰهِ",           transliteration: "Subhanallah",      meaning: "Glory be to Allah" },
-  { arabic: "ٱلْحَمْدُ لِلَّٰهِ",           transliteration: "Alhamdulillah",    meaning: "All praise is to Allah" },
-  { arabic: "ٱللَّٰهُ أَكْبَرُ",            transliteration: "Allahu Akbar",     meaning: "Allah is the Greatest" },
-  { arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ", transliteration: "La ilaha illallah",meaning: "There is no god but Allah" },
+  { arabic: "سُبْحَانَ ٱللَّٰهِ", transliteration: "Subhanallah", meaning: "Glory be to Allah" },
+  { arabic: "ٱلْحَمْدُ لِلَّٰهِ", transliteration: "Alhamdulillah", meaning: "All praise is to Allah" },
+  { arabic: "ٱللَّٰهُ أَكْبَرُ", transliteration: "Allahu Akbar", meaning: "Allah is the Greatest" },
+  { arabic: "لَا إِلَٰهَ إِلَّا ٱللَّٰهُ", transliteration: "La ilaha illallah", meaning: "There is no god but Allah" },
 ];
 
 interface Surah { number: number; name: string; englishName: string; versesCount: number; }
-interface Verse  { verseKey: string; arabic: string; translation: string; }
+interface Verse { verseKey: string; arabic: string; translation: string; }
 
 const NATURE_SOUNDS = [
-  { id: "rain",  label: "Rain of Calm",  emoji: "🌧️" },
-  { id: "ocean", label: "Ocean Waves",      emoji: "🌊" },
-  { id: "river", label: "Zamzam Flow",      emoji: "💧" },
-  { id: "birds", label: "Dawn Garden",      emoji: "🐦" },
+  { id: "rain", label: "Rain of Calm", emoji: "🌧️" },
+  { id: "ocean", label: "Ocean Waves", emoji: "🌊" },
+  { id: "river", label: "Zamzam Flow", emoji: "💧" },
+  { id: "birds", label: "Dawn Garden", emoji: "🐦" },
 ];
 
 const SOUND_FILES: Record<string, string> = {
-  rain:  "/sounds/rain.mp3",
+  rain: "/sounds/rain.mp3",
   ocean: "/sounds/ocean.mp3",
   river: "/sounds/river.mp3",
   birds: "/sounds/birds.mp3",
@@ -76,37 +77,39 @@ function stripHtml(text: string) {
 
 
 export default function TafakkurHubScreen() {
-  const [reciters, setReciters]          = useState<Reciter[]>([]);
+  const { width } = useWindowDimensions();
+  const isCompact = width < 768;
+  const [reciters, setReciters] = useState<Reciter[]>([]);
   const [loadingReciters, setLoadingReciters] = useState(true);
   const [recitersError, setRecitersError] = useState<string | null>(null);
-  const [surahs, setSurahs]             = useState<Surah[]>([]);
-  const [surahSearch, setSurahSearch]   = useState("");
+  const [surahs, setSurahs] = useState<Surah[]>([]);
+  const [surahSearch, setSurahSearch] = useState("");
   const [loadingSurahs, setLoadingSurahs] = useState(true);
   const [surahsError, setSurahsError] = useState<string | null>(null);
   const [activeReciter, setActiveReciter] = useState(0);
-  const [activeSurah, setActiveSurah]   = useState<Surah | null>(null);
-  const [isPlaying, setIsPlaying]       = useState(false);
+  const [activeSurah, setActiveSurah] = useState<Surah | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-  const [audioError, setAudioError]     = useState<string | null>(null);
-  const [progress, setProgress]         = useState(0);
-  const [duration, setDuration]         = useState(0);
-  const [currentTime, setCurrentTime]   = useState(0);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [dhikrIndex, setDhikrIndex]     = useState(0);
-  const [dhikrCount, setDhikrCount]     = useState(0);
+  const [dhikrIndex, setDhikrIndex] = useState(0);
+  const [dhikrCount, setDhikrCount] = useState(0);
   const [activeNature, setActiveNature] = useState<string | null>(null);
-  const [surahVerses, setSurahVerses]   = useState<Verse[]>([]);
+  const [surahVerses, setSurahVerses] = useState<Verse[]>([]);
   const [currentVerseIdx, setCurrentVerseIdx] = useState(0);
-  const [pendingPlay, setPendingPlay]   = useState(false);
+  const [pendingPlay, setPendingPlay] = useState(false);
   const [progressBarWidth, setProgressBarWidth] = useState(0);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
   const [autoPlayMode, setAutoPlayMode] = useState<'stop' | 'loop'>('loop');
   const [showAllReciters, setShowAllReciters] = useState(false);
 
-  const audioRef      = useRef<HTMLAudioElement | null>(null);
-  const intervalRef   = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const intervalRef = useRef<any>(null);
   const ambientStopRef = useRef<(() => void) | null>(null);
-  const requestIdRef  = useRef(0); // cancels stale loadAndPlay calls
+  const requestIdRef = useRef(0); // cancels stale loadAndPlay calls
   const audioUrlCacheRef = useRef<Record<string, { url: string; reciterIdUsed: number }>>({});
   const scrubProgressRef = useRef<number | null>(null);
   const autoPlayActiveSurahRef = useRef<Surah | null>(null); // track active surah during auto-play
@@ -240,7 +243,7 @@ export default function TafakkurHubScreen() {
       setPendingPlay(false);
       loadAndPlayVerses(activeReciter, activeSurah, 0);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [surahVerses, pendingPlay]);
 
   const stopAudio = useCallback(() => {
@@ -349,7 +352,7 @@ export default function TafakkurHubScreen() {
               const currentSurahNum = _surah.number;
               const nextSurahNum = currentSurahNum === 114 ? 1 : currentSurahNum + 1;
               const nextSurah = surahs.find(s => s.number === nextSurahNum);
-              
+
               if (nextSurah) {
                 // Mark that we're auto-advancing
                 autoPlayActiveSurahRef.current = nextSurah;
@@ -382,7 +385,7 @@ export default function TafakkurHubScreen() {
     };
 
     playVerse(startIdx);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchVerseAudioUrl, playbackRate, reciters, surahVerses, surahs, autoPlayMode]);
 
   const seekToProgressFraction = useCallback((fraction: number) => {
@@ -431,7 +434,7 @@ export default function TafakkurHubScreen() {
       setAudioError("No reciter available for playback.");
       return;
     }
-    
+
     if (!activeSurah) {
       setAudioError("Please select a surah first.");
       return;
@@ -469,7 +472,7 @@ export default function TafakkurHubScreen() {
     const audio = new Audio(url);
     audio.loop = true;
     audio.volume = 0.35;
-    audio.play().catch(() => {});
+    audio.play().catch(() => { });
     ambientStopRef.current = () => { audio.pause(); audio.currentTime = 0; };
     setActiveNature(soundId);
   };
@@ -500,9 +503,13 @@ export default function TafakkurHubScreen() {
         ))}
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 180 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 180, paddingHorizontal: isCompact ? 16 : 0 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
-        <View style={{ paddingHorizontal: 24, paddingVertical: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.4)", ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.2)" } as any) : {}) }}>
+        <View style={{ paddingHorizontal: isCompact ? 16 : 24, paddingVertical: isCompact ? 12 : 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.4)", ...(Platform.OS === "web" ? ({ position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(255,255,255,0.2)" } as any) : {}) }}>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#d1fae5", alignItems: "center", justifyContent: "center" }}>
             <MeditationIcon size={20} color="#065f46" />
           </View>
@@ -510,18 +517,18 @@ export default function TafakkurHubScreen() {
           <View style={{ width: 40, height: 40 }} />
         </View>
 
-        <View style={{ paddingHorizontal: 24, gap: 32, paddingTop: 28, maxWidth: 680, alignSelf: "center", width: "100%" }}>
+        <View style={{ paddingHorizontal: 0, gap: isCompact ? 24 : 32, paddingTop: 28, maxWidth: 680, alignSelf: "center", width: "100%" }}>
 
           {/* Hero */}
           <View style={{ gap: 4 }}>
-            <Text style={{ fontFamily: "Newsreader", fontSize: 36, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: 44 }}>Tafakkur</Text>
+            <Text style={{ fontFamily: "Newsreader", fontSize: isCompact ? 28 : 36, fontStyle: "italic", fontWeight: "600", color: "#2f3338", lineHeight: isCompact ? 34 : 44 }}>Tafakkur</Text>
             <Text style={{ fontFamily: "Noto Serif", fontSize: 14, fontStyle: "italic", color: "#5b5f65", lineHeight: 22 }}>
               Contemplate the divine through recitation, reflection, and remembrance.
             </Text>
           </View>
 
           {/* Setup Instructions */}
-          <View style={[glass(20), { padding: 20, gap: 12, backgroundColor: "rgba(169,247,183,0.08)" }]}>
+          <View style={[glass(20), { padding: isCompact ? 16 : 20, gap: 12, backgroundColor: "rgba(169,247,183,0.08)" }]}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: "#0e6030" }}>
               Getting Started:
             </Text>
@@ -547,14 +554,14 @@ export default function TafakkurHubScreen() {
               Curated Reciters
             </Text>
             {loadingReciters ? (
-              <View style={[glass(20), { padding: 20, flexDirection: "row", alignItems: "center", gap: 10 }]}>
+              <View style={[glass(20), { padding: isCompact ? 16 : 20, flexDirection: "row", alignItems: "center", gap: 10 }]}>
                 <ActivityIndicator color="#166534" />
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#5b5f65" }}>
                   Loading reciters...
                 </Text>
               </View>
             ) : reciters.length === 0 ? (
-              <View style={[glass(20), { padding: 20 }]}>
+              <View style={[glass(20), { padding: isCompact ? 16 : 20 }]}>
                 <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, color: "#991b1b" }}>
                   {recitersError || "Reciters are unavailable. Please try again shortly."}
                 </Text>
@@ -575,7 +582,7 @@ export default function TafakkurHubScreen() {
                     key={r.id}
                     onPress={() => { setActiveReciter(i); if (activeSurah && surahVerses.length > 0) loadAndPlayVerses(i, activeSurah, 0); }}
                     activeOpacity={0.85}
-                    style={[glass(20), { flexDirection: "row", alignItems: "center", gap: 16, padding: 18, ...(activeReciter === i ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" } : {}) }]}
+                    style={[glass(20), { flexDirection: "row", alignItems: "center", gap: 16, padding: isCompact ? 14 : 18, ...(activeReciter === i ? { backgroundColor: "rgba(169,247,183,0.18)", borderColor: "rgba(22,101,52,0.3)" } : {}) }]}
                   >
                     <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: r.bg, alignItems: "center", justifyContent: "center" }}>
                       <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 18, fontWeight: "800", color: "#fff" }}>{r.initials}</Text>
@@ -676,7 +683,8 @@ export default function TafakkurHubScreen() {
 
           {/* Audio Player */}
           {(showPlayer || !activeSurah) && (
-            <View style={[glass(24), { padding: 24, gap: 16, opacity: !activeSurah ? 0.6 : 1 }]}>
+            <View style={[glass(24), { padding: isCompact ? 16 : 24, gap: 16, opacity: !activeSurah ? 0.6 : 1 }]}>
+              {/* Track info */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                 <Text style={{ fontSize: 20 }}>🎵</Text>
                 <View style={{ flex: 1 }}>
@@ -687,23 +695,26 @@ export default function TafakkurHubScreen() {
                     {!activeSurah ? "👉 Choose a surah from the list above" : isLoadingAudio ? "Loading audio..." : audioError ? audioError : `${formatTime(currentTime)} / ${formatTime(duration)}`}
                   </Text>
                 </View>
+              </View>
+              {/* Player controls — wrap on small screens */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <TouchableOpacity onPress={togglePlay} disabled={!activeSurah || isLoadingAudio}
-                  style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: !activeSurah ? "#c5c5c5" : "#166534", alignItems: "center", justifyContent: "center" }}>
-                  {isLoadingAudio ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 20, color: "#fff" }}>{isPlaying ? "⏸" : "▶"}</Text>}
+                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: !activeSurah ? "#c5c5c5" : "#166534", alignItems: "center", justifyContent: "center" }}>
+                  {isLoadingAudio ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ fontSize: 18, color: "#fff" }}>{isPlaying ? "⏸" : "▶"}</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={stopAudio}
-                  style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ fontSize: 18 }}>⏹</Text>
+                  style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 16 }}>⏹</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={cyclePlaybackRate}
-                  style={{ minWidth: 58, height: 36, borderRadius: 18, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
-                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 12, fontWeight: "700", color: "#2f3338" }}>{playbackRate}x</Text>
+                  style={{ height: 34, borderRadius: 17, backgroundColor: "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 10 }}>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: "#2f3338" }}>{playbackRate}x</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setAutoPlayMode(autoPlayMode === 'stop' ? 'loop' : 'stop')}
-                  style={{ minWidth: 48, height: 36, borderRadius: 18, backgroundColor: autoPlayMode === 'loop' ? "rgba(22,165,52,0.3)" : "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 8, borderWidth: 1, borderColor: autoPlayMode === 'loop' ? "rgba(22,165,52,0.5)" : "transparent" }}>
+                  style={{ height: 34, borderRadius: 17, backgroundColor: autoPlayMode === 'loop' ? "rgba(22,165,52,0.3)" : "rgba(229,223,248,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 10, borderWidth: 1, borderColor: autoPlayMode === 'loop' ? "rgba(22,165,52,0.5)" : "transparent" }}>
                   <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: autoPlayMode === 'loop' ? "#0e6030" : "#524f63" }}>
-                    {autoPlayMode === 'loop' ? '🔁' : '⏭'}
+                    {autoPlayMode === 'loop' ? '🔁 Auto' : '⏭ Auto'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -763,7 +774,7 @@ export default function TafakkurHubScreen() {
           )}
 
           {/* Read & Reflect — synced verse display */}
-          <View style={[glass(24), { padding: 28, gap: 16, backgroundColor: "rgba(169,247,183,0.08)" }]}>
+          <View style={[glass(24), { padding: isCompact ? 18 : 28, gap: 16, backgroundColor: "rgba(169,247,183,0.08)" }]}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 2, color: "#0e6030", fontWeight: "700", textAlign: "center" }}>
               Read &amp; Reflect{activeSurah ? ` · ${activeSurah.englishName}` : ""}
             </Text>
@@ -829,7 +840,7 @@ export default function TafakkurHubScreen() {
           </View>
 
           {/* Dhikr Counter */}
-          <View style={[glass(28), { padding: 28, gap: 20, alignItems: "center" }]}>
+          <View style={[glass(28), { padding: isCompact ? 18 : 28, gap: 20, alignItems: "center" }]}>
             <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 10, textTransform: "uppercase", letterSpacing: 3, color: "#5b5f65", fontWeight: "700" }}>
               Dhikr Counter
             </Text>

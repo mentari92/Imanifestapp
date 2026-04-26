@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { Heart } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -57,6 +58,8 @@ const SENTIMENT_CHIPS = ['Hopeful', 'Peaceful', 'Grounded', 'Anxious', 'Seeking'
 export default function QalbScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 768;
   const { loading, error, result, streak, analyzeEntry, fetchStreak } =
     useQalb();
   const [journalText, setJournalText] = useState('');
@@ -158,7 +161,10 @@ export default function QalbScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16 }]}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 16, paddingHorizontal: isCompact ? 16 : 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -173,7 +179,7 @@ export default function QalbScreen() {
 
         {/* ── Hero ───────────────────────────────────────────────── */}
         <View style={styles.hero}>
-          <Text style={styles.displayHeadline}>
+          <Text style={[styles.displayHeadline, isCompact && styles.displayHeadlineCompact]}>
             A Sanctuary for your{'\n'}Spiritual Voice
           </Text>
           <Text style={styles.displaySub}>
@@ -185,7 +191,12 @@ export default function QalbScreen() {
         {/* ── Central Mic Button ──────────────────────────────────── */}
         <View style={styles.micSection}>
           <TouchableOpacity
-            style={[glass, styles.micCircle, isRecording && { borderColor: '#ac3149', borderWidth: 2 }]}
+            style={[
+              glass,
+              styles.micCircle,
+              isCompact && styles.micCircleCompact,
+              isRecording && { borderColor: '#ac3149', borderWidth: 2 },
+            ]}
             onPress={toggleVoiceRecording}
             disabled={loading}
             activeOpacity={0.88}
@@ -213,7 +224,7 @@ export default function QalbScreen() {
 
         {/* ── Sentiment Landscape ─────────────────────────────────── */}
         <View style={styles.sentimentSection}>
-          <View style={styles.sentimentRow}>
+          <View style={[styles.sentimentRow, isCompact && styles.sentimentRowCompact]}>
             <Text style={styles.sentimentHeading}>Sentiment Landscape</Text>
             <Text style={styles.sentimentSubLabel}>Current Vibrations</Text>
           </View>
@@ -244,7 +255,7 @@ export default function QalbScreen() {
         </View>
 
         {/* ── Writing Section ─────────────────────────────────────── */}
-        <View style={[glass, styles.writePanel]}>
+        <View style={[glass, styles.writePanel, isCompact && styles.writePanelCompact]}>
           <Text style={styles.writePanelTitle}>Write Your Problem</Text>
           <Text style={styles.writePanelSub}>
             Tell what you are facing. AI will answer with Quran, tafsir, hadith, and practical steps.
@@ -432,6 +443,10 @@ const styles = StyleSheet.create({
     color: C.onSurface,
     marginBottom: 12,
   },
+  displayHeadlineCompact: {
+    fontSize: 34,
+    lineHeight: 40,
+  },
   displaySub: {
     fontSize: 16,
     lineHeight: 25,
@@ -452,6 +467,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  micCircleCompact: {
+    width: 190,
+    height: 190,
   },
   micIconBg: {
     width: 72,
@@ -517,6 +536,11 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     marginBottom: 16,
   },
+  sentimentRowCompact: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 4,
+  },
   sentimentHeading: {
     fontSize: 28,
     fontFamily: 'Newsreader',
@@ -556,6 +580,9 @@ const styles = StyleSheet.create({
   writePanel: {
     padding: 28,
     marginBottom: 16,
+  },
+  writePanelCompact: {
+    padding: 20,
   },
   writePanelTitle: {
     fontSize: 24,

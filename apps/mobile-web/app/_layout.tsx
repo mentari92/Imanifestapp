@@ -38,6 +38,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const inAuthGroup = segments[0] === "auth";
   const inPublicRoute =
     segments[0] === "privacy-policy" ||
+    segments[0] === "about-us" ||
     segments[0] === "terms-of-service" ||
     segments[0] === "terms";
   const isAuthenticated = Boolean(user && token);
@@ -110,6 +111,7 @@ export default function RootLayout() {
           {demoAuthMode ? <Stack.Screen name="api-proof" options={{ title: "API Proof" }} /> : null}
           <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+          <Stack.Screen name="about-us" options={{ headerShown: false }} />
           <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
           <Stack.Screen name="terms" options={{ headerShown: false }} />
           <Stack.Screen
