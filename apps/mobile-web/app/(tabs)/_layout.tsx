@@ -44,7 +44,10 @@ function GlassTabBar({ state, navigation }: any) {
       {state.routes
         .map((route: any, index: number) => {
           const isFocused = state.index === state.routes.findIndex((r: any) => r.key === route.key);
-          const Icon = TABS[index]?.icon ?? Heart;
+          // Match by route name — Expo Router orders routes alphabetically,
+          // so array index ≠ TABS index.
+          const tabDef = TABS.find((t) => t.name === route.name);
+          const Icon = tabDef?.icon ?? Heart;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -86,7 +89,7 @@ function GlassTabBar({ state, navigation }: any) {
                   letterSpacing: 0.2,
                 }}
               >
-                {TABS[index]?.label ?? 'Tab'}
+                {tabDef?.label ?? 'Tab'}
               </Text>
             </TouchableOpacity>
           );
