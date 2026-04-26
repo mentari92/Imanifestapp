@@ -5,10 +5,16 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { QuranApiService } from "../common/quran-api.service";
+import { PrismaService } from "@imanifest/database";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private quranApi: QuranApiService,
+    private prisma: PrismaService,
+  ) {}
 
   private getClientIp(req: any): string | undefined {
     const cfIp = req.headers?.["cf-connecting-ip"];
@@ -105,5 +111,41 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  /** Proxy bookmark creation to Quran Foundation User API */
+  @Post("quran/bookmark")
+  @HttpCode(HttpStatus.OK)
+  async addBookmark(@Req() req: any, @Body("verseKey") verseKey: string) {
+    if (!verseKey || !/^\d+:\d+$/.test(verseKey)) {
+      throw new BadRequestException("verseKey must be in format 'surah:verse'");
+    }
+    const userId: string = req.user?.userId;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { quranApiKey: true },
+    });
+    if (!user?.quranApiKey) {
+      return { success: false, message: "No Quran.com account linked. Please login with Quran.com to use bookmarks." };
+    }
+    const result = await this.quranApi.addBookmark(user.quranApiKey, verseKey);
+    return result
+      ? { success: true, data: result }
+      : { success: false, message: "Bookmark could not be saved to Quran.com" };
+  }
+
+  /** Proxy streak fetch from Quran Foundation User API */
+  @Get("quran/streaks")
+  async getQuranStreaks(@Req() req: any) {
+    const userId: string = req.user?.userId;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { quranApiKey: true },
+    });
+    if (!user?.quranApiKey) {
+      return { success: false, data: null };
+    }
+    const streak = await this.quranApi.getUserStreaks(user.quranApiKey);
+    return { success: true, data: streak };
   }
 }

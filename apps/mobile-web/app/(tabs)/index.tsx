@@ -134,10 +134,10 @@ type QuickAccessItem = {
 };
 
 const QUICK_ACCESS: QuickAccessItem[] = [
-  { label: 'Qalb', desc: 'Calm your heart and reset your focus', route: '/(tabs)/qalb', Icon: Heart, iconBg: '#fce7f3', iconColor: '#db2777', iconFill: '#db2777' },
-  { label: 'Imanifest', desc: 'Write a clear intention and direction', route: '/(tabs)/imanifest', Icon: Sparkles, iconBg: '#ede9fe', iconColor: '#7c3aed' },
-  { label: 'Dua-to-Do', desc: 'Turn intention into daily action', route: '/(tabs)/dua-todo', Icon: ListChecks, iconBg: '#fef3c7', iconColor: '#b45309' },
-  { label: 'Tafakkur', desc: 'Reconnect through Quran reflection', route: '/(tabs)/tafakkur', Icon: MeditationIcon, iconBg: '#d1fae5', iconColor: '#059669' },
+  { label: 'Qalb', desc: 'Soften your heart and purify your focus', route: '/(tabs)/qalb', Icon: Heart, iconBg: '#fce7f3', iconColor: '#db2777', iconFill: '#db2777' },
+  { label: 'Imanifest', desc: 'Set your niyyah with Quranic guidance', route: '/(tabs)/imanifest', Icon: Sparkles, iconBg: '#ede9fe', iconColor: '#7c3aed' },
+  { label: 'Dua-to-Do', desc: "Turn your niyyah into daily 'amal", route: '/(tabs)/dua-todo', Icon: ListChecks, iconBg: '#fef3c7', iconColor: '#b45309' },
+  { label: 'Tafakkur', desc: 'Read, listen & reflect on the Quran', route: '/(tabs)/tafakkur', Icon: MeditationIcon, iconBg: '#d1fae5', iconColor: '#059669' },
 ];
 
 
@@ -255,7 +255,7 @@ export default function DashboardScreen() {
   const streak = data?.stats?.currentStreak ?? 7;
   const completed = data?.stats?.completedDuaTasks ?? 0;
   const total = data?.stats?.totalDuaTasks ?? 15;
-  const alignPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 80;
+  const alignPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
   const hasQalbStep = (data?.stats?.totalJournalEntries ?? 0) > 0;
   const hasImanifestStep = (data?.stats?.totalIntentions ?? 0) > 0;
   const hasDuaStep = (data?.stats?.completedDuaTasks ?? 0) > 0;
@@ -347,7 +347,7 @@ export default function DashboardScreen() {
         {/* Welcome */}
         <View style={s.welcomeSection}>
           <Text style={[s.welcomeHeadline, isCompact && s.welcomeHeadlineCompact]}>Assalamu'alaikum, {userName}.</Text>
-          <Text style={s.welcomeSub}>Build your dreams through intention, action, and consistency.</Text>
+          <Text style={s.welcomeSub}>Align your niyyah, deepen your 'amal, and grow with istiqamah.</Text>
         </View>
 
         {/* Offline notice */}
@@ -479,7 +479,7 @@ export default function DashboardScreen() {
 
         {/* Bento: Daily Alignment + Streak */}
         <View style={[s.bentoRow, isCompact && s.bentoRowCompact]}>
-          {/* Dream Realization */}
+          {/* Niyyah Realization */}
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => router.push('/(tabs)/dua-todo')}
@@ -494,8 +494,8 @@ export default function DashboardScreen() {
             </View>
             <View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }, isCompact && { flexDirection: 'column', gap: 10 }]}>
               <View>
-                <Text style={s.bentoTitle}>Dream Realization</Text>
-                <Text style={s.bentoSubtitle}>Intention to daily action</Text>
+                <Text style={s.bentoTitle}>Niyyah Realization</Text>
+                <Text style={s.bentoSubtitle}>Niyyah to daily 'amal</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={[s.bentoStat, isCompact && s.bentoStatCompact]}>{completed}/{total}</Text>

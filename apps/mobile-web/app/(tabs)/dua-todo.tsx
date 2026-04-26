@@ -143,8 +143,8 @@ export default function DuaTodoScreen() {
           <View style={styles.hero}>
             <Text style={[styles.displayHeadline, isCompact && styles.displayHeadlineCompact]}>
               {totalCount > 0
-                ? `${totalCount} Steps to Manifest your Intention`
-                : 'Turn your Duas into Actionable Steps'}
+                ? `${totalCount} 'Amal Steps from Your Niyyah`
+                : "Turn Your Niyyah into Daily 'Amal"}
             </Text>
           </View>
 
@@ -185,12 +185,12 @@ export default function DuaTodoScreen() {
           {totalCount === 0 && (
             <>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionLabel}>Your Dua / Intention</Text>
+                <Text style={styles.sectionLabel}>Your Niyyah / Dua</Text>
               </View>
               <View style={[glass, styles.emptyGuideCard, isCompact && styles.emptyGuideCardCompact]}>
-                <Text style={[styles.emptyGuideTitle, isCompact && styles.emptyGuideTitleCompact]}>Quick start flow</Text>
+                <Text style={[styles.emptyGuideTitle, isCompact && styles.emptyGuideTitleCompact]}>How it works</Text>
                 <Text style={styles.emptyGuideText}>
-                  Paste one intention from Imanifest, generate your tasks, and complete at least one item to make your demo progress visible.
+                  Copy your niyyah from Imanifest, generate your daily 'amal steps, and check them off as you act on your intention.
                 </Text>
               </View>
               <View style={[glass, styles.inputCard, isCompact && styles.inputCardCompact]}>

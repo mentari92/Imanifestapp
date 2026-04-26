@@ -190,9 +190,9 @@ export default function ImanifestScreen() {
 
           {/* ── Hero ───────────────────────────────────────────────── */}
           <View style={styles.hero}>
-            <Text style={[styles.displayHeadline, isCompact && styles.displayHeadlineCompact]}>Imanifest{'\n'}My Vision</Text>
+            <Text style={[styles.displayHeadline, isCompact && styles.displayHeadlineCompact]}>Set Your{'\n'}Niyyah</Text>
             <Text style={styles.displaySub}>
-              Align your soul's purpose with intentional action.
+              Ground your niyyah in the Quran and let Allah guide your path.
             </Text>
           </View>
 
@@ -226,7 +226,7 @@ export default function ImanifestScreen() {
 
           {/* ── Soul's Intention ───────────────────────────────────── */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionLabel}>Soul's Intention</Text>
+            <Text style={styles.sectionLabel}>Your Niyyah</Text>
             <TouchableOpacity onPress={() => startVoiceRecording('intention')} disabled={isRecording}>
               <Text style={[styles.voiceLabel, recordingTarget === 'intention' && { color: '#ac3149' }]}>
                 {recordingTarget === 'intention' ? '⏺ Recording...' : '🎙 Voice Record'}
@@ -236,7 +236,7 @@ export default function ImanifestScreen() {
           <View style={[glass, styles.intentionCard, isCompact && styles.intentionCardCompact]}>
             <TextInput
               style={styles.intentionInput}
-              placeholder="Write what your soul desires to manifest today..."
+              placeholder="Write your niyyah — what do you sincerely intend for the sake of Allah?"
               placeholderTextColor="rgba(96,93,113,0.45)"
               value={intentionText}
               onChangeText={setIntentionText}
@@ -324,7 +324,7 @@ export default function ImanifestScreen() {
             activeOpacity={0.85}
           >
             <Text style={styles.ctaText}>
-              {loading ? 'Analyzing...' : 'Manifest & Get AI Guidance  →'}
+              {loading ? 'Analyzing...' : 'Get Quranic Guidance  →'}
             </Text>
           </TouchableOpacity>
 
@@ -440,7 +440,7 @@ export default function ImanifestScreen() {
 
           {history.length > 0 ? (
             <View style={styles.historySection}>
-              <Text style={styles.subSectionTitle}>Saved manifestations</Text>
+              <Text style={styles.subSectionTitle}>Saved Niyyah</Text>
               {history.map((item) => (
                 <View key={item.id} style={[glass, styles.historyCard]}>
                   <View style={styles.historyTopRow}>

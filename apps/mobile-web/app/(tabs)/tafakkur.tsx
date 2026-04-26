@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, Platform,
-  ActivityIndicator, TextInput,
+  ActivityIndicator, TextInput, Alert,
   useWindowDimensions,
 } from "react-native";
 import { MeditationIcon } from "../../components/shared/MeditationIcon";
-import { apiGet } from "../../lib/api";
+import { apiGet, api } from "../../lib/api";
 
 const glass = (radius = 24) => ({
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -105,6 +105,30 @@ export default function TafakkurHubScreen() {
   const [progressBarWidth, setProgressBarWidth] = useState(0);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
   const [autoPlayMode, setAutoPlayMode] = useState<'stop' | 'loop'>('loop');
+  const [bookmarkedVerses, setBookmarkedVerses] = useState<Set<string>>(new Set());
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+
+  const handleBookmark = useCallback(async (verseKey: string) => {
+    if (bookmarkLoading) return;
+    if (bookmarkedVerses.has(verseKey)) {
+      Alert.alert('Already bookmarked', `${verseKey} is already in your Quran.com bookmarks.`);
+      return;
+    }
+    setBookmarkLoading(true);
+    try {
+      const res = await api.post('/auth/quran/bookmark', { verseKey });
+      if (res.data?.success) {
+        setBookmarkedVerses((prev) => new Set([...prev, verseKey]));
+        Alert.alert('Bookmarked ✓', `Ayah ${verseKey} saved to your Quran.com account.`);
+      } else {
+        Alert.alert('Not saved', res.data?.message || 'Please login with Quran.com to bookmark verses.');
+      }
+    } catch {
+      Alert.alert('Not saved', 'Please login with Quran.com to bookmark verses.');
+    } finally {
+      setBookmarkLoading(false);
+    }
+  }, [bookmarkLoading, bookmarkedVerses]);
   const [showAllReciters, setShowAllReciters] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -792,6 +816,34 @@ export default function TafakkurHubScreen() {
                   — {currentVerse.verseKey}
                   {surahVerses.length > 0 ? `  ·  verse ${currentVerseIdx + 1} of ${surahVerses.length}` : ""}
                 </Text>
+                <TouchableOpacity
+                  onPress={() => void handleBookmark(currentVerse.verseKey)}
+                  disabled={bookmarkLoading}
+                  style={{
+                    alignSelf: "center",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 999,
+                    backgroundColor: bookmarkedVerses.has(currentVerse.verseKey)
+                      ? "rgba(22,101,52,0.15)"
+                      : "rgba(169,247,183,0.25)",
+                    borderWidth: 1,
+                    borderColor: bookmarkedVerses.has(currentVerse.verseKey)
+                      ? "rgba(22,101,52,0.4)"
+                      : "rgba(169,247,183,0.6)",
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={{ fontSize: 14 }}>
+                    {bookmarkedVerses.has(currentVerse.verseKey) ? "🔖" : "📖"}
+                  </Text>
+                  <Text style={{ fontFamily: "Plus Jakarta Sans", fontSize: 11, fontWeight: "700", color: "#0e6030" }}>
+                    {bookmarkedVerses.has(currentVerse.verseKey) ? "Saved to Quran.com" : "Bookmark in Quran.com"}
+                  </Text>
+                </TouchableOpacity>
               </>
             ) : (
               <>
