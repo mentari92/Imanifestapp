@@ -40,7 +40,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private redis: RedisService,
-  ) {}
+  ) { }
 
   async register(email: string, password: string, name?: string, ip?: string) {
     if (ip) await this.checkRateLimit(ip);
@@ -117,7 +117,7 @@ export class AuthService {
       10 * 60,
     );
 
-    const authorizeUrl = new URL(`${cfg.oauthBaseUrl}/oauth2/auth`);
+    const authorizeUrl = new URL(`${cfg.oauthBaseUrl}/authorize`);
     authorizeUrl.searchParams.set("response_type", "code");
     authorizeUrl.searchParams.set("client_id", cfg.clientId);
     authorizeUrl.searchParams.set("redirect_uri", cfg.redirectUri);
@@ -167,7 +167,7 @@ export class AuthService {
       form.set("code_verifier", codeVerifier);
 
       const tokenResp = await axios.post<OauthExchangePayload>(
-        `${cfg.oauthBaseUrl}/oauth2/token`,
+        `${cfg.oauthBaseUrl}/token`,
         form.toString(),
         {
           headers: {
@@ -238,9 +238,27 @@ export class AuthService {
       redirectUrl.searchParams.set("oauth_code", loginCode);
       return redirectUrl.toString();
     } catch (error) {
-      this.logger.warn(
-        `OAuth callback failed: ${error instanceof Error ? error.message : error}`,
+      const axiosErr = error as { response?: { data?: any; status?: number } };
+      const errDetail =
+        axiosErr.response?.data
+          ? JSON.stringify(axiosErr.response.data)
+          : error instanceof Error
+            ? error.message
+            : String(error);
+
+      this.logger.error(
+        `OAuth callback failed (redirect_uri=${cfg.redirectUri}): ${errDetail}`,
       );
+
+      if (
+        errDetail.includes("redirect_uri") ||
+        errDetail.includes("mismatch")
+      ) {
+        return safeErrorRedirect(
+          `redirect_uri_mismatch:${cfg.redirectUri}`,
+        );
+      }
+
       return safeErrorRedirect("oauth_callback_failed");
     }
   }
