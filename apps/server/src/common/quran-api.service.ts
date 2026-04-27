@@ -579,13 +579,25 @@ export class QuranApiService {
       const translation =
         verse.translations?.[0]?.text || "Translation unavailable";
 
+      // Fetch surah name from chapters endpoint
+      let surahName = `Surah ${randomSurah}`;
+      try {
+        const chapterRes = await axios.get<{ chapter: any }>(
+          `${this.baseUrl}/chapters/${randomSurah}`,
+          { params: { language: "en" }, headers: this.getHeaders(), timeout: 5000 },
+        );
+        surahName = chapterRes.data?.chapter?.name_simple || surahName;
+      } catch {
+        // keep fallback
+      }
+
       return {
         number: Number(verse.id || globalIndex),
         text: this.decodeHtmlEntities(this.stripHtmlTags(String(translation))),
         numberInSurah: Number(verse.verse_number || 0),
         surah: {
           number: randomSurah,
-          englishName: `Surah ${randomSurah}`,
+          englishName: surahName,
         },
       };
     } catch {

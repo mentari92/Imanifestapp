@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
-  Linking,
   ScrollView,
   useWindowDimensions,
 } from "react-native";
@@ -17,13 +16,27 @@ import { useAuth } from "../lib/auth";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, token, loading } = useAuth();
+  const { user, token, loading, logout } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isCompact = width < 768;
 
   const handleOAuthPress = async () => {
     router.push("/auth");
+  };
+
+  const handleLogout = () => {
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign Out",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/auth");
+        },
+      },
+    ]);
   };
 
   const handleProfilePress = () => {
@@ -58,13 +71,22 @@ export default function SettingsScreen() {
             progress across all your devices.
           </Text>
 
-          <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.buttonDisabled]}
-            onPress={() => void handleOAuthPress()}
-            disabled={loading}
-          >
-            <Text style={styles.primaryButtonText}>Sign in with Quran.com</Text>
-          </TouchableOpacity>
+          {isSignedIn ? (
+            <TouchableOpacity
+              style={[styles.logoutButton]}
+              onPress={handleLogout}
+            >
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.primaryButton, loading && styles.buttonDisabled]}
+              onPress={() => void handleOAuthPress()}
+              disabled={loading}
+            >
+              <Text style={styles.primaryButtonText}>Sign in with Quran.com</Text>
+            </TouchableOpacity>
+          )}
 
         </View>
 
@@ -214,6 +236,22 @@ const styles = {
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  logoutButton: {
+    borderRadius: 9999,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    alignItems: "center" as const,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#ef4444",
+    backgroundColor: "rgba(239,68,68,0.06)",
+  },
+  logoutButtonText: {
+    color: "#ef4444",
+    fontSize: 16,
+    fontWeight: "600" as const,
+    fontFamily: "Inter-SemiBold",
   },
   legalRow: {
     flexDirection: "row" as const,

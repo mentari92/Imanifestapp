@@ -252,7 +252,7 @@ export default function DashboardScreen() {
   };
 
   const userName = data?.user?.name || 'Mentari';
-  const streak = data?.stats?.currentStreak ?? 7;
+  const streak = data?.stats?.currentStreak ?? 0;
   const completed = data?.stats?.completedDuaTasks ?? 0;
   const total = data?.stats?.totalDuaTasks ?? 15;
   const alignPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
