@@ -379,29 +379,6 @@ export class QuranApiService {
     }
   }
 
-  async getAudioEditions(): Promise<AudioEdition[]> {
-    return [
-      {
-        identifier: "ar.alafasy",
-        language: "ar",
-        name: "Mishary Rashid Alafasy",
-        englishName: "Mishary Rashid Alafasy",
-      },
-      {
-        identifier: "ar.abdurrahmaansudais",
-        language: "ar",
-        name: "Abdurrahman As-Sudais",
-        englishName: "Abdurrahman As-Sudais",
-      },
-      {
-        identifier: "ar.abdulbasitmurattal",
-        language: "ar",
-        name: "Abdul Basit",
-        englishName: "Abdul Basit",
-      },
-    ];
-  }
-
   async getAudioUrl(
     surahNumber: number,
     reciterIdentifier: string | number,

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { apiGet } from '../lib/api';
+import { api } from '../lib/api';
 
 interface DashboardData {
   user: {
@@ -28,6 +29,7 @@ interface DashboardData {
     surahNumber: number;
     ayahNumber: number;
   } | null;
+  quranFoundationStreak: { days: number; status: string } | null;
 }
 
 // Demo data for offline/fallback mode
@@ -66,6 +68,7 @@ const DEMO_DASHBOARD: DashboardData = {
     surahNumber: 2,
     ayahNumber: 1,
   },
+  quranFoundationStreak: null,
 };
 
 /**
@@ -108,13 +111,23 @@ export function useDashboard() {
     retryCountRef.current = 0;
 
     try {
-      const response = await fetchWithRetry(
-        () => apiGet<{ data: DashboardData }>('/dashboard/overview'),
-        3,
-        500,
-      );
-      setData(response.data);
-      return response.data;
+      const [dashboardResponse, streakResponse] = await Promise.allSettled([
+        fetchWithRetry(() => apiGet<{ data: DashboardData }>('/dashboard/overview'), 3, 500),
+        api.get<{ success: boolean; data: { days: number; status: string } | null }>('/auth/quran/streaks'),
+      ]);
+
+      const dashData: DashboardData = dashboardResponse.status === 'fulfilled'
+        ? dashboardResponse.value.data
+        : DEMO_DASHBOARD;
+
+      const qfStreak = streakResponse.status === 'fulfilled'
+        ? streakResponse.value.data?.data ?? null
+        : null;
+
+      const enriched: DashboardData = { ...dashData, quranFoundationStreak: qfStreak };
+      setData(enriched);
+      if (dashboardResponse.status === 'rejected') throw (dashboardResponse as PromiseRejectedResult).reason;
+      return enriched;
     } catch (err: any) {
       const message = err.message || 'Failed to fetch dashboard';
       

@@ -252,7 +252,9 @@ export default function DashboardScreen() {
   };
 
   const userName = data?.user?.name || 'Mentari';
-  const streak = data?.stats?.currentStreak ?? 0;
+  const qfStreak = data?.quranFoundationStreak;
+  const streak = qfStreak?.days ?? data?.stats?.currentStreak ?? 0;
+  const streakSource = qfStreak ? 'quran.com' : 'local';
   const completed = data?.stats?.completedDuaTasks ?? 0;
   const total = data?.stats?.totalDuaTasks ?? 15;
   const alignPct = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
@@ -525,7 +527,12 @@ export default function DashboardScreen() {
             <View style={s.streakIconWrap}>
               <Star size={28} color={C.tertiary} fill={C.tertiaryContainer} />
             </View>
-            <Text style={s.streakTitle}>{streak}-Day Consistency</Text>
+            <Text style={s.streakTitle}>{streak}-Day Streak</Text>
+            {streakSource === 'quran.com' ? (
+              <Text style={{ fontFamily: 'Plus Jakarta Sans', fontSize: 9, fontWeight: '700', color: C.tertiary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 4 }}>
+                ✓ Synced from Quran.com
+              </Text>
+            ) : null}
             <Text style={s.streakSub}>Small daily steps create lasting growth.</Text>
             <View style={s.streakDots}>
               {Array.from({ length: 7 }, (_, i) => (
