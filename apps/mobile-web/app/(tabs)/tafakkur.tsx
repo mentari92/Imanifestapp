@@ -105,6 +105,7 @@ export default function TafakkurHubScreen() {
   const [progressBarWidth, setProgressBarWidth] = useState(0);
   const [scrubProgress, setScrubProgress] = useState<number | null>(null);
   const [autoPlayMode, setAutoPlayMode] = useState<'stop' | 'loop'>('loop');
+  const [versesSurahNumber, setVersesSurahNumber] = useState<number | null>(null);
   const [bookmarkedVerses, setBookmarkedVerses] = useState<Set<string>>(new Set());
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
@@ -238,13 +239,15 @@ export default function TafakkurHubScreen() {
 
   // Fetch verses when surah changes (Quran Foundation API supports CORS)
   useEffect(() => {
-    if (!activeSurah) { setSurahVerses([]); return; }
+    if (!activeSurah) { setSurahVerses([]); setVersesSurahNumber(null); return; }
     setSurahVerses([]);
+    setVersesSurahNumber(null);
     setCurrentVerseIdx(0);
+    const surahNum = activeSurah.number;
     (async () => {
       try {
         const res = await fetch(
-          `https://api.quran.com/api/v4/verses/by_chapter/${activeSurah.number}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`
+          `https://api.quran.com/api/v4/verses/by_chapter/${surahNum}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`
         );
         const data = await res.json();
         const verses: Verse[] = (data.verses || []).map((v: any) => {
@@ -256,20 +259,23 @@ export default function TafakkurHubScreen() {
           };
         });
         setSurahVerses(verses);
+        setVersesSurahNumber(surahNum);
       } catch {
         setSurahVerses([]);
+        setVersesSurahNumber(null);
       }
     })();
   }, [activeSurah]);
 
-  // Start playing when verses are ready (after surah tap)
+  // Start playing when verses are ready (after surah tap or autoplay advance)
+  // versesSurahNumber guards against stale surahVerses triggering wrong surah playback
   useEffect(() => {
-    if (pendingPlay && surahVerses.length > 0 && activeSurah) {
+    if (pendingPlay && surahVerses.length > 0 && activeSurah && versesSurahNumber === activeSurah.number) {
       setPendingPlay(false);
       loadAndPlayVerses(activeReciter, activeSurah, 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [surahVerses, pendingPlay]);
+  }, [surahVerses, pendingPlay, versesSurahNumber]);
 
   const stopAudio = useCallback(() => {
     requestIdRef.current++;
