@@ -138,7 +138,6 @@ export default function TafakkurHubScreen() {
   const requestIdRef = useRef(0); // cancels stale loadAndPlay calls
   const audioUrlCacheRef = useRef<Record<string, { url: string; reciterIdUsed: number }>>({});
   const scrubProgressRef = useRef<number | null>(null);
-  const autoPlayActiveSurahRef = useRef<Surah | null>(null); // track active surah during auto-play
 
   const toInitials = (name: string) => {
     const words = name
@@ -315,10 +314,11 @@ export default function TafakkurHubScreen() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    const verses = surahVerses;
-    if (verses.length === 0) { setIsLoadingAudio(false); return; }
+    const initialVerses = surahVerses;
+    if (initialVerses.length === 0) { setIsLoadingAudio(false); return; }
 
-    const playVerse = async (idx: number) => {
+    // playVerse accepts verses explicitly — avoids stale closure when autoplay advances surahs
+    const playVerse = async (idx: number, verses: Verse[]) => {
       if (thisId !== requestIdRef.current || idx >= verses.length) {
         setIsPlaying(false);
         setIsLoadingAudio(false);
@@ -336,15 +336,13 @@ export default function TafakkurHubScreen() {
         resolved = await fetchVerseAudioUrl(reciter.id, verse.verseKey);
       } catch {
         setIsLoadingAudio(false);
-        if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 300);
+        if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1, verses), 300);
         return;
       }
 
       if (resolved.reciterIdUsed !== reciter.id) {
         const fallbackReciterIndex = reciters.findIndex((r) => r.id === resolved.reciterIdUsed);
-        if (fallbackReciterIndex >= 0) {
-          setActiveReciter(fallbackReciterIndex);
-        }
+        if (fallbackReciterIndex >= 0) setActiveReciter(fallbackReciterIndex);
       }
 
       const audio = new Audio(resolved.url);
@@ -369,53 +367,68 @@ export default function TafakkurHubScreen() {
           }, 300);
         }).catch(() => {
           setIsLoadingAudio(false);
-          if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 300);
+          if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1, verses), 300);
         });
       };
       audio.onended = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
-        if (thisId === requestIdRef.current) {
-          // Check if we're at the last verse of current surah
-          if (idx + 1 >= verses.length) {
-            // We reached the end of this surah
-            if (autoPlayMode === 'loop') {
-              // Find next surah: if at surah 114, loop to surah 1, otherwise go to next
-              const currentSurahNum = _surah.number;
-              const nextSurahNum = currentSurahNum === 114 ? 1 : currentSurahNum + 1;
-              const nextSurah = surahs.find(s => s.number === nextSurahNum);
+        if (thisId !== requestIdRef.current) return;
 
-              if (nextSurah) {
-                // Mark that we're auto-advancing
-                autoPlayActiveSurahRef.current = nextSurah;
-                setActiveSurah(nextSurah);
-                setPendingPlay(true);
-              } else {
-                setIsPlaying(false);
-                setIsLoadingAudio(false);
-                setProgress(100);
-              }
-            } else {
-              // autoPlayMode === 'stop': just stop
-              setIsPlaying(false);
-              setIsLoadingAudio(false);
-              setProgress(100);
-              autoPlayActiveSurahRef.current = null;
-            }
-          } else {
-            // Continue to next verse in same surah
-            playVerse(idx + 1);
-          }
+        if (idx + 1 < verses.length) {
+          // Continue to next verse in same surah
+          playVerse(idx + 1, verses);
+          return;
         }
+
+        // End of surah
+        if (autoPlayMode !== 'loop') {
+          setIsPlaying(false);
+          setIsLoadingAudio(false);
+          setProgress(100);
+          return;
+        }
+
+        // Autoplay: fetch next surah directly — no React state intermediary
+        const nextSurahNum = _surah.number === 114 ? 1 : _surah.number + 1;
+        const nextSurah = surahs.find(s => s.number === nextSurahNum);
+        if (!nextSurah) { setIsPlaying(false); setIsLoadingAudio(false); setProgress(100); return; }
+
+        setActiveSurah(nextSurah);
+        setCurrentVerseIdx(0);
+        setProgress(0);
+        setIsLoadingAudio(true);
+        setIsPlaying(false);
+
+        (async () => {
+          try {
+            const res = await fetch(
+              `https://api.quran.com/api/v4/verses/by_chapter/${nextSurah.number}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`
+            );
+            const data = await res.json();
+            if (thisId !== requestIdRef.current) return;
+            const nextVerses: Verse[] = (data.verses || []).map((v: any) => {
+              const raw = v.translations?.find((t: any) => t.text?.trim())?.text || "";
+              return { verseKey: v.verse_key, arabic: v.text_uthmani || "", translation: stripHtml(raw) };
+            });
+            if (thisId !== requestIdRef.current) return;
+            setSurahVerses(nextVerses);
+            setVersesSurahNumber(nextSurah.number);
+            playVerse(0, nextVerses);
+          } catch {
+            setIsLoadingAudio(false);
+            setIsPlaying(false);
+          }
+        })();
       };
       audio.onerror = () => {
         if (intervalRef.current) clearInterval(intervalRef.current);
         setIsLoadingAudio(false);
-        if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1), 200);
+        if (thisId === requestIdRef.current) setTimeout(() => playVerse(idx + 1, verses), 200);
       };
       audio.load();
     };
 
-    playVerse(startIdx);
+    playVerse(startIdx, initialVerses);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchVerseAudioUrl, playbackRate, reciters, surahVerses, surahs, autoPlayMode]);
 
