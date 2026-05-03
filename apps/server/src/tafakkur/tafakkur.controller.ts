@@ -52,6 +52,7 @@ export class TafakkurController {
     return { data: reciters };
   }
 
+  @Public()
   @Get('audio-url')
   async getAudioUrl(
     @Query('surah') surah: string,
@@ -65,6 +66,7 @@ export class TafakkurController {
     return result;
   }
 
+  @Public()
   @Get('verse-audio-url')
   async getVerseAudioUrl(
     @Query('ayahKey') ayahKey: string,
