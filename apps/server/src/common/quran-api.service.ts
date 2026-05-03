@@ -98,8 +98,6 @@ export interface VerseResult {
 @Injectable()
 export class QuranApiService {
   private readonly logger = new Logger(QuranApiService.name);
-  private readonly baseUrl =
-    process.env.QURAN_API_BASE_URL || "https://api.quran.com/api/v4";
   private readonly apiKey = process.env.QURAN_FOUNDATION_API_KEY || "";
   private readonly foundationBaseUrl =
     process.env.QURAN_FOUNDATION_CONTENT_API_URL ||
@@ -141,7 +139,7 @@ export class QuranApiService {
 
     try {
       const response = await axios.get<{ search: { results: QuranSearchResult[] } }>(
-        `${this.baseUrl}/search`,
+        `${this.foundationBaseUrl}/search`,
         {
           params: {
             q: query,
@@ -218,7 +216,7 @@ export class QuranApiService {
   async getTafsir(verseKey: string): Promise<string> {
     try {
       const response = await axios.get<TafsirResponse>(
-        `${this.baseUrl}/tafsirs/169/by_ayah/${verseKey}`,
+        `${this.foundationBaseUrl}/tafsirs/169/by_ayah/${verseKey}`,
         {
           headers: this.getHeaders(),
           timeout: 7000,
@@ -238,7 +236,7 @@ export class QuranApiService {
   async getVerseWithTranslation(verseKey: string): Promise<VerseResult | null> {
     try {
       const response = await axios.get<QuranVerseResponse>(
-        `${this.baseUrl}/verses/by_key/${verseKey}`,
+        `${this.foundationBaseUrl}/verses/by_key/${verseKey}`,
         {
           params: {
             translations: "85,131,20",
@@ -350,7 +348,7 @@ export class QuranApiService {
 
     try {
       const response = await axios.get<{ chapters: any[] }>(
-        `${this.baseUrl}/chapters`,
+        `${this.foundationBaseUrl}/chapters`,
         {
           params: { language: "en" },
           headers: this.getHeaders(),
@@ -521,7 +519,6 @@ export class QuranApiService {
   }
 
   async getRandomAyah(): Promise<RandomAyahResult | null> {
-    // Use Quran Foundation public API (api.quran.com) for Verse of the Day
     // Pick a daily verse based on date so it changes once per day, not per request.
     const dayOfYear = Math.floor(
       (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86_400_000,
