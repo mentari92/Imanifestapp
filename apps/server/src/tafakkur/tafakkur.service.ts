@@ -85,6 +85,10 @@ export class TafakkurService {
     return this.getFallbackSurahs();
   }
 
+  async getVersesByChapter(surahNum: number) {
+    return this.quranApiService.getVersesByChapter(surahNum);
+  }
+
   async getReciters(): Promise<ReciterInfo[]> {
     const cacheKey = "tafakkur:reciters:v2";
 

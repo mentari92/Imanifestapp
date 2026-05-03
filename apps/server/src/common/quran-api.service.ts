@@ -346,14 +346,12 @@ export class QuranApiService {
       // non-critical
     }
 
+    const headers = await this.getFoundationHeaders() ?? this.getHeaders();
+
     try {
       const response = await axios.get<{ chapters: any[] }>(
         `${this.foundationBaseUrl}/chapters`,
-        {
-          params: { language: "en" },
-          headers: this.getHeaders(),
-          timeout: 9000,
-        },
+        { params: { language: "en" }, headers, timeout: 9000 },
       );
 
       const surahs: SurahInfo[] = (response.data?.chapters || []).map((c) => ({
@@ -373,6 +371,45 @@ export class QuranApiService {
 
       return surahs;
     } catch {
+      return [];
+    }
+  }
+
+  async getVersesByChapter(surahNum: number): Promise<{ verseKey: string; arabic: string; translation: string }[]> {
+    const cacheKey = `quran:verses:${surahNum}`;
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+    } catch { /* non-critical */ }
+
+    const headers = await this.getFoundationHeaders() ?? this.getHeaders();
+
+    try {
+      const response = await axios.get<{ verses: any[] }>(
+        `${this.foundationBaseUrl}/verses/by_chapter/${surahNum}`,
+        {
+          params: { language: "en", words: false, fields: "text_uthmani", translations: "85,131", per_page: 300 },
+          headers,
+          timeout: 12000,
+        },
+      );
+
+      const verses = (response.data?.verses || []).map((v: any) => {
+        const raw = (v.translations as any[])?.find((t: any) => t.text?.trim())?.text || "";
+        return {
+          verseKey: String(v.verse_key),
+          arabic: String(v.text_uthmani || ""),
+          translation: this.stripHtmlTags(this.decodeHtmlEntities(raw)),
+        };
+      });
+
+      try {
+        await this.redis.set(cacheKey, JSON.stringify(verses), 86400);
+      } catch { /* non-critical */ }
+
+      return verses;
+    } catch (error) {
+      this.logger.warn(`getVersesByChapter(${surahNum}) failed: ${error instanceof Error ? error.message : error}`);
       return [];
     }
   }

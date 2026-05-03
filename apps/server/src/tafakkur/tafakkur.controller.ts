@@ -28,6 +28,17 @@ export class TafakkurController {
   }
 
   @Public()
+  @Get('verses')
+  async getVerses(@Query('surah') surah: string) {
+    const surahNum = parseInt(surah, 10);
+    if (!surahNum || surahNum < 1 || surahNum > 114) {
+      return { data: [] };
+    }
+    const verses = await this.tafakkurService.getVersesByChapter(surahNum);
+    return { data: verses };
+  }
+
+  @Public()
   @Get('reciters')
   async getReciters() {
     const reciters = await this.tafakkurService.getReciters();

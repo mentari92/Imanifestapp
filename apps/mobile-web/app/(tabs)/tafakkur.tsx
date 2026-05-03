@@ -5,7 +5,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { MeditationIcon } from "../../components/shared/MeditationIcon";
-import { apiGet, api } from "../../lib/api";
+import { apiGet, api, API_BASE_URL } from "../../lib/api";
 
 const glass = (radius = 24) => ({
   backgroundColor: "rgba(255,255,255,0.45)",
@@ -72,9 +72,6 @@ function formatTime(s: number) {
   return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 }
 
-function stripHtml(text: string) {
-  return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-}
 
 
 export default function TafakkurHubScreen() {
@@ -205,13 +202,12 @@ export default function TafakkurHubScreen() {
     setLoadingSurahs(true);
     setSurahsError(null);
     try {
-      const res = await fetch("https://apis.quran.foundation/content/api/v4/chapters?language=en");
-      const data = await res.json();
-      const mappedSurahs = (data.chapters || []).map((c: any) => ({
-        number: Number(c.id),
-        name: String(c.name_arabic || ""),
-        englishName: String(c.name_simple || `Surah ${c.id}`),
-        versesCount: Number(c.verses_count || 0),
+      const data = await apiGet<{ data: Array<{ number: number; name: string; englishName: string; versesCount: number }> }>("/tafakkur/surahs");
+      const mappedSurahs = (data.data || []).map((s) => ({
+        number: s.number,
+        name: s.name || "",
+        englishName: s.englishName || `Surah ${s.number}`,
+        versesCount: s.versesCount || 0,
       }));
 
       if (mappedSurahs.length === 0) {
@@ -235,15 +231,12 @@ export default function TafakkurHubScreen() {
 
   const fetchVersesByChapter = useCallback(async (surahNum: number, signal?: AbortSignal): Promise<Verse[]> => {
     const res = await fetch(
-      `https://apis.quran.foundation/content/api/v4/verses/by_chapter/${surahNum}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`,
+      `${API_BASE_URL}/tafakkur/verses?surah=${surahNum}`,
       signal ? { signal } : undefined,
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return (data.verses || []).map((v: any) => {
-      const raw = (v.translations as any[])?.find((t: any) => t.text?.trim())?.text || "";
-      return { verseKey: String(v.verse_key), arabic: String(v.text_uthmani || ""), translation: stripHtml(raw) };
-    });
+    const data = await res.json() as { data: Verse[] };
+    return data.data || [];
   }, []);
 
   // Load reciters and 114 surahs
