@@ -205,7 +205,7 @@ export default function TafakkurHubScreen() {
     setLoadingSurahs(true);
     setSurahsError(null);
     try {
-      const res = await fetch("https://api.quran.com/api/v4/chapters?language=en");
+      const res = await fetch("https://apis.quran.foundation/content/api/v4/chapters?language=en");
       const data = await res.json();
       const mappedSurahs = (data.chapters || []).map((c: any) => ({
         number: Number(c.id),
@@ -235,7 +235,7 @@ export default function TafakkurHubScreen() {
 
   const fetchVersesByChapter = useCallback(async (surahNum: number, signal?: AbortSignal): Promise<Verse[]> => {
     const res = await fetch(
-      `https://api.quran.com/api/v4/verses/by_chapter/${surahNum}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`,
+      `https://apis.quran.foundation/content/api/v4/verses/by_chapter/${surahNum}?language=en&words=false&fields=text_uthmani&translations=85,131&per_page=300`,
       signal ? { signal } : undefined,
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
