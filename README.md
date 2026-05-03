@@ -1,8 +1,8 @@
 # Imanifest
 
-[![CI Checks](https://github.com/mentari92/Imanifestapp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/ci.yml)
-[![Backend Tests](https://github.com/mentari92/Imanifestapp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/test.yml)
-[![Deploy to VPS](https://github.com/mentari92/Imanifestapp/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/deploy.yml)
+[![CI Checks](https://github.com/mentari92/Imanifest/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifest/actions/workflows/ci.yml)
+[![Backend Tests](https://github.com/mentari92/Imanifest/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifest/actions/workflows/test.yml)
+[![Deploy to VPS](https://github.com/mentari92/Imanifest/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifest/actions/workflows/deploy.yml)
 
 **Transform spiritual intention into disciplined action.** An AI-powered spiritual productivity platform that guides users from authentic intention-setting (Imanifest) through reflection (Qalb) to Quranic wisdom (Tafakkur) and finally organized action (Dua To-Do).
 
@@ -21,7 +21,7 @@
 ## Monorepo Structure
 
 ```
-imanifestapp/
+imanifest/
 ├── apps/
 │   ├── mobile-web/     # Expo (React Native + Web) — Expo Router + NativeWind v4
 │   └── server/         # NestJS API — TypeScript strict
