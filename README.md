@@ -1,4 +1,4 @@
-# ImanifestApp
+# Imanifest
 
 [![CI Checks](https://github.com/mentari92/Imanifestapp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/ci.yml)
 [![Backend Tests](https://github.com/mentari92/Imanifestapp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/mentari92/Imanifestapp/actions/workflows/test.yml)
