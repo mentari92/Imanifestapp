@@ -79,8 +79,7 @@ Optional but required for AI responses:
 
 ### AI (apps/server/.env)
 ```bash
-OPENROUTER_API_KEY="your_openrouter_key"   # Primary AI provider
-ZHIPU_API_KEY="your_zhipu_key"             # Fallback AI provider
+OPENROUTER_API_KEY="your_openrouter_key"   # AI provider (Claude via OpenRouter)
 ```
 
 Optional but required for Tafakkur backend audio proxy:
@@ -142,7 +141,7 @@ npx tsc --noEmit
 | Backend | NestJS 10, TypeScript strict |
 | Database | PostgreSQL 15+, Prisma 6 |
 | Auth | JWT + bcrypt + Redis token blacklist |
-| AI | OpenRouter (primary), Zhipu GLM-4 (fallback) |
+| AI | Claude API via OpenRouter |
 | Audio | Expo AV + Quran Foundation API |
 | Icons | Lucide React Native |
 | Package Manager | pnpm 9.15 + Turborepo |

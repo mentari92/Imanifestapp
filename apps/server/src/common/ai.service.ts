@@ -2,8 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import axios from "axios";
 
 @Injectable()
-export class ZhipuService {
-  private readonly logger = new Logger(ZhipuService.name);
+export class AiService {
+  private readonly logger = new Logger(AiService.name);
   private readonly zhipuApiKey = process.env.ZHIPU_API_KEY || "";
   private readonly openRouterApiKey = process.env.OPENROUTER_API_KEY || "";
 
@@ -154,7 +154,7 @@ export class ZhipuService {
     pick(/keluarga|ortu|suami|istri|anak|silaturahmi/, "family ties");
 
     while (bucket.length < 3) {
-      const candidate = ZhipuService.THEME_FALLBACK[bucket.length];
+      const candidate = AiService.THEME_FALLBACK[bucket.length];
       if (!bucket.includes(candidate)) bucket.push(candidate);
     }
 
@@ -206,7 +206,7 @@ export class ZhipuService {
 
   private async callZhipu(systemPrompt: string, userMessage: string): Promise<string> {
     if (!this.zhipuApiKey) {
-      throw new Error("Zhipu key not configured");
+      throw new Error("AI key not configured");
     }
 
     const models = [this.zhipuModel, "glm-4-flash", "glm-4-plus"];
@@ -234,15 +234,15 @@ export class ZhipuService {
 
         const content = response.data?.choices?.[0]?.message?.content || "";
         if (content) {
-          if (model !== models[0]) this.logger.warn(`Zhipu fallback model used: ${model}`);
+          if (model !== models[0]) this.logger.warn(`AI fallback model used: ${model}`);
           return content;
         }
       } catch (error: any) {
-        this.logger.warn(`Zhipu [${model}] error: ${error.response?.data?.error?.message || error.message}`);
+        this.logger.warn(`AI [${model}] error: ${error.response?.data?.error?.message || error.message}`);
       }
     }
 
-    throw new Error("All Zhipu models unavailable");
+    throw new Error("All AI models unavailable");
   }
 
   private async callTextAI(systemPrompt: string, userMessage: string): Promise<string> {
@@ -251,7 +251,7 @@ export class ZhipuService {
     }
 
     if (this.zhipuApiKey) {
-      this.logger.warn("OpenRouter key missing, falling back to Zhipu provider");
+      this.logger.warn("OpenRouter key missing, using fallback AI provider");
       return this.callZhipu(systemPrompt, userMessage);
     }
 
@@ -307,7 +307,7 @@ Return ONLY a valid JSON array of English keywords.`;
 
     if (this.zhipuApiKey) {
       try {
-        this.logger.warn("OpenRouter key missing for vision flow, falling back to Zhipu provider");
+        this.logger.warn("OpenRouter key missing for vision flow, using fallback AI provider");
         const response = await axios.post(
           this.zhipuUrl,
           {
@@ -338,7 +338,7 @@ Return ONLY a valid JSON array of English keywords.`;
         const content = response.data?.choices?.[0]?.message?.content || "";
         if (content) return content;
       } catch (error: any) {
-        this.logger.warn(`Zhipu vision error: ${error.response?.data?.error?.message || error.message}`);
+        this.logger.warn(`AI vision error: ${error.response?.data?.error?.message || error.message}`);
       }
     }
 
