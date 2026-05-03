@@ -1,3 +1,8 @@
+# Private documents — never commit
+EMAIL_REPLY_BASIT.txt
+GITHUB_SECRETS_SETUP.md
+QURAN_FOUNDATION_OAUTH2_REQUEST.md
+
 # Dependencies
 node_modules/
 
