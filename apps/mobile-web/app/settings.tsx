@@ -33,7 +33,11 @@ export default function SettingsScreen() {
         style: "destructive",
         onPress: async () => {
           await logout();
-          router.replace("/auth");
+          if (Platform.OS === "web" && typeof window !== "undefined") {
+            window.location.href = "/auth";
+          } else {
+            router.replace("/auth");
+          }
         },
       },
     ]);
